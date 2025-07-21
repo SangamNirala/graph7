@@ -382,14 +382,58 @@ University of Technology, 2020"""
     
     def test_voice_interview_start(self) -> bool:
         """Test starting an interview session with voice mode enabled"""
-        if not self.generated_token:
-            self.log_test("Voice Interview Start", False, "No token available")
-            return False
-        
+        # Generate a new token for voice interview testing
         try:
+            # First create a new job/resume upload for voice testing
+            resume_content = """Alex Johnson
+Voice Interview Test Candidate
+Email: alex.johnson@email.com
+Phone: (555) 111-2222
+
+EXPERIENCE:
+- 4+ years of full-stack development
+- Experience with voice interfaces and audio processing
+- Built real-time applications with WebRTC
+- Strong background in Python and JavaScript
+
+SKILLS:
+- Python, JavaScript, React, FastAPI
+- Audio processing, WebRTC, real-time systems
+- MongoDB, PostgreSQL, Redis
+- Voice UI design and implementation"""
+            
+            files = {
+                'resume_file': ('voice_resume.txt', io.StringIO(resume_content), 'text/plain')
+            }
+            
+            data = {
+                'job_title': 'Voice Interface Developer',
+                'job_description': 'We are looking for a developer experienced in voice interfaces and real-time audio processing. The role involves building voice-enabled applications and integrating speech technologies.',
+                'job_requirements': 'Requirements: 3+ years experience, voice interface knowledge, real-time systems, Python/JavaScript skills, audio processing experience.'
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/admin/upload-job",
+                files=files,
+                data=data,
+                timeout=15
+            )
+            
+            if response.status_code != 200:
+                self.log_test("Voice Interview Session Management", False, "Failed to create voice interview token")
+                return False
+            
+            result = response.json()
+            voice_token = result.get("token")
+            
+            if not voice_token:
+                self.log_test("Voice Interview Session Management", False, "No token received for voice interview")
+                return False
+            
+            # Now test voice interview start
             payload = {
-                "token": self.generated_token,
-                "candidate_name": "Jane Smith",
+                "token": voice_token,
+                "candidate_name": "Alex Johnson",
                 "voice_mode": True
             }
             response = self.session.post(
@@ -417,11 +461,11 @@ University of Technology, 2020"""
                         success = False
                 
                 if success:
-                    self.session_id = data["session_id"]
+                    voice_session_id = data["session_id"]
             
             details = f"Status: {response.status_code}"
             if success:
-                details += f", Voice Mode: {data.get('voice_mode')}, Session: {self.session_id[:8] if self.session_id else 'None'}..."
+                details += f", Voice Mode: {data.get('voice_mode')}, Session: {voice_session_id[:8] if 'voice_session_id' in locals() else 'None'}..."
                 if "welcome_audio" in data:
                     details += f", Welcome Audio: {len(data['welcome_audio']) // 1024}KB"
                 if "question_audio" in data:
