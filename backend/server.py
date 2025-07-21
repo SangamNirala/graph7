@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, WebSocket, WebSocketDisconnect
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -14,6 +14,17 @@ import asyncio
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 import secrets
 import string
+import io
+import base64
+
+# Document parsing imports
+import PyPDF2
+from docx import Document
+
+# Google Cloud imports
+from google.cloud import texttospeech, speech
+from google.oauth2 import service_account
+import gridfs
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -22,6 +33,13 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+fs = gridfs.GridFS(db)
+
+# Google Cloud Setup
+credentials_json = json.loads(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', '{}'))
+credentials = service_account.Credentials.from_service_account_info(credentials_json)
+tts_client = texttospeech.TextToSpeechClient(credentials=credentials)
+stt_client = speech.SpeechClient(credentials=credentials)
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -57,6 +75,7 @@ class InterviewSession(BaseModel):
     started_at: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
     status: str = "in_progress"  # in_progress, completed
+    voice_mode: bool = False
 
 class InterviewAssessment(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -86,6 +105,57 @@ class InterviewMessageRequest(BaseModel):
 class InterviewStartRequest(BaseModel):
     token: str
     candidate_name: str
+    voice_mode: Optional[bool] = False
+
+class VoiceQuestionRequest(BaseModel):
+    session_id: str
+    question_text: str
+
+# Document parsing utilities
+def extract_text_from_pdf(file_content: bytes) -> str:
+    try:
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        return text.strip()
+    except Exception as e:
+        logging.error(f"PDF parsing error: {str(e)}")
+        return ""
+
+def extract_text_from_docx(file_content: bytes) -> str:
+    try:
+        doc = Document(io.BytesIO(file_content))
+        text = ""
+        for paragraph in doc.paragraphs:
+            text += paragraph.text + "\n"
+        return text.strip()
+    except Exception as e:
+        logging.error(f"DOCX parsing error: {str(e)}")
+        return ""
+
+def extract_text_from_txt(file_content: bytes) -> str:
+    try:
+        return file_content.decode('utf-8')
+    except Exception as e:
+        logging.error(f"TXT parsing error: {str(e)}")
+        return ""
+
+def parse_resume(file: UploadFile, content: bytes) -> str:
+    filename = file.filename.lower()
+    
+    if filename.endswith('.pdf'):
+        return extract_text_from_pdf(content)
+    elif filename.endswith(('.doc', '.docx')):
+        return extract_text_from_docx(content)
+    elif filename.endswith('.txt'):
+        return extract_text_from_txt(content)
+    else:
+        # Try to decode as text first
+        try:
+            return content.decode('utf-8')
+        except:
+            raise HTTPException(status_code=400, detail="Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files.")
 
 # AI Interview Engine
 class InterviewAI:
@@ -225,8 +295,69 @@ class InterviewAI:
             recommendations="Continue developing relevant skills and gain more practical experience. Focus on areas where improvement was noted."
         )
 
-# Initialize AI Engine
+# Voice Processing Class
+class VoiceProcessor:
+    def __init__(self):
+        self.tts_client = tts_client
+        self.stt_client = stt_client
+    
+    async def text_to_speech(self, text: str) -> str:
+        """Convert text to speech and return base64 audio data"""
+        try:
+            synthesis_input = texttospeech.SynthesisInput(text=text)
+            voice = texttospeech.VoiceSelectionParams(
+                language_code="en-US",
+                ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
+            )
+            audio_config = texttospeech.AudioConfig(
+                audio_encoding=texttospeech.AudioEncoding.MP3
+            )
+            
+            response = self.tts_client.synthesize_speech(
+                input=synthesis_input,
+                voice=voice,
+                audio_config=audio_config
+            )
+            
+            # Store in GridFS and return file ID
+            file_id = fs.put(response.audio_content, 
+                           filename=f"question_{str(uuid.uuid4())}.mp3",
+                           metadata={"type": "question_audio"})
+            
+            # Also return base64 for immediate playback
+            audio_base64 = base64.b64encode(response.audio_content).decode('utf-8')
+            
+            return {
+                "file_id": str(file_id),
+                "audio_base64": audio_base64
+            }
+        except Exception as e:
+            logging.error(f"TTS Error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Text-to-speech failed: {str(e)}")
+    
+    async def speech_to_text(self, audio_data: bytes) -> str:
+        """Convert speech audio to text"""
+        try:
+            audio = speech.RecognitionAudio(content=audio_data)
+            config = speech.RecognitionConfig(
+                encoding=speech.RecognitionConfig.AudioEncoding.WEBM_OPUS,
+                sample_rate_hertz=48000,
+                language_code="en-US",
+            )
+            
+            response = self.stt_client.recognize(config=config, audio=audio)
+            
+            if response.results:
+                return response.results[0].alternatives[0].transcript
+            else:
+                return ""
+        except Exception as e:
+            logging.error(f"STT Error: {str(e)}")
+            return ""
+
+# Initialize engines
 interview_ai = InterviewAI()
+voice_processor = VoiceProcessor()
 
 # Helper Functions
 def generate_secure_token() -> str:
@@ -248,7 +379,15 @@ async def upload_job_and_resume(
 ):
     # Read resume content
     resume_content = await resume_file.read()
-    resume_text = resume_content.decode('utf-8')
+    
+    # Parse resume based on file type
+    try:
+        resume_text = parse_resume(resume_file, resume_content)
+        
+        if not resume_text.strip():
+            raise HTTPException(status_code=400, detail="Could not extract text from resume file")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Resume parsing failed: {str(e)}")
     
     # Create job record
     job_data = JobDescription(
@@ -273,7 +412,8 @@ async def upload_job_and_resume(
     return {
         "success": True,
         "token": token,
-        "message": "Job and resume uploaded successfully. Token generated for candidate."
+        "resume_preview": resume_text[:200] + "..." if len(resume_text) > 200 else resume_text,
+        "message": f"Job and resume ({resume_file.filename}) uploaded successfully. Token generated for candidate."
     }
 
 @api_router.get("/admin/reports")
@@ -294,6 +434,68 @@ async def get_report_by_session(session_id: str):
     if '_id' in report:
         report['_id'] = str(report['_id'])
     return {"report": report}
+
+# Voice Routes
+@api_router.post("/voice/generate-question")
+async def generate_voice_question(request: VoiceQuestionRequest):
+    """Generate TTS audio for interview question"""
+    try:
+        audio_data = await voice_processor.text_to_speech(request.question_text)
+        
+        # Store question audio reference in session metadata
+        await db.session_metadata.update_one(
+            {"session_id": request.session_id},
+            {"$push": {"question_audios": {
+                "file_id": audio_data["file_id"],
+                "text": request.question_text,
+                "timestamp": datetime.utcnow()
+            }}}
+        )
+        
+        return {
+            "success": True,
+            "audio_base64": audio_data["audio_base64"],
+            "file_id": audio_data["file_id"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/voice/process-answer")
+async def process_voice_answer(
+    session_id: str = Form(...),
+    question_number: int = Form(...),
+    audio_file: UploadFile = File(...)
+):
+    """Process voice answer - convert to text and store audio"""
+    try:
+        audio_content = await audio_file.read()
+        
+        # Convert speech to text
+        transcript = await voice_processor.speech_to_text(audio_content)
+        
+        # Store audio file in GridFS
+        file_id = fs.put(audio_content, 
+                        filename=f"answer_{session_id}_{question_number}.webm",
+                        metadata={"type": "answer_audio", "session_id": session_id})
+        
+        # Store answer in session metadata
+        await db.session_metadata.update_one(
+            {"session_id": session_id},
+            {"$push": {"answer_audios": {
+                "file_id": str(file_id),
+                "transcript": transcript,
+                "question_number": question_number,
+                "timestamp": datetime.utcnow()
+            }}}
+        )
+        
+        return {
+            "success": True,
+            "transcript": transcript,
+            "file_id": str(file_id)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Voice processing failed: {str(e)}")
 
 # Candidate Routes
 @api_router.post("/candidate/validate-token")
@@ -331,6 +533,7 @@ async def start_interview(request: InterviewStartRequest):
         session_id=session_id,
         candidate_name=request.candidate_name,
         job_title=job_data['title'] if job_data else "Software Developer",
+        voice_mode=request.voice_mode or False,
         messages=[{
             "type": "system",
             "content": f"Welcome {request.candidate_name}! I'm your AI interviewer today. We'll have 8 questions - 4 technical and 4 behavioral. Let's begin!",
@@ -346,7 +549,9 @@ async def start_interview(request: InterviewStartRequest):
         "session_id": session_id,
         "questions": questions,
         "technical_evaluations": [],
-        "behavioral_evaluations": []
+        "behavioral_evaluations": [],
+        "question_audios": [],
+        "answer_audios": []
     })
     
     # Mark token as used
@@ -355,13 +560,27 @@ async def start_interview(request: InterviewStartRequest):
         {"$set": {"used": True}}
     )
     
-    return {
+    response_data = {
         "session_id": session_id,
         "first_question": questions[0] if questions else "Tell me about your experience with software development.",
         "question_number": 1,
         "total_questions": 8,
-        "welcome_message": f"Welcome {request.candidate_name}! Ready to start your interview?"
+        "welcome_message": f"Welcome {request.candidate_name}! Ready to start your interview?",
+        "voice_mode": request.voice_mode or False
     }
+    
+    # Generate TTS for voice mode
+    if request.voice_mode:
+        try:
+            welcome_audio = await voice_processor.text_to_speech(response_data["welcome_message"])
+            question_audio = await voice_processor.text_to_speech(questions[0] if questions else "Tell me about your experience.")
+            
+            response_data["welcome_audio"] = welcome_audio["audio_base64"]
+            response_data["question_audio"] = question_audio["audio_base64"]
+        except Exception as e:
+            logging.error(f"TTS generation failed: {str(e)}")
+    
+    return response_data
 
 @api_router.post("/candidate/send-message")
 async def send_interview_message(request: InterviewMessageRequest):
@@ -464,12 +683,22 @@ async def send_interview_message(request: InterviewMessageRequest):
             }
         )
         
-        return {
+        response_data = {
             "completed": False,
             "next_question": next_question,
             "question_number": next_q_num + 1,
             "total_questions": len(questions)
         }
+        
+        # Generate TTS for voice mode
+        if session.get('voice_mode'):
+            try:
+                question_audio = await voice_processor.text_to_speech(next_question)
+                response_data["question_audio"] = question_audio["audio_base64"]
+            except Exception as e:
+                logging.error(f"TTS generation failed: {str(e)}")
+        
+        return response_data
 
 # Health check
 @api_router.get("/health")
@@ -478,7 +707,7 @@ async def health_check():
 
 @api_router.get("/")
 async def root():
-    return {"message": "AI-Powered Interview Agent API"}
+    return {"message": "AI-Powered Interview Agent API with Voice Support"}
 
 # Include the router in the main app
 app.include_router(api_router)

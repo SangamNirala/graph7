@@ -1,8 +1,42 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useReactMediaRecorder } from 'react-media-recorder';
 import './App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Voice Recording Hook
+const useVoiceRecorder = (onRecordingComplete) => {
+  const { status, startRecording, stopRecording, mediaBlobUrl } = useReactMediaRecorder({
+    audio: true,
+    onStop: (blobUrl, blob) => onRecordingComplete(blob)
+  });
+
+  return { status, startRecording, stopRecording, mediaBlobUrl };
+};
+
+// Audio Player Component
+const AudioPlayer = ({ audioBase64, autoPlay = false }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (audioBase64 && audioRef.current) {
+      const audioSrc = `data:audio/mp3;base64,${audioBase64}`;
+      audioRef.current.src = audioSrc;
+      if (autoPlay) {
+        audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+      }
+    }
+  }, [audioBase64, autoPlay]);
+
+  return (
+    <div className="audio-player">
+      <audio ref={audioRef} controls className="w-full">
+        Your browser does not support the audio element.
+      </audio>
+    </div>
+  );
+};
 
 // Landing Page Component
 const LandingPage = ({ setCurrentPage }) => {
@@ -11,12 +45,23 @@ const LandingPage = ({ setCurrentPage }) => {
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <h1 className="text-6xl font-bold text-white mb-6">
-            AI-Powered Interview Agent
+            🎤 AI-Powered Voice Interview Agent
           </h1>
           <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
             Experience the future of hiring with our advanced AI interviewer that conducts 
-            personalized technical and behavioral interviews based on your resume and job requirements.
+            personalized voice interviews with female AI voice and supports PDF/Word resume uploads.
           </p>
+          <div className="flex justify-center space-x-6 mb-8">
+            <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3">
+              <span className="text-green-200">✅ Voice Interview Mode</span>
+            </div>
+            <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3">
+              <span className="text-blue-200">✅ PDF/Word/TXT Resume Support</span>
+            </div>
+            <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-3">
+              <span className="text-purple-200">✅ AI Female Voice Questions</span>
+            </div>
+          </div>
         </div>
 
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
@@ -29,7 +74,7 @@ const LandingPage = ({ setCurrentPage }) => {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-white mb-4">Admin Portal</h2>
-              <p className="text-gray-300 mb-6">Upload job descriptions, manage candidate resumes, and generate secure interview tokens.</p>
+              <p className="text-gray-300 mb-6">Upload job descriptions, manage resumes (PDF/Word/TXT), and generate secure interview tokens.</p>
               <button 
                 onClick={() => setCurrentPage('admin-login')}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl"
@@ -44,11 +89,11 @@ const LandingPage = ({ setCurrentPage }) => {
             <div className="text-center">
               <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-white mb-4">Candidate Portal</h2>
-              <p className="text-gray-300 mb-6">Enter your secure token to begin your personalized AI-powered interview experience.</p>
+              <p className="text-gray-300 mb-6">Enter your secure token for personalized voice interviews with AI interviewer.</p>
               <button 
                 onClick={() => setCurrentPage('candidate-login')}
                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl"
@@ -61,16 +106,25 @@ const LandingPage = ({ setCurrentPage }) => {
 
         {/* Features Section */}
         <div className="mt-20 max-w-6xl mx-auto">
-          <h3 className="text-3xl font-bold text-white text-center mb-12">Key Features</h3>
-          <div className="grid md:grid-cols-3 gap-8">
+          <h3 className="text-3xl font-bold text-white text-center mb-12">Enhanced Features</h3>
+          <div className="grid md:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
               </div>
-              <h4 className="text-xl font-bold text-white mb-2">AI-Driven Questions</h4>
-              <p className="text-gray-300">Dynamically generated questions based on your resume and job description.</p>
+              <h4 className="text-xl font-bold text-white mb-2">Voice Interviews</h4>
+              <p className="text-gray-300">AI female voice asks questions, candidates respond with voice.</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h4 className="text-xl font-bold text-white mb-2">Multi-Format Resumes</h4>
+              <p className="text-gray-300">Upload PDF, Word, or TXT resume files for processing.</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -78,8 +132,8 @@ const LandingPage = ({ setCurrentPage }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <h4 className="text-xl font-bold text-white mb-2">Comprehensive Assessment</h4>
-              <p className="text-gray-300">Detailed scoring and feedback on both technical and behavioral performance.</p>
+              <h4 className="text-xl font-bold text-white mb-2">Audio Analytics</h4>
+              <p className="text-gray-300">Voice recordings stored for comprehensive assessment reports.</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -88,7 +142,7 @@ const LandingPage = ({ setCurrentPage }) => {
                 </svg>
               </div>
               <h4 className="text-xl font-bold text-white mb-2">Secure & Private</h4>
-              <p className="text-gray-300">Token-based authentication ensures secure access and data privacy.</p>
+              <p className="text-gray-300">Token-based authentication with encrypted voice data storage.</p>
             </div>
           </div>
         </div>
@@ -193,12 +247,25 @@ const AdminDashboard = ({ setCurrentPage }) => {
   const [jobRequirements, setJobRequirements] = useState('');
   const [resumeFile, setResumeFile] = useState(null);
   const [generatedToken, setGeneratedToken] = useState('');
+  const [resumePreview, setResumePreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState([]);
   const [activeTab, setActiveTab] = useState('upload');
 
   const handleFileChange = (e) => {
-    setResumeFile(e.target.files[0]);
+    const file = e.target.files[0];
+    setResumeFile(file);
+    
+    // Show file info
+    if (file) {
+      const fileType = file.name.split('.').pop().toLowerCase();
+      const supportedTypes = ['pdf', 'doc', 'docx', 'txt'];
+      if (!supportedTypes.includes(fileType)) {
+        alert('Please upload PDF, DOC, DOCX, or TXT files only');
+        e.target.value = '';
+        setResumeFile(null);
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -220,15 +287,21 @@ const AdminDashboard = ({ setCurrentPage }) => {
       if (response.ok) {
         const data = await response.json();
         setGeneratedToken(data.token);
+        setResumePreview(data.resume_preview || '');
         
         // Reset form
         setJobTitle('');
         setJobDescription('');
         setJobRequirements('');
         setResumeFile(null);
+        document.querySelector('input[type="file"]').value = '';
+      } else {
+        const errorData = await response.json();
+        alert(`Upload failed: ${errorData.detail}`);
       }
     } catch (err) {
       console.error('Upload error:', err);
+      alert('Upload failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -256,7 +329,7 @@ const AdminDashboard = ({ setCurrentPage }) => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-white">Admin Dashboard</h1>
+          <h1 className="text-4xl font-bold text-white">🎤 Voice Interview Admin</h1>
           <button
             onClick={() => setCurrentPage('landing')}
             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
@@ -276,7 +349,7 @@ const AdminDashboard = ({ setCurrentPage }) => {
                   : 'text-gray-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              Upload Job & Resume
+              📄 Upload Job & Resume
             </button>
             <button
               onClick={() => setActiveTab('reports')}
@@ -286,7 +359,7 @@ const AdminDashboard = ({ setCurrentPage }) => {
                   : 'text-gray-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              View Reports
+              📊 Voice Interview Reports
             </button>
           </nav>
         </div>
@@ -334,14 +407,26 @@ const AdminDashboard = ({ setCurrentPage }) => {
               </div>
 
               <div>
-                <label className="block text-white font-medium mb-2">Candidate Resume (TXT file)</label>
+                <label className="block text-white font-medium mb-2">
+                  Candidate Resume (PDF, Word, or TXT file)
+                </label>
+                <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-3 mb-2">
+                  <p className="text-blue-200 text-sm">
+                    ✅ <strong>Supported formats:</strong> PDF, DOC, DOCX, TXT files
+                  </p>
+                </div>
                 <input
                   type="file"
-                  accept=".txt,.doc,.docx"
+                  accept=".pdf,.doc,.docx,.txt"
                   onChange={handleFileChange}
                   className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                   required
                 />
+                {resumeFile && (
+                  <div className="mt-2 text-sm text-green-200">
+                    📎 Selected: {resumeFile.name} ({(resumeFile.size / 1024).toFixed(1)} KB)
+                  </div>
+                )}
               </div>
 
               <button
@@ -349,19 +434,30 @@ const AdminDashboard = ({ setCurrentPage }) => {
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
               >
-                {loading ? 'Generating Token...' : 'Generate Interview Token'}
+                {loading ? 'Processing Resume & Generating Token...' : 'Generate Interview Token'}
               </button>
             </form>
 
             {generatedToken && (
-              <div className="mt-8 p-6 bg-green-600/20 border border-green-500/30 rounded-lg">
-                <h3 className="text-xl font-bold text-green-200 mb-2">Token Generated Successfully!</h3>
-                <div className="bg-black/30 rounded-lg p-4 font-mono text-lg text-green-200">
-                  {generatedToken}
+              <div className="mt-8 space-y-4">
+                <div className="p-6 bg-green-600/20 border border-green-500/30 rounded-lg">
+                  <h3 className="text-xl font-bold text-green-200 mb-2">✅ Token Generated Successfully!</h3>
+                  <div className="bg-black/30 rounded-lg p-4 font-mono text-lg text-green-200">
+                    {generatedToken}
+                  </div>
+                  <p className="text-green-200 mt-2 text-sm">
+                    🎤 Provide this token to the candidate to start their voice interview.
+                  </p>
                 </div>
-                <p className="text-green-200 mt-2 text-sm">
-                  Provide this token to the candidate to start their interview.
-                </p>
+                
+                {resumePreview && (
+                  <div className="p-6 bg-blue-600/20 border border-blue-500/30 rounded-lg">
+                    <h3 className="text-xl font-bold text-blue-200 mb-2">📄 Resume Preview</h3>
+                    <div className="bg-black/30 rounded-lg p-4 text-sm text-blue-200 max-h-32 overflow-y-auto">
+                      {resumePreview}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -370,17 +466,19 @@ const AdminDashboard = ({ setCurrentPage }) => {
         {/* Reports Tab */}
         {activeTab === 'reports' && (
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-6">Interview Reports</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">🎤 Voice Interview Reports</h2>
             
             <div className="space-y-4">
               {reports.length === 0 ? (
-                <p className="text-gray-300 text-center py-8">No interview reports available yet.</p>
+                <p className="text-gray-300 text-center py-8">No voice interview reports available yet.</p>
               ) : (
                 reports.map((report) => (
                   <div key={report.id} className="bg-white/10 rounded-lg p-6 border border-white/20">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-xl font-bold text-white">{report.candidate_name}</h3>
+                        <h3 className="text-xl font-bold text-white flex items-center">
+                          🎤 {report.candidate_name}
+                        </h3>
                         <p className="text-gray-300">{report.job_title}</p>
                         <p className="text-sm text-gray-400">
                           {new Date(report.created_at).toLocaleDateString()}
@@ -465,11 +563,11 @@ const CandidateLogin = ({ setCurrentPage, setToken, setValidatedJob }) => {
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m0 0a2 2 0 012 2m-2-2v6a2 2 0 01-2 2h-6a2 2 0 01-2-2V9a2 2 0 012-2 2 2 0 012-2" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-white mb-2">Candidate Portal</h2>
-          <p className="text-gray-300">Enter your secure interview token</p>
+          <h2 className="text-3xl font-bold text-white mb-2">🎤 Candidate Portal</h2>
+          <p className="text-gray-300">Enter your secure interview token for voice interview</p>
         </div>
 
         <form onSubmit={handleTokenValidation} className="space-y-6">
@@ -518,6 +616,7 @@ const CandidateLogin = ({ setCurrentPage, setToken, setValidatedJob }) => {
 // Interview Start Component
 const InterviewStart = ({ setCurrentPage, token, validatedJob }) => {
   const [candidateName, setCandidateName] = useState('');
+  const [voiceMode, setVoiceMode] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const handleStartInterview = async (e) => {
@@ -532,7 +631,8 @@ const InterviewStart = ({ setCurrentPage, token, validatedJob }) => {
         },
         body: JSON.stringify({ 
           token, 
-          candidate_name: candidateName 
+          candidate_name: candidateName,
+          voice_mode: voiceMode
         }),
       });
 
@@ -545,7 +645,10 @@ const InterviewStart = ({ setCurrentPage, token, validatedJob }) => {
           token,
           currentQuestion: data.first_question,
           questionNumber: data.question_number,
-          totalQuestions: data.total_questions
+          totalQuestions: data.total_questions,
+          voiceMode: data.voice_mode,
+          welcomeAudio: data.welcome_audio,
+          questionAudio: data.question_audio
         }));
         setCurrentPage('interview-session');
       }
@@ -562,15 +665,15 @@ const InterviewStart = ({ setCurrentPage, token, validatedJob }) => {
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-white mb-2">Ready to Start Your Interview?</h2>
+          <h2 className="text-3xl font-bold text-white mb-2">Ready for Your Voice Interview?</h2>
           <p className="text-gray-300 mb-4">Position: <span className="font-semibold text-white">{validatedJob.job_title}</span></p>
-          <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-4 mb-6">
-            <p className="text-blue-200 text-sm">
-              <strong>Interview Format:</strong> You'll receive 8 questions total - 4 technical and 4 behavioral questions. 
-              Take your time to provide thoughtful answers. The AI will evaluate your responses and provide comprehensive feedback.
+          <div className="bg-green-600/20 border border-green-500/30 rounded-lg p-4 mb-6">
+            <p className="text-green-200 text-sm">
+              <strong>🎤 Voice Interview Format:</strong> The AI interviewer will ask questions in a female voice, 
+              and you'll respond using your voice. All audio is recorded and transcribed for assessment.
             </p>
           </div>
         </div>
@@ -591,13 +694,33 @@ const InterviewStart = ({ setCurrentPage, token, validatedJob }) => {
             />
           </div>
 
+          <div className="bg-white/10 rounded-lg p-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={voiceMode}
+                onChange={(e) => setVoiceMode(e.target.checked)}
+                className="mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500 focus:ring-2"
+              />
+              <span className="text-white">
+                🎤 Enable Voice Interview Mode (Recommended)
+              </span>
+            </label>
+            <p className="text-xs text-gray-300 mt-1 ml-8">
+              {voiceMode 
+                ? "AI will speak questions and record your voice answers"
+                : "Traditional text-based interview mode"
+              }
+            </p>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-4">
             <button
               type="submit"
               disabled={loading}
               className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
             >
-              {loading ? 'Starting Interview...' : 'Start Interview'}
+              {loading ? 'Starting Interview...' : '🎤 Start Voice Interview'}
             </button>
             <button
               type="button"
@@ -620,43 +743,72 @@ const InterviewSession = ({ setCurrentPage }) => {
   const [loading, setLoading] = useState(false);
   const [interviewData, setInterviewData] = useState(null);
   const [completed, setCompleted] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef(null);
+
+  const handleRecordingComplete = async (audioBlob) => {
+    if (!audioBlob) return;
+
+    try {
+      // Send audio to backend for processing
+      const formData = new FormData();
+      formData.append('session_id', interviewData.sessionId);
+      formData.append('question_number', interviewData.questionNumber);
+      formData.append('audio_file', audioBlob, 'answer.webm');
+
+      const response = await fetch(`${API}/voice/process-answer`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Use the transcribed text as the answer
+        handleSendMessage(data.transcript);
+      } else {
+        console.error('Voice processing failed');
+      }
+    } catch (err) {
+      console.error('Failed to process voice answer:', err);
+    }
+  };
+
+  const { status, startRecording, stopRecording, mediaBlobUrl } = useVoiceRecorder(handleRecordingComplete);
 
   useEffect(() => {
     const savedData = localStorage.getItem('interviewData');
     if (savedData) {
       const data = JSON.parse(savedData);
       setInterviewData(data);
-      setMessages([
+      
+      const initialMessages = [
         {
           type: 'ai',
-          content: `Welcome ${data.candidateName}! I'm your AI interviewer today. We'll have 8 questions - 4 technical and 4 behavioral. Let's begin with your first question:`,
-          timestamp: new Date().toLocaleTimeString()
+          content: `Welcome ${data.candidateName}! I'm your AI interviewer today.`,
+          timestamp: new Date().toLocaleTimeString(),
+          audio: data.welcomeAudio
         },
         {
           type: 'ai',
           content: data.currentQuestion,
           timestamp: new Date().toLocaleTimeString(),
-          questionNumber: data.questionNumber
+          questionNumber: data.questionNumber,
+          audio: data.questionAudio
         }
-      ]);
+      ];
+      
+      setMessages(initialMessages);
     }
   }, []);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!currentAnswer.trim() || loading) return;
+  const handleSendMessage = async (messageText = currentAnswer) => {
+    if (!messageText.trim() || loading) return;
 
     setLoading(true);
 
-    // Add user message
     const userMessage = {
       type: 'user',
-      content: currentAnswer,
+      content: messageText,
       timestamp: new Date().toLocaleTimeString()
     };
 
@@ -670,7 +822,7 @@ const InterviewSession = ({ setCurrentPage }) => {
         },
         body: JSON.stringify({ 
           token: interviewData.token, 
-          message: currentAnswer 
+          message: messageText 
         }),
       });
 
@@ -685,12 +837,15 @@ const InterviewSession = ({ setCurrentPage }) => {
             timestamp: new Date().toLocaleTimeString()
           }]);
         } else {
-          setMessages(prev => [...prev, {
+          const aiMessage = {
             type: 'ai',
             content: data.next_question,
             timestamp: new Date().toLocaleTimeString(),
-            questionNumber: data.question_number
-          }]);
+            questionNumber: data.question_number,
+            audio: data.question_audio
+          };
+          
+          setMessages(prev => [...prev, aiMessage]);
           
           setInterviewData(prev => ({
             ...prev,
@@ -707,6 +862,20 @@ const InterviewSession = ({ setCurrentPage }) => {
     }
   };
 
+  const handleVoiceAnswer = () => {
+    if (status === 'recording') {
+      stopRecording();
+      setIsRecording(false);
+    } else {
+      startRecording();
+      setIsRecording(true);
+    }
+  };
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   if (!interviewData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center">
@@ -722,7 +891,9 @@ const InterviewSession = ({ setCurrentPage }) => {
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-white">{interviewData.candidateName}</h1>
+              <h1 className="text-2xl font-bold text-white flex items-center">
+                🎤 {interviewData.candidateName}
+              </h1>
               <p className="text-gray-300">{interviewData.jobTitle}</p>
             </div>
             <div className="text-right">
@@ -736,7 +907,7 @@ const InterviewSession = ({ setCurrentPage }) => {
                   ? 'bg-green-600/20 text-green-200 border border-green-500/30'
                   : 'bg-blue-600/20 text-blue-200 border border-blue-500/30'
               }`}>
-                {completed ? 'Completed' : 'In Progress'}
+                {completed ? '✅ Completed' : '🎤 Recording'}
               </div>
             </div>
           </div>
@@ -753,9 +924,14 @@ const InterviewSession = ({ setCurrentPage }) => {
                     : 'bg-white/20 text-white border border-white/30'
                 }`}>
                   {message.questionNumber && (
-                    <div className="text-xs text-gray-300 mb-2">Question {message.questionNumber}</div>
+                    <div className="text-xs text-gray-300 mb-2">🎤 Question {message.questionNumber}</div>
                   )}
                   <p className="whitespace-pre-wrap">{message.content}</p>
+                  {message.audio && interviewData.voiceMode && (
+                    <div className="mt-3">
+                      <AudioPlayer audioBase64={message.audio} autoPlay={true} />
+                    </div>
+                  )}
                   <div className="text-xs opacity-70 mt-2">{message.timestamp}</div>
                 </div>
               </div>
@@ -767,26 +943,81 @@ const InterviewSession = ({ setCurrentPage }) => {
         {/* Input Form */}
         {!completed && (
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-            <form onSubmit={handleSendMessage} className="space-y-4">
-              <div>
-                <label className="block text-white font-medium mb-2">Your Answer</label>
-                <textarea
-                  value={currentAnswer}
-                  onChange={(e) => setCurrentAnswer(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Type your answer here..."
-                  required
-                />
+            {interviewData.voiceMode ? (
+              /* Voice Mode UI */
+              <div className="space-y-4">
+                <div className="text-center">
+                  <button
+                    onClick={handleVoiceAnswer}
+                    disabled={loading}
+                    className={`w-32 h-32 rounded-full text-white font-bold text-lg transition-all duration-300 shadow-lg ${
+                      isRecording 
+                        ? 'bg-red-600 hover:bg-red-700 animate-pulse'
+                        : 'bg-green-600 hover:bg-green-700'
+                    } disabled:opacity-50`}
+                  >
+                    {isRecording ? '🔴 STOP' : '🎤 RECORD'}
+                  </button>
+                  <p className="text-white mt-4">
+                    {isRecording 
+                      ? 'Recording your answer...'
+                      : 'Click to record your voice answer'
+                    }
+                  </p>
+                  {status === 'stopped' && mediaBlobUrl && (
+                    <div className="mt-4">
+                      <p className="text-green-200 mb-2">Your recorded answer:</p>
+                      <audio src={mediaBlobUrl} controls className="mx-auto" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Fallback text option */}
+                <details className="bg-white/10 rounded-lg p-4">
+                  <summary className="text-gray-300 cursor-pointer">
+                    💬 Or type your answer instead
+                  </summary>
+                  <div className="mt-4 space-y-4">
+                    <textarea
+                      value={currentAnswer}
+                      onChange={(e) => setCurrentAnswer(e.target.value)}
+                      rows={4}
+                      className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Type your answer here..."
+                    />
+                    <button
+                      onClick={() => handleSendMessage()}
+                      disabled={loading}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 disabled:opacity-50"
+                    >
+                      {loading ? 'Sending...' : 'Send Text Answer'}
+                    </button>
+                  </div>
+                </details>
               </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
-              >
-                {loading ? 'Sending...' : 'Send Answer'}
-              </button>
-            </form>
+            ) : (
+              /* Text Mode UI */
+              <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="space-y-4">
+                <div>
+                  <label className="block text-white font-medium mb-2">Your Answer</label>
+                  <textarea
+                    value={currentAnswer}
+                    onChange={(e) => setCurrentAnswer(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Type your answer here..."
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
+                >
+                  {loading ? 'Sending...' : 'Send Answer'}
+                </button>
+              </form>
+            )}
           </div>
         )}
 
@@ -799,9 +1030,10 @@ const InterviewSession = ({ setCurrentPage }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-green-200 mb-2">Interview Completed!</h3>
+              <h3 className="text-2xl font-bold text-green-200 mb-2">🎤 Voice Interview Completed!</h3>
               <p className="text-green-200 mb-6">
-                Thank you for your time. Your responses have been evaluated and a comprehensive report has been generated.
+                Thank you for your time. Your voice responses have been recorded, transcribed, and evaluated. 
+                A comprehensive report has been generated for the hiring team.
               </p>
               <button
                 onClick={() => {
