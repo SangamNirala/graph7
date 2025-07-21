@@ -101,7 +101,7 @@ class InterviewAI:
             session_id=session_id,
             system_message=system_message
         )
-        chat.with_model("gemini", "gemini-2.5-pro-preview-05-06")
+        chat.with_model("gemini", "gemini-2.5-flash")
         chat.with_max_tokens(2048)
         return chat
     
