@@ -599,9 +599,10 @@ University of Technology, 2020"""
     
     def run_all_tests(self) -> Dict[str, bool]:
         """Run all tests in sequence"""
-        print("=" * 60)
-        print("AI-POWERED INTERVIEW AGENT - BACKEND TESTING")
-        print("=" * 60)
+        print("=" * 70)
+        print("AI-POWERED INTERVIEW AGENT - ENHANCED BACKEND TESTING")
+        print("Testing Voice Features & Multi-Format Resume Support")
+        print("=" * 70)
         print()
         
         results = {}
@@ -613,15 +614,24 @@ University of Technology, 2020"""
         results["admin_login"] = self.test_admin_login()
         results["admin_login_invalid"] = self.test_admin_login_invalid()
         
-        # Job and resume upload
-        results["job_resume_upload"] = self.test_job_resume_upload()
+        # Multi-format resume upload and parsing
+        results["multi_format_resume_upload"] = self.test_job_resume_upload()
+        
+        # Voice processing features
+        results["google_tts_integration"] = self.test_voice_question_generation()
+        results["google_stt_integration"] = self.test_voice_answer_processing()
         
         # Token validation
         results["token_validation"] = self.test_token_validation()
         results["token_validation_invalid"] = self.test_token_validation_invalid()
         
-        # Interview flow
-        results["interview_start"] = self.test_interview_start()
+        # Interview flow (text mode)
+        results["interview_start_text"] = self.test_interview_start()
+        
+        # Voice interview flow
+        results["voice_interview_session"] = self.test_voice_interview_start()
+        
+        # Interview conversation
         results["interview_conversation"] = self.test_interview_conversation()
         
         # Admin reporting
@@ -629,24 +639,41 @@ University of Technology, 2020"""
         results["specific_report"] = self.test_specific_report()
         
         # Summary
-        print("=" * 60)
+        print("=" * 70)
         print("TEST SUMMARY")
-        print("=" * 60)
+        print("=" * 70)
         
         passed = sum(1 for result in results.values() if result)
         total = len(results)
         
-        for test_name, result in results.items():
-            status = "✅ PASS" if result else "❌ FAIL"
-            print(f"{status} {test_name}")
+        # Group results by category
+        categories = {
+            "Basic Connectivity": ["health_check"],
+            "Admin Authentication": ["admin_login", "admin_login_invalid"],
+            "Multi-Format Resume Support": ["multi_format_resume_upload"],
+            "Google Cloud Voice Integration": ["google_tts_integration", "google_stt_integration"],
+            "Token Management": ["token_validation", "token_validation_invalid"],
+            "Interview Sessions": ["interview_start_text", "voice_interview_session"],
+            "Interview Flow": ["interview_conversation"],
+            "Admin Reporting": ["admin_reports", "specific_report"]
+        }
+        
+        for category, test_names in categories.items():
+            print(f"\n{category}:")
+            for test_name in test_names:
+                if test_name in results:
+                    status = "✅ PASS" if results[test_name] else "❌ FAIL"
+                    print(f"  {status} {test_name}")
         
         print()
         print(f"OVERALL: {passed}/{total} tests passed ({passed/total*100:.1f}%)")
         
         if passed == total:
-            print("🎉 ALL TESTS PASSED! Backend is working correctly.")
+            print("🎉 ALL TESTS PASSED! Enhanced backend with voice features is working correctly.")
+        elif passed >= total * 0.8:
+            print("✅ MOSTLY WORKING! Most features are functional with minor issues.")
         else:
-            print("⚠️  Some tests failed. Check the details above.")
+            print("⚠️  Multiple tests failed. Check the details above.")
         
         return results
 
