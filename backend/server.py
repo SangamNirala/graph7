@@ -269,6 +269,8 @@ class InterviewAI:
         # Generate comprehensive feedback
         system_message = """You are an expert HR analyst. Based on the interview evaluations provided, generate a comprehensive assessment report.
 
+        IMPORTANT: Provide feedback in plain text without any formatting like backticks, bold, or italics since this may be converted to speech.
+
         Provide detailed feedback for technical performance, behavioral performance, overall assessment, and specific recommendations for the candidate."""
         
         session_id = self.generate_session_id()
