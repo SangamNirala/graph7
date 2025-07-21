@@ -24,6 +24,7 @@ from docx import Document
 # Google Cloud imports
 from google.cloud import texttospeech, speech
 from google.oauth2 import service_account
+import pymongo
 import gridfs
 
 ROOT_DIR = Path(__file__).parent
