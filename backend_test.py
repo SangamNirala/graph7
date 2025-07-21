@@ -3,6 +3,9 @@
 Comprehensive Backend Testing for AI-Powered Interview Agent
 Tests the complete interview flow end-to-end including:
 - Admin authentication and file upload
+- Multi-format resume parsing (PDF/Word/TXT)
+- Google Cloud TTS/STT integration
+- Voice interview session management
 - Token validation and interview start
 - Multi-turn interview conversation
 - Assessment generation and reporting
@@ -12,6 +15,8 @@ import requests
 import json
 import time
 import io
+import base64
+import tempfile
 from typing import Dict, Any, Optional
 
 # Backend URL from frontend .env
