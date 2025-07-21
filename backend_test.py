@@ -343,7 +343,42 @@ University of Technology, 2020"""
             self.log_test("Token Validation (Invalid Token)", False, f"Exception: {str(e)}")
             return False
     
-    def test_voice_interview_start(self) -> bool:
+    def test_interview_start(self) -> bool:
+        """Test starting an interview session (text mode)"""
+        if not self.generated_token:
+            self.log_test("Interview Start", False, "No token available")
+            return False
+        
+        try:
+            payload = {
+                "token": self.generated_token,
+                "candidate_name": "John Doe",
+                "voice_mode": False
+            }
+            response = self.session.post(
+                f"{self.base_url}/candidate/start-interview",
+                json=payload,
+                timeout=15
+            )
+            
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = ("session_id" in data and 
+                          "first_question" in data and 
+                          "question_number" in data)
+                if success:
+                    self.session_id = data["session_id"]
+            
+            details = f"Status: {response.status_code}, Response: {response.text[:300]}"
+            if self.session_id:
+                details += f", Session ID: {self.session_id[:8]}..."
+            
+            self.log_test("Interview Start (Text Mode)", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Interview Start (Text Mode)", False, f"Exception: {str(e)}")
+            return False
         """Test starting an interview session with voice mode enabled"""
         if not self.generated_token:
             self.log_test("Voice Interview Start", False, "No token available")
