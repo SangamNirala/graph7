@@ -307,10 +307,39 @@ class VoiceProcessor:
         self.tts_client = tts_client
         self.stt_client = stt_client
     
+    def clean_text_for_speech(self, text: str) -> str:
+        """Clean text for better TTS pronunciation by removing formatting characters"""
+        import re
+        
+        # Remove backticks around code terms
+        text = re.sub(r'`([^`]+)`', r'\1', text)
+        
+        # Remove other markdown formatting
+        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)  # Bold
+        text = re.sub(r'\*([^*]+)\*', r'\1', text)      # Italic
+        text = re.sub(r'_([^_]+)_', r'\1', text)        # Underscore italic
+        text = re.sub(r'~~([^~]+)~~', r'\1', text)      # Strikethrough
+        
+        # Replace common code-related phrases for better pronunciation
+        text = text.replace('HTML', 'H-T-M-L')
+        text = text.replace('CSS', 'C-S-S')
+        text = text.replace('JavaScript', 'Java Script')
+        text = text.replace('APIs', 'A-P-Is')
+        text = text.replace('API', 'A-P-I')
+        text = text.replace('JSON', 'J-S-O-N')
+        text = text.replace('SQL', 'S-Q-L')
+        
+        # Remove multiple spaces and clean up
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        return text
+    
     async def text_to_speech(self, text: str) -> str:
         """Convert text to speech and return base64 audio data"""
         try:
-            synthesis_input = texttospeech.SynthesisInput(text=text)
+            # Clean text before synthesis
+            cleaned_text = self.clean_text_for_speech(text)
+            synthesis_input = texttospeech.SynthesisInput(text=cleaned_text)
             voice = texttospeech.VoiceSelectionParams(
                 language_code="en-US",
                 ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
