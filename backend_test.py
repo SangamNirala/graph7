@@ -343,7 +343,60 @@ University of Technology, 2020"""
             self.log_test("Token Validation (Invalid Token)", False, f"Exception: {str(e)}")
             return False
     
-    def test_interview_start(self) -> bool:
+    def test_voice_interview_start(self) -> bool:
+        """Test starting an interview session with voice mode enabled"""
+        if not self.generated_token:
+            self.log_test("Voice Interview Start", False, "No token available")
+            return False
+        
+        try:
+            payload = {
+                "token": self.generated_token,
+                "candidate_name": "Jane Smith",
+                "voice_mode": True
+            }
+            response = self.session.post(
+                f"{self.base_url}/candidate/start-interview",
+                json=payload,
+                timeout=25  # Longer timeout for TTS generation
+            )
+            
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = ("session_id" in data and 
+                          "first_question" in data and 
+                          "voice_mode" in data and
+                          data.get("voice_mode") == True)
+                
+                # Check for TTS audio generation
+                if success and "welcome_audio" in data and "question_audio" in data:
+                    # Verify audio data is base64 encoded
+                    try:
+                        base64.b64decode(data["welcome_audio"])
+                        base64.b64decode(data["question_audio"])
+                        success = True
+                    except Exception:
+                        success = False
+                
+                if success:
+                    self.session_id = data["session_id"]
+            
+            details = f"Status: {response.status_code}"
+            if success:
+                details += f", Voice Mode: {data.get('voice_mode')}, Session: {self.session_id[:8] if self.session_id else 'None'}..."
+                if "welcome_audio" in data:
+                    details += f", Welcome Audio: {len(data['welcome_audio']) // 1024}KB"
+                if "question_audio" in data:
+                    details += f", Question Audio: {len(data['question_audio']) // 1024}KB"
+            else:
+                details += f", Response: {response.text[:200]}"
+            
+            self.log_test("Voice Interview Session Management", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Voice Interview Session Management", False, f"Exception: {str(e)}")
+            return False
         """Test starting an interview session"""
         if not self.generated_token:
             self.log_test("Interview Start", False, "No token available")
