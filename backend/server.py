@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,10 +6,14 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime
-
+from datetime import datetime, timedelta
+import json
+import asyncio
+from emergentintegrations.llm.chat import LlmChat, UserMessage
+import secrets
+import string
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -25,32 +29,444 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-
-# Define Models
-class StatusCheck(BaseModel):
+# Pydantic Models
+class JobDescription(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    title: str
+    description: str
+    requirements: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class CandidateToken(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    token: str
+    job_id: str
+    resume_content: str
+    job_description: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    used: bool = False
 
-# Add your routes to the router instead of directly to app
+class InterviewSession(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    token: str
+    session_id: str
+    candidate_name: str
+    job_title: str
+    messages: List[Dict[str, Any]] = []
+    current_question: int = 0
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+    status: str = "in_progress"  # in_progress, completed
+
+class InterviewAssessment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
+    token: str
+    candidate_name: str
+    job_title: str
+    technical_score: int
+    behavioral_score: int
+    overall_score: int
+    technical_feedback: str
+    behavioral_feedback: str
+    overall_feedback: str
+    recommendations: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AdminLoginRequest(BaseModel):
+    password: str
+
+class TokenValidationRequest(BaseModel):
+    token: str
+
+class InterviewMessageRequest(BaseModel):
+    token: str
+    message: str
+
+class InterviewStartRequest(BaseModel):
+    token: str
+    candidate_name: str
+
+# AI Interview Engine
+class InterviewAI:
+    def __init__(self):
+        self.api_key = os.environ.get('GEMINI_API_KEY')
+        
+    def generate_session_id(self) -> str:
+        return str(uuid.uuid4())
+    
+    async def create_chat_instance(self, session_id: str, system_message: str) -> LlmChat:
+        chat = LlmChat(
+            api_key=self.api_key,
+            session_id=session_id,
+            system_message=system_message
+        )
+        chat.with_model("gemini", "gemini-2.5-pro-preview-05-06")
+        chat.with_max_tokens(2048)
+        return chat
+    
+    async def generate_interview_questions(self, resume: str, job_description: str) -> List[str]:
+        system_message = f"""You are an expert AI interviewer. Based on the resume and job description provided, create exactly 8 interview questions (4 technical and 4 behavioral).
+
+        Resume: {resume}
+        Job Description: {job_description}
+
+        Generate questions in this exact format:
+        TECHNICAL_1: [question]
+        TECHNICAL_2: [question]
+        TECHNICAL_3: [question]
+        TECHNICAL_4: [question]
+        BEHAVIORAL_1: [question]
+        BEHAVIORAL_2: [question]
+        BEHAVIORAL_3: [question]
+        BEHAVIORAL_4: [question]"""
+        
+        session_id = self.generate_session_id()
+        chat = await self.create_chat_instance(session_id, system_message)
+        
+        user_message = UserMessage(text="Generate the interview questions based on the resume and job description.")
+        response = await chat.send_message(user_message)
+        
+        # Parse questions from response
+        questions = []
+        lines = response.split('\n')
+        for line in lines:
+            if line.startswith(('TECHNICAL_', 'BEHAVIORAL_')):
+                question = line.split(': ', 1)[1] if ': ' in line else line
+                questions.append(question.strip())
+        
+        return questions[:8]  # Ensure exactly 8 questions
+    
+    async def evaluate_answer(self, question: str, answer: str, question_type: str) -> Dict[str, Any]:
+        system_message = f"""You are an expert interview evaluator. Evaluate the candidate's answer to this {question_type} question.
+
+        Question: {question}
+        Answer: {answer}
+
+        Provide evaluation in this exact JSON format:
+        {{
+            "score": [0-10],
+            "feedback": "detailed feedback on the answer",
+            "strengths": ["strength1", "strength2"],
+            "improvements": ["improvement1", "improvement2"]
+        }}"""
+        
+        session_id = self.generate_session_id()
+        chat = await self.create_chat_instance(session_id, system_message)
+        
+        user_message = UserMessage(text=f"Evaluate this answer: {answer}")
+        response = await chat.send_message(user_message)
+        
+        try:
+            # Try to extract JSON from response
+            start = response.find('{')
+            end = response.rfind('}') + 1
+            if start != -1 and end != -1:
+                json_str = response[start:end]
+                evaluation = json.loads(json_str)
+                return evaluation
+        except:
+            pass
+        
+        # Fallback evaluation
+        return {
+            "score": 7,
+            "feedback": "Answer provided shows understanding of the topic.",
+            "strengths": ["Shows knowledge"],
+            "improvements": ["Could provide more specific examples"]
+        }
+    
+    async def generate_final_assessment(self, session_data: Dict) -> InterviewAssessment:
+        technical_evaluations = session_data.get('technical_evaluations', [])
+        behavioral_evaluations = session_data.get('behavioral_evaluations', [])
+        
+        # Calculate scores
+        tech_scores = [eval.get('score', 0) for eval in technical_evaluations]
+        behavioral_scores = [eval.get('score', 0) for eval in behavioral_evaluations]
+        
+        technical_score = int((sum(tech_scores) / len(tech_scores)) * 10) if tech_scores else 50
+        behavioral_score = int((sum(behavioral_scores) / len(behavioral_scores)) * 10) if behavioral_scores else 50
+        overall_score = int((technical_score + behavioral_score) / 2)
+        
+        # Generate comprehensive feedback
+        system_message = """You are an expert HR analyst. Based on the interview evaluations provided, generate a comprehensive assessment report.
+
+        Provide detailed feedback for technical performance, behavioral performance, overall assessment, and specific recommendations for the candidate."""
+        
+        session_id = self.generate_session_id()
+        chat = await self.create_chat_instance(session_id, system_message)
+        
+        evaluation_summary = f"""
+        Technical Evaluations: {technical_evaluations}
+        Behavioral Evaluations: {behavioral_evaluations}
+        Technical Score: {technical_score}/100
+        Behavioral Score: {behavioral_score}/100
+        """
+        
+        user_message = UserMessage(text=f"Generate comprehensive assessment based on: {evaluation_summary}")
+        response = await chat.send_message(user_message)
+        
+        return InterviewAssessment(
+            session_id=session_data['session_id'],
+            token=session_data['token'],
+            candidate_name=session_data['candidate_name'],
+            job_title=session_data['job_title'],
+            technical_score=technical_score,
+            behavioral_score=behavioral_score,
+            overall_score=overall_score,
+            technical_feedback=f"Technical performance: {technical_score}/100",
+            behavioral_feedback=f"Behavioral performance: {behavioral_score}/100",
+            overall_feedback=response,
+            recommendations="Continue developing relevant skills and gain more practical experience."
+        )
+
+# Initialize AI Engine
+interview_ai = InterviewAI()
+
+# Helper Functions
+def generate_secure_token() -> str:
+    return ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+
+# Admin Routes
+@api_router.post("/admin/login")
+async def admin_login(request: AdminLoginRequest):
+    if request.password != "Game@123":
+        raise HTTPException(status_code=401, detail="Invalid password")
+    return {"success": True, "message": "Admin authenticated successfully"}
+
+@api_router.post("/admin/upload-job")
+async def upload_job_and_resume(
+    job_title: str = Form(...),
+    job_description: str = Form(...),
+    job_requirements: str = Form(...),
+    resume_file: UploadFile = File(...)
+):
+    # Read resume content
+    resume_content = await resume_file.read()
+    resume_text = resume_content.decode('utf-8')
+    
+    # Create job record
+    job_data = JobDescription(
+        title=job_title,
+        description=job_description,
+        requirements=job_requirements
+    )
+    await db.jobs.insert_one(job_data.dict())
+    
+    # Generate secure token
+    token = generate_secure_token()
+    
+    # Create token record
+    token_data = CandidateToken(
+        token=token,
+        job_id=job_data.id,
+        resume_content=resume_text,
+        job_description=f"{job_title}\n\n{job_description}\n\n{job_requirements}"
+    )
+    await db.tokens.insert_one(token_data.dict())
+    
+    return {
+        "success": True,
+        "token": token,
+        "message": "Job and resume uploaded successfully. Token generated for candidate."
+    }
+
+@api_router.get("/admin/reports")
+async def get_all_reports():
+    reports = await db.assessments.find().to_list(1000)
+    return {"reports": reports}
+
+@api_router.get("/admin/reports/{session_id}")
+async def get_report_by_session(session_id: str):
+    report = await db.assessments.find_one({"session_id": session_id})
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return {"report": report}
+
+# Candidate Routes
+@api_router.post("/candidate/validate-token")
+async def validate_token(request: TokenValidationRequest):
+    token_data = await db.tokens.find_one({"token": request.token})
+    if not token_data or token_data.get('used', False):
+        raise HTTPException(status_code=401, detail="Invalid or used token")
+    
+    job_data = await db.jobs.find_one({"id": token_data['job_id']})
+    
+    return {
+        "valid": True,
+        "job_title": job_data['title'] if job_data else "Software Developer",
+        "token": request.token
+    }
+
+@api_router.post("/candidate/start-interview")
+async def start_interview(request: InterviewStartRequest):
+    token_data = await db.tokens.find_one({"token": request.token})
+    if not token_data or token_data.get('used', False):
+        raise HTTPException(status_code=401, detail="Invalid or used token")
+    
+    job_data = await db.jobs.find_one({"id": token_data['job_id']})
+    
+    # Generate interview questions
+    questions = await interview_ai.generate_interview_questions(
+        token_data['resume_content'],
+        token_data['job_description']
+    )
+    
+    # Create interview session
+    session_id = interview_ai.generate_session_id()
+    session_data = InterviewSession(
+        token=request.token,
+        session_id=session_id,
+        candidate_name=request.candidate_name,
+        job_title=job_data['title'] if job_data else "Software Developer",
+        messages=[{
+            "type": "system",
+            "content": f"Welcome {request.candidate_name}! I'm your AI interviewer today. We'll have 8 questions - 4 technical and 4 behavioral. Let's begin!",
+            "timestamp": datetime.utcnow().isoformat()
+        }],
+        current_question=0
+    )
+    
+    await db.sessions.insert_one(session_data.dict())
+    
+    # Store questions in session metadata
+    await db.session_metadata.insert_one({
+        "session_id": session_id,
+        "questions": questions,
+        "technical_evaluations": [],
+        "behavioral_evaluations": []
+    })
+    
+    # Mark token as used
+    await db.tokens.update_one(
+        {"token": request.token},
+        {"$set": {"used": True}}
+    )
+    
+    return {
+        "session_id": session_id,
+        "first_question": questions[0] if questions else "Tell me about your experience with software development.",
+        "question_number": 1,
+        "total_questions": 8,
+        "welcome_message": f"Welcome {request.candidate_name}! Ready to start your interview?"
+    }
+
+@api_router.post("/candidate/send-message")
+async def send_interview_message(request: InterviewMessageRequest):
+    session = await db.sessions.find_one({"token": request.token, "status": "in_progress"})
+    if not session:
+        raise HTTPException(status_code=404, detail="Interview session not found or completed")
+    
+    session_metadata = await db.session_metadata.find_one({"session_id": session['session_id']})
+    if not session_metadata:
+        raise HTTPException(status_code=404, detail="Session metadata not found")
+    
+    questions = session_metadata['questions']
+    current_q_num = session['current_question']
+    
+    if current_q_num >= len(questions):
+        raise HTTPException(status_code=400, detail="Interview already completed")
+    
+    # Evaluate current answer
+    current_question = questions[current_q_num]
+    question_type = "technical" if current_q_num < 4 else "behavioral"
+    
+    evaluation = await interview_ai.evaluate_answer(
+        current_question,
+        request.message,
+        question_type
+    )
+    
+    # Store evaluation
+    if question_type == "technical":
+        session_metadata['technical_evaluations'].append(evaluation)
+    else:
+        session_metadata['behavioral_evaluations'].append(evaluation)
+    
+    await db.session_metadata.update_one(
+        {"session_id": session['session_id']},
+        {"$set": {
+            "technical_evaluations": session_metadata['technical_evaluations'],
+            "behavioral_evaluations": session_metadata['behavioral_evaluations']
+        }}
+    )
+    
+    # Add candidate's message
+    new_message = {
+        "type": "candidate",
+        "content": request.message,
+        "timestamp": datetime.utcnow().isoformat(),
+        "question_number": current_q_num + 1
+    }
+    
+    # Move to next question
+    next_q_num = current_q_num + 1
+    
+    if next_q_num >= len(questions):
+        # Interview completed
+        await db.sessions.update_one(
+            {"session_id": session['session_id']},
+            {
+                "$push": {"messages": new_message},
+                "$set": {
+                    "current_question": next_q_num,
+                    "status": "completed",
+                    "completed_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Generate final assessment
+        assessment_data = {
+            "session_id": session['session_id'],
+            "token": request.token,
+            "candidate_name": session['candidate_name'],
+            "job_title": session['job_title'],
+            "technical_evaluations": session_metadata['technical_evaluations'],
+            "behavioral_evaluations": session_metadata['behavioral_evaluations']
+        }
+        
+        assessment = await interview_ai.generate_final_assessment(assessment_data)
+        await db.assessments.insert_one(assessment.dict())
+        
+        return {
+            "completed": True,
+            "message": "Thank you for completing the interview! Your responses have been evaluated.",
+            "assessment_id": assessment.id
+        }
+    else:
+        # Continue with next question
+        next_question = questions[next_q_num]
+        ai_response = {
+            "type": "ai",
+            "content": next_question,
+            "timestamp": datetime.utcnow().isoformat(),
+            "question_number": next_q_num + 1
+        }
+        
+        await db.sessions.update_one(
+            {"session_id": session['session_id']},
+            {
+                "$push": {"messages": {"$each": [new_message, ai_response]}},
+                "$set": {"current_question": next_q_num}
+            }
+        )
+        
+        return {
+            "completed": False,
+            "next_question": next_question,
+            "question_number": next_q_num + 1,
+            "total_questions": len(questions)
+        }
+
+# Health check
+@api_router.get("/health")
+async def health_check():
+    return {"status": "healthy", "message": "AI Interview Agent is running"}
+
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+    return {"message": "AI-Powered Interview Agent API"}
 
 # Include the router in the main app
 app.include_router(api_router)
