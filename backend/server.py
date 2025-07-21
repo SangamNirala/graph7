@@ -279,6 +279,10 @@ async def upload_job_and_resume(
 @api_router.get("/admin/reports")
 async def get_all_reports():
     reports = await db.assessments.find().to_list(1000)
+    # Convert MongoDB ObjectIds to strings for JSON serialization
+    for report in reports:
+        if '_id' in report:
+            report['_id'] = str(report['_id'])
     return {"reports": reports}
 
 @api_router.get("/admin/reports/{session_id}")
@@ -286,6 +290,9 @@ async def get_report_by_session(session_id: str):
     report = await db.assessments.find_one({"session_id": session_id})
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+    # Convert MongoDB ObjectId to string for JSON serialization
+    if '_id' in report:
+        report['_id'] = str(report['_id'])
     return {"report": report}
 
 # Candidate Routes
