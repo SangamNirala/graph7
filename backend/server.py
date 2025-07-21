@@ -33,7 +33,12 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
-fs = gridfs.GridFS(db)
+
+# For GridFS, we need a synchronous connection
+import pymongo
+sync_client = pymongo.MongoClient(mongo_url)
+sync_db = sync_client[os.environ['DB_NAME']]
+fs = gridfs.GridFS(sync_db)
 
 # Google Cloud Setup
 credentials_json = json.loads(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', '{}'))
