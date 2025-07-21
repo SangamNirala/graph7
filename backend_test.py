@@ -89,7 +89,7 @@ class InterviewAgentTester:
             self.log_test("Admin Login (Invalid Password)", False, f"Exception: {str(e)}")
             return False
     
-    def test_pdf_resume_upload(self) -> bool:
+    def test_job_resume_upload(self) -> bool:
         """Test PDF resume upload and parsing"""
         try:
             # Create a simple PDF-like content (simulated)
