@@ -184,6 +184,8 @@ class InterviewAI:
     async def generate_interview_questions(self, resume: str, job_description: str) -> List[str]:
         system_message = f"""You are an expert AI interviewer. Based on the resume and job description provided, create exactly 8 interview questions (4 technical and 4 behavioral).
 
+        IMPORTANT: Generate questions in plain text without any formatting like backticks, bold, or italics since these will be converted to speech.
+
         Resume: {resume}
         Job Description: {job_description}
 
