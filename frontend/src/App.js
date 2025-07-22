@@ -579,6 +579,8 @@ const AdminDashboard = ({ setCurrentPage }) => {
     formData.append('role_archetype', roleArchetype);
     formData.append('interview_focus', interviewFocus);
     formData.append('resume_file', resumeFile);
+    formData.append('min_questions', minQuestions);
+    formData.append('max_questions', maxQuestions);
 
     try {
       // Use enhanced endpoint
