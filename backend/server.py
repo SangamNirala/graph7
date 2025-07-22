@@ -615,6 +615,18 @@ class InterviewAI:
         role_context = self._get_role_context(role_archetype)
         focus_context = self._get_focus_context(interview_focus)
         
+        # Calculate technical and behavioral question distribution
+        total_questions = min_questions  # Start with minimum questions
+        technical_count = (total_questions + 1) // 2  # Round up for technical
+        behavioral_count = total_questions - technical_count
+        
+        # Generate dynamic question format instructions
+        question_format = "Generate questions in this exact format:\n"
+        for i in range(1, technical_count + 1):
+            question_format += f"TECHNICAL_{i}: [question]\n"
+        for i in range(1, behavioral_count + 1):
+            question_format += f"BEHAVIORAL_{i}: [question]\n"
+        
         system_message = f"""You are an expert AI interviewer conducting a fair and unbiased interview. {bias_mitigation}
         
         Role Archetype: {role_archetype}
@@ -624,19 +636,14 @@ class InterviewAI:
         {focus_context}
 
         IMPORTANT: Generate questions in plain text without any formatting like backticks, bold, or italics since these will be converted to speech.
+        
+        You need to generate exactly {total_questions} questions ({technical_count} technical, {behavioral_count} behavioral).
+        The interviewer can ask up to {max_questions} questions if needed for comprehensive assessment.
 
         Resume: {resume}
         Job Description: {job_description}
 
-        Generate questions in this exact format:
-        TECHNICAL_1: [question]
-        TECHNICAL_2: [question]
-        TECHNICAL_3: [question]
-        TECHNICAL_4: [question]
-        BEHAVIORAL_1: [question]
-        BEHAVIORAL_2: [question]
-        BEHAVIORAL_3: [question]
-        BEHAVIORAL_4: [question]"""
+        {question_format}"""
         
         session_id = self.generate_session_id()
         chat = await self.create_chat_instance(session_id, system_message)
