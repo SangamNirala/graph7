@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime, timedelta
 import json
 import asyncio
+import re
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 import secrets
 import string
