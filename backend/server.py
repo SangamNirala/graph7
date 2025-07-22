@@ -28,6 +28,13 @@ from google.oauth2 import service_account
 import pymongo
 import gridfs
 
+# Import libraries for sentiment analysis and emotional intelligence
+import librosa
+import torch
+import transformers
+from transformers import pipeline
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
