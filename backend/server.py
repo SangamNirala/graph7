@@ -1124,12 +1124,12 @@ async def start_practice_round(request: PracticeRoundRequest):
     )
     await db.practice_rounds.insert_one(practice.dict())
     
-    # Generate TTS for practice question if voice mode
-    audio_data = None
+    # Clean TTS practice question
     try:
-        audio_data = await voice_processor.text_to_speech(practice.question)
+        audio_text = await voice_processor.text_to_speech(practice.question)
     except Exception as e:
-        logging.error(f"TTS generation failed for practice: {str(e)}")
+        logging.error(f"Text cleaning failed for practice: {str(e)}")
+        audio_text = practice.question
     
     return {
         "session_id": practice.session_id,
