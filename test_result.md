@@ -354,8 +354,10 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
-  stuck_tasks: []
+  current_focus:
+    - "Google Cloud Text-to-Speech Integration"
+  stuck_tasks:
+    - "Google Cloud Text-to-Speech Integration"
   test_all: false
   test_priority: "high_first"
 
