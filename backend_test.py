@@ -51,7 +51,7 @@ class InterviewAgentTester:
     def test_admin_login(self) -> bool:
         """Test admin authentication with correct password"""
         try:
-            payload = {"password": "Game@123"}
+            payload = {"password": "Game@1234"}
             response = self.session.post(
                 f"{self.base_url}/admin/login",
                 json=payload,
