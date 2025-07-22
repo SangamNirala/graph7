@@ -944,6 +944,8 @@ async def upload_job_enhanced(
     include_coding_challenge: bool = Form(False),
     role_archetype: str = Form("General"),
     interview_focus: str = Form("Balanced"),
+    min_questions: int = Form(8),
+    max_questions: int = Form(12),
     resume_file: UploadFile = File(...)
 ):
     # Validate admin authentication (same as before)
