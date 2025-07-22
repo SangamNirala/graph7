@@ -601,6 +601,8 @@ const AdminDashboard = ({ setCurrentPage }) => {
         setIncludeCodingChallenge(false);
         setRoleArchetype('General');
         setInterviewFocus('Balanced');
+        setMinQuestions(8);
+        setMaxQuestions(12);
         setResumeFile(null);
         document.querySelector('input[type="file"]').value = '';
         
