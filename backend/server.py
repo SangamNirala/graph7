@@ -1630,7 +1630,7 @@ async def start_interview(request: InterviewStartRequest):
         "session_id": session_id,
         "first_question": questions[0] if questions else "Tell me about your experience with software development.",
         "question_number": 1,
-        "total_questions": 8,
+        "total_questions": len(questions),  # Use actual number of generated questions
         "welcome_message": f"Welcome {request.candidate_name}! Ready to start your interview?",
         "voice_mode": request.voice_mode or False,
         "is_enhanced": is_enhanced
