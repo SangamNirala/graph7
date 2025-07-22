@@ -207,6 +207,83 @@ const AudioPlayer = ({ audioBase64, autoPlay = false }) => {
   );
 };
 
+// Text-to-Speech Component for AI Interviewer Voice
+const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete }) => {
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  useEffect(() => {
+    if (voiceMode && text && text.trim() && 'speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Configure voice settings for professional female AI interviewer
+      utterance.rate = 0.9; // Slightly slower for clarity
+      utterance.pitch = 1.1; // Slightly higher pitch for female voice
+      utterance.volume = 0.8;
+      
+      // Try to get a female voice
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes('female') || 
+        voice.name.toLowerCase().includes('woman') ||
+        voice.name.toLowerCase().includes('samantha') ||
+        voice.name.toLowerCase().includes('karen') ||
+        voice.name.toLowerCase().includes('moira')
+      );
+      
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
+      
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+      };
+      
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        if (onSpeechComplete) {
+          onSpeechComplete();
+        }
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event.error);
+        setIsSpeaking(false);
+      };
+      
+      // Small delay to ensure clean speech
+      setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+      }, 100);
+    }
+
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, [text, voiceMode, onSpeechComplete]);
+
+  if (!voiceMode || !text) {
+    return null;
+  }
+
+  return (
+    <div className="ai-voice-indicator flex items-center gap-2 mb-4">
+      {isSpeaking && (
+        <>
+          <div className="animate-pulse flex items-center gap-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+          </div>
+          <span className="text-blue-400 text-sm">AI Interviewer is speaking...</span>
+        </>
+      )}
+    </div>
+  );
+};
+
 // Enhanced Landing Page Component
 const EnhancedLandingPage = ({ setCurrentPage }) => {
   return (
