@@ -1631,6 +1631,16 @@ const InterviewSession = ({ setCurrentPage }) => {
                   {message.questionNumber && (
                     <div className="text-xs text-gray-300 mb-2">🎤 Question {message.questionNumber}</div>
                   )}
+                  
+                  {/* AI Voice Speaker for non-user messages in voice mode */}
+                  {message.type !== 'user' && interviewData.voiceMode && (
+                    <AIVoiceSpeaker 
+                      text={message.content} 
+                      voiceMode={interviewData.voiceMode}
+                      onSpeechComplete={() => console.log('AI finished speaking question')}
+                    />
+                  )}
+                  
                   <p className="whitespace-pre-wrap">{message.content}</p>
                   {message.audio && interviewData.voiceMode && (
                     <div className="mt-3">
