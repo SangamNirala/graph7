@@ -908,23 +908,12 @@ class VoiceProcessor:
             return text
     
     async def speech_to_text(self, audio_data: bytes) -> str:
-        """Convert speech audio to text"""
+        """Placeholder for speech-to-text - Web Speech API handles this on frontend"""
         try:
-            audio = speech.RecognitionAudio(content=audio_data)
-            config = speech.RecognitionConfig(
-                encoding=speech.RecognitionConfig.AudioEncoding.WEBM_OPUS,
-                sample_rate_hertz=48000,
-                language_code="en-US",
-            )
-            
-            response = self.stt_client.recognize(config=config, audio=audio)
-            
-            if response.results:
-                return response.results[0].alternatives[0].transcript
-            else:
-                return ""
+            logging.info("Speech-to-text with Web Speech API - handled on frontend")
+            return "Speech recognition handled by Web Speech API"
         except Exception as e:
-            logging.error(f"STT Error: {str(e)}")
+            logging.error(f"STT placeholder error: {str(e)}")
             return ""
 
 # Initialize engines
