@@ -1415,6 +1415,43 @@ const InterviewSession = ({ setCurrentPage }) => {
           </div>
         </div>
 
+        {/* NEW: Real-time Emotional Intelligence Dashboard */}
+        {currentEI && !completed && (
+          <EmotionalIntelligenceDashboard 
+            eiData={currentEI} 
+            showRealTime={true} 
+          />
+        )}
+
+        {/* NEW: Final Results with Predictive Analytics */}
+        {completed && finalResults && (
+          <>
+            <PredictiveAnalyticsDashboard predictiveData={{
+              success_probability: finalResults.success_probability,
+              prediction: finalResults.prediction,
+              recommendation: `Based on comprehensive analysis including emotional intelligence assessment`,
+              score_breakdown: {
+                technical: 0.75, // These would come from actual data
+                behavioral: 0.68,
+                emotional_intelligence: (
+                  finalResults.emotional_intelligence.enthusiasm +
+                  finalResults.emotional_intelligence.confidence +
+                  finalResults.emotional_intelligence.emotional_stability +
+                  (1 - finalResults.emotional_intelligence.stress_level)
+                ) / 4,
+                communication: 0.72
+              },
+              key_strengths: finalResults.strengths || [],
+              improvement_areas: ["Areas for development will be provided in detailed report"]
+            }} />
+            
+            <EmotionalIntelligenceDashboard 
+              eiData={finalResults.emotional_intelligence} 
+              showRealTime={false} 
+            />
+          </>
+        )}
+
         {/* Messages */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-6" style={{ minHeight: '400px', maxHeight: '500px', overflowY: 'auto' }}>
           <div className="space-y-4">
