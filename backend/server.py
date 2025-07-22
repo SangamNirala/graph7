@@ -1640,21 +1640,41 @@ async def send_interview_message(request: InterviewMessageRequest):
     if current_q_num >= len(questions):
         raise HTTPException(status_code=400, detail="Interview already completed")
     
-    # Evaluate current answer
+    # ENHANCED: Perform emotional intelligence analysis on the answer
+    ei_analysis = ei_analyzer.analyze_text_sentiment(request.message)
+    
+    # Apply bias detection to the evaluation process
     current_question = questions[current_q_num]
     question_type = "technical" if current_q_num < 4 else "behavioral"
+    
+    # Generate unbiased evaluation prompt
+    unbiased_prompt = bias_detector.generate_unbiased_prompt(
+        f"Evaluate this {question_type} response to: {current_question}\n\nCandidate's answer: {request.message}"
+    )
     
     evaluation = await interview_ai.evaluate_answer(
         current_question,
         request.message,
-        question_type
+        question_type,
+        unbiased_prompt=unbiased_prompt
     )
+    
+    # Enhanced evaluation with EI metrics and bias detection
+    enhanced_evaluation = {
+        **evaluation,
+        "emotional_intelligence": ei_analysis["emotional_intelligence"],
+        "sentiment_analysis": ei_analysis["sentiment"],
+        "detected_emotions": ei_analysis["emotions"],
+        "bias_check": bias_detector.detect_bias_in_evaluation(
+            evaluation.get("feedback", ""), current_question
+        )
+    }
     
     # Store evaluation
     if question_type == "technical":
-        session_metadata['technical_evaluations'].append(evaluation)
+        session_metadata['technical_evaluations'].append(enhanced_evaluation)
     else:
-        session_metadata['behavioral_evaluations'].append(evaluation)
+        session_metadata['behavioral_evaluations'].append(enhanced_evaluation)
     
     await db.session_metadata.update_one(
         {"session_id": session['session_id']},
@@ -1664,19 +1684,21 @@ async def send_interview_message(request: InterviewMessageRequest):
         }}
     )
     
-    # Add candidate's message
+    # Add candidate's message with EI analysis
     new_message = {
         "type": "candidate",
         "content": request.message,
         "timestamp": datetime.utcnow().isoformat(),
-        "question_number": current_q_num + 1
+        "question_number": current_q_num + 1,
+        "emotional_intelligence": ei_analysis["emotional_intelligence"],
+        "sentiment": ei_analysis["sentiment"]["compound"]
     }
     
     # Move to next question
     next_q_num = current_q_num + 1
     
     if next_q_num >= len(questions):
-        # Interview completed
+        # Interview completed - Generate enhanced assessment with predictive analytics
         await db.sessions.update_one(
             {"session_id": session['session_id']},
             {
@@ -1689,7 +1711,7 @@ async def send_interview_message(request: InterviewMessageRequest):
             }
         )
         
-        # Generate final assessment
+        # Prepare data for enhanced assessment
         assessment_data = {
             "session_id": session['session_id'],
             "token": request.token,
@@ -1699,22 +1721,76 @@ async def send_interview_message(request: InterviewMessageRequest):
             "behavioral_evaluations": session_metadata['behavioral_evaluations']
         }
         
-        assessment = await interview_ai.generate_final_assessment(assessment_data)
-        await db.assessments.insert_one(assessment.dict())
+        # Calculate aggregated EI metrics
+        all_evaluations = session_metadata['technical_evaluations'] + session_metadata['behavioral_evaluations']
+        ei_metrics = {
+            "enthusiasm": np.mean([eval.get("emotional_intelligence", {}).get("enthusiasm", 0.5) for eval in all_evaluations]),
+            "confidence": np.mean([eval.get("emotional_intelligence", {}).get("confidence", 0.5) for eval in all_evaluations]),
+            "emotional_stability": np.mean([eval.get("emotional_intelligence", {}).get("emotional_stability", 0.5) for eval in all_evaluations]),
+            "stress_level": np.mean([eval.get("emotional_intelligence", {}).get("stress_level", 0.5) for eval in all_evaluations])
+        }
+        
+        assessment_data["emotional_intelligence_metrics"] = ei_metrics
+        assessment_data["responses"] = [{"answer": msg["content"]} for msg in session.get("messages", []) if msg.get("type") == "candidate"]
+        
+        # Generate enhanced assessment
+        base_assessment = await interview_ai.generate_final_assessment(assessment_data)
+        
+        # Add predictive analytics
+        predictive_results = predictive_analytics.predict_interview_success(assessment_data)
+        
+        # Enhanced assessment with all new features
+        enhanced_assessment = {
+            **base_assessment.dict(),
+            "emotional_intelligence_metrics": ei_metrics,
+            "predictive_analytics": predictive_results,
+            "communication_effectiveness": predictive_results["score_breakdown"]["communication"],
+            "bias_analysis": {
+                "evaluations_checked": len(all_evaluations),
+                "bias_detected": any(eval.get("bias_check", {}).get("is_biased", False) for eval in all_evaluations),
+                "bias_score": np.mean([eval.get("bias_check", {}).get("bias_score", 0) for eval in all_evaluations])
+            }
+        }
+        
+        await db.assessments.insert_one(enhanced_assessment)
         
         return {
             "completed": True,
-            "message": "Thank you for completing the interview! Your responses have been evaluated.",
-            "assessment_id": assessment.id
+            "message": "Thank you for completing the interview! Your responses have been evaluated with advanced AI analysis including emotional intelligence assessment and predictive analytics.",
+            "assessment_id": enhanced_assessment["id"],
+            "success_probability": predictive_results["success_probability"],
+            "key_insights": {
+                "emotional_intelligence": ei_metrics,
+                "prediction": predictive_results["prediction"],
+                "strengths": predictive_results["key_strengths"]
+            }
         }
     else:
-        # Continue with next question
+        # Continue with next question - Enhanced with adaptive questioning
         next_question = questions[next_q_num]
+        
+        # PERSONALIZATION: Adapt question difficulty based on EI analysis
+        confidence_level = ei_analysis["emotional_intelligence"]["confidence"]
+        stress_level = ei_analysis["emotional_intelligence"]["stress_level"]
+        
+        # If candidate shows high stress or low confidence, provide encouragement
+        adaptive_response = next_question
+        if stress_level > 0.7 or confidence_level < 0.3:
+            adaptive_response = f"You're doing well so far! {next_question}"
+        elif confidence_level > 0.8 and stress_level < 0.3:
+            # For confident candidates, we can be more direct
+            adaptive_response = next_question
+        
         ai_response = {
-            "type": "ai",
-            "content": next_question,
+            "type": "ai", 
+            "content": adaptive_response,
             "timestamp": datetime.utcnow().isoformat(),
-            "question_number": next_q_num + 1
+            "question_number": next_q_num + 1,
+            "adaptive_feedback": {
+                "confidence_detected": confidence_level,
+                "stress_detected": stress_level,
+                "encouragement_provided": stress_level > 0.7 or confidence_level < 0.3
+            }
         }
         
         await db.sessions.update_one(
