@@ -533,6 +533,10 @@ const AdminDashboard = ({ setCurrentPage }) => {
   const [candidatePipeline, setCandidatePipeline] = useState([]);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
   const [comparisonResults, setComparisonResults] = useState([]);
+  
+  // Interview question limits
+  const [minQuestions, setMinQuestions] = useState(8);
+  const [maxQuestions, setMaxQuestions] = useState(12);
 
   const roleArchetypes = [
     'General',
