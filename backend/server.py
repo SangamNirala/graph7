@@ -261,6 +261,322 @@ def parse_resume(file: UploadFile, content: bytes) -> str:
         except:
             raise HTTPException(status_code=400, detail="Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files.")
 
+# Initialize sentiment analysis tools
+analyzer = SentimentIntensityAnalyzer()
+
+# Initialize emotion classification pipeline 
+try:
+    emotion_classifier = pipeline("text-classification", 
+                                model="j-hartmann/emotion-english-distilroberta-base",
+                                return_all_scores=True)
+    print("✅ Emotion classifier loaded successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not load emotion classifier - {e}")
+    emotion_classifier = None
+
+class EmotionalIntelligenceAnalyzer:
+    """Advanced emotional intelligence and sentiment analysis"""
+    
+    def __init__(self):
+        self.analyzer = analyzer
+        self.emotion_classifier = emotion_classifier
+        
+    def analyze_text_sentiment(self, text: str) -> Dict[str, Any]:
+        """Analyze text sentiment using VADER and emotion classification"""
+        try:
+            # VADER sentiment analysis
+            sentiment_scores = self.analyzer.polarity_scores(text)
+            
+            # Emotion classification if available
+            emotions = {}
+            if self.emotion_classifier and text.strip():
+                emotion_results = self.emotion_classifier(text)
+                for emotion_score in emotion_results[0]:
+                    emotions[emotion_score['label']] = emotion_score['score']
+            
+            # Calculate overall emotional intelligence metrics
+            emotional_stability = 1 - abs(sentiment_scores['compound'])
+            enthusiasm_score = max(emotions.get('joy', 0), emotions.get('excitement', 0)) if emotions else sentiment_scores['pos']
+            stress_indicators = emotions.get('fear', 0) + emotions.get('sadness', 0) if emotions else sentiment_scores['neg']
+            
+            return {
+                "sentiment": {
+                    "compound": sentiment_scores['compound'],
+                    "positive": sentiment_scores['pos'],
+                    "neutral": sentiment_scores['neu'],
+                    "negative": sentiment_scores['neg']
+                },
+                "emotions": emotions,
+                "emotional_intelligence": {
+                    "enthusiasm": float(enthusiasm_score),
+                    "emotional_stability": float(emotional_stability),
+                    "stress_level": float(stress_indicators),
+                    "confidence": float(sentiment_scores['pos'] - sentiment_scores['neg'] + 1) / 2
+                }
+            }
+        except Exception as e:
+            print(f"Error in sentiment analysis: {e}")
+            return {
+                "sentiment": {"compound": 0, "positive": 0, "neutral": 1, "negative": 0},
+                "emotions": {},
+                "emotional_intelligence": {
+                    "enthusiasm": 0.5,
+                    "emotional_stability": 0.5,
+                    "stress_level": 0.5,
+                    "confidence": 0.5
+                }
+            }
+    
+    def analyze_voice_features(self, audio_data: bytes, sample_rate: int = 16000) -> Dict[str, Any]:
+        """Analyze voice characteristics for emotional indicators"""
+        try:
+            # Convert bytes to numpy array
+            audio_array = np.frombuffer(audio_data, dtype=np.float32)
+            
+            # Extract voice features using librosa
+            features = {}
+            
+            # Pitch and energy features
+            pitches, magnitudes = librosa.piptrack(y=audio_array, sr=sample_rate)
+            pitch_mean = np.mean(pitches[pitches > 0]) if np.any(pitches > 0) else 0
+            
+            # Energy and loudness
+            rms = librosa.feature.rms(y=audio_array)[0]
+            energy_mean = np.mean(rms)
+            energy_variance = np.var(rms)
+            
+            # Spectral features
+            spectral_centroids = librosa.feature.spectral_centroid(y=audio_array, sr=sample_rate)[0]
+            spectral_rolloff = librosa.feature.spectral_rolloff(y=audio_array, sr=sample_rate)[0]
+            
+            # Zero crossing rate (speech clarity indicator)
+            zcr = librosa.feature.zero_crossing_rate(audio_array)[0]
+            
+            # Estimate emotional indicators from voice features
+            voice_confidence = min(1.0, energy_mean * 2)  # Higher energy = more confidence
+            voice_stress = min(1.0, pitch_mean / 400.0 if pitch_mean > 0 else 0)  # Higher pitch can indicate stress
+            voice_enthusiasm = min(1.0, (energy_variance + np.mean(spectral_centroids) / 1000) / 2)
+            
+            return {
+                "voice_features": {
+                    "pitch_mean": float(pitch_mean) if not np.isnan(pitch_mean) else 0.0,
+                    "energy_mean": float(energy_mean),
+                    "energy_variance": float(energy_variance),
+                    "spectral_centroid_mean": float(np.mean(spectral_centroids)),
+                    "spectral_rolloff_mean": float(np.mean(spectral_rolloff)),
+                    "zero_crossing_rate": float(np.mean(zcr))
+                },
+                "voice_emotional_indicators": {
+                    "confidence": float(voice_confidence),
+                    "stress_level": float(voice_stress),
+                    "enthusiasm": float(voice_enthusiasm),
+                    "clarity": float(1 - np.mean(zcr))  # Lower ZCR = clearer speech
+                }
+            }
+        except Exception as e:
+            print(f"Error in voice analysis: {e}")
+            return {
+                "voice_features": {
+                    "pitch_mean": 0.0,
+                    "energy_mean": 0.0,
+                    "energy_variance": 0.0,
+                    "spectral_centroid_mean": 0.0,
+                    "spectral_rolloff_mean": 0.0,
+                    "zero_crossing_rate": 0.0
+                },
+                "voice_emotional_indicators": {
+                    "confidence": 0.5,
+                    "stress_level": 0.5,
+                    "enthusiasm": 0.5,
+                    "clarity": 0.5
+                }
+            }
+
+# Initialize the emotional intelligence analyzer
+ei_analyzer = EmotionalIntelligenceAnalyzer()
+
+class PredictiveAnalytics:
+    """ML-powered predictive analytics for interview success"""
+    
+    def __init__(self):
+        self.performance_weights = {
+            "technical_score": 0.35,
+            "behavioral_score": 0.25,
+            "emotional_intelligence": 0.20,
+            "communication_effectiveness": 0.20
+        }
+    
+    def calculate_communication_effectiveness(self, responses: list) -> float:
+        """Calculate communication effectiveness score"""
+        if not responses:
+            return 0.5
+        
+        total_readability = 0
+        total_clarity = 0
+        
+        for response in responses:
+            # Readability score using Flesch Reading Ease
+            readability = flesch_reading_ease(response.get('answer', ''))
+            readability_normalized = min(1.0, max(0.0, readability / 100.0))
+            
+            # Response length appropriateness (50-300 words ideal)
+            word_count = len(response.get('answer', '').split())
+            length_score = 1.0 if 50 <= word_count <= 300 else max(0.3, 1 - abs(word_count - 175) / 200)
+            
+            total_readability += readability_normalized
+            total_clarity += length_score
+        
+        avg_readability = total_readability / len(responses)
+        avg_clarity = total_clarity / len(responses)
+        
+        return (avg_readability + avg_clarity) / 2
+    
+    def predict_interview_success(self, assessment_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Predict interview success probability using ML-based scoring"""
+        try:
+            # Extract scores
+            technical_score = assessment_data.get('technical_score', 0) / 100.0
+            behavioral_score = assessment_data.get('behavioral_score', 0) / 100.0
+            
+            # Calculate emotional intelligence composite score
+            ei_metrics = assessment_data.get('emotional_intelligence_metrics', {})
+            ei_score = (
+                ei_metrics.get('enthusiasm', 0.5) * 0.3 +
+                ei_metrics.get('confidence', 0.5) * 0.3 +
+                ei_metrics.get('emotional_stability', 0.5) * 0.2 +
+                (1 - ei_metrics.get('stress_level', 0.5)) * 0.2  # Lower stress = better
+            )
+            
+            # Communication effectiveness from response analysis
+            communication_score = self.calculate_communication_effectiveness(
+                assessment_data.get('responses', [])
+            )
+            
+            # Weighted success probability
+            success_probability = (
+                technical_score * self.performance_weights['technical_score'] +
+                behavioral_score * self.performance_weights['behavioral_score'] +
+                ei_score * self.performance_weights['emotional_intelligence'] +
+                communication_score * self.performance_weights['communication_effectiveness']
+            )
+            
+            # Success prediction categories
+            if success_probability >= 0.75:
+                prediction = "High Success Probability"
+                recommendation = "Strong candidate - recommend for hire"
+            elif success_probability >= 0.60:
+                prediction = "Moderate Success Probability" 
+                recommendation = "Good candidate - consider for hire pending reference check"
+            elif success_probability >= 0.45:
+                prediction = "Uncertain Success Probability"
+                recommendation = "Average candidate - additional interviews recommended"
+            else:
+                prediction = "Low Success Probability"
+                recommendation = "Candidate may not be suitable for this role"
+            
+            return {
+                "success_probability": float(success_probability),
+                "prediction": prediction,
+                "recommendation": recommendation,
+                "score_breakdown": {
+                    "technical": float(technical_score),
+                    "behavioral": float(behavioral_score), 
+                    "emotional_intelligence": float(ei_score),
+                    "communication": float(communication_score)
+                },
+                "key_strengths": self._identify_strengths(
+                    technical_score, behavioral_score, ei_score, communication_score
+                ),
+                "improvement_areas": self._identify_improvements(
+                    technical_score, behavioral_score, ei_score, communication_score
+                )
+            }
+        except Exception as e:
+            print(f"Error in predictive analytics: {e}")
+            return {
+                "success_probability": 0.5,
+                "prediction": "Unable to determine",
+                "recommendation": "Manual review required",
+                "score_breakdown": {},
+                "key_strengths": [],
+                "improvement_areas": []
+            }
+    
+    def _identify_strengths(self, tech: float, behav: float, ei: float, comm: float) -> list:
+        """Identify candidate's key strengths"""
+        scores = {"Technical Skills": tech, "Behavioral Fit": behav, 
+                 "Emotional Intelligence": ei, "Communication": comm}
+        strengths = [k for k, v in scores.items() if v >= 0.7]
+        return strengths[:3]  # Top 3 strengths
+    
+    def _identify_improvements(self, tech: float, behav: float, ei: float, comm: float) -> list:
+        """Identify areas for improvement"""
+        scores = {"Technical Skills": tech, "Behavioral Fit": behav,
+                 "Emotional Intelligence": ei, "Communication": comm}
+        improvements = [k for k, v in scores.items() if v < 0.6]
+        return improvements[:2]  # Top 2 improvement areas
+
+# Initialize predictive analytics
+predictive_analytics = PredictiveAnalytics()
+
+# Enhanced bias detection and mitigation
+class BiasDetectionSystem:
+    """Advanced bias detection and mitigation system"""
+    
+    def __init__(self):
+        self.bias_indicators = {
+            "gender_bias": ["he said", "she said", "man", "woman", "guy", "girl"],
+            "age_bias": ["young", "old", "experienced", "fresh", "senior", "junior"],
+            "cultural_bias": ["accent", "background", "culture", "foreign", "native"],
+            "appearance_bias": ["looks", "appearance", "professional looking", "well-dressed"]
+        }
+    
+    def detect_bias_in_evaluation(self, evaluation_text: str, question: str = "") -> Dict[str, Any]:
+        """Detect potential bias in evaluation text"""
+        bias_detected = {}
+        bias_score = 0.0
+        
+        evaluation_lower = evaluation_text.lower()
+        
+        for bias_type, indicators in self.bias_indicators.items():
+            detected_indicators = [word for word in indicators if word in evaluation_lower]
+            if detected_indicators:
+                bias_detected[bias_type] = detected_indicators
+                bias_score += len(detected_indicators) * 0.1
+        
+        # Normalize bias score
+        bias_score = min(1.0, bias_score)
+        
+        return {
+            "bias_detected": bias_detected,
+            "bias_score": float(bias_score),
+            "is_biased": bias_score > 0.3,
+            "recommendation": "Review evaluation for potential bias" if bias_score > 0.3 else "Evaluation appears unbiased"
+        }
+    
+    def generate_unbiased_prompt(self, base_prompt: str) -> str:
+        """Generate bias-free prompt for AI evaluation"""
+        bias_mitigation_prefix = """
+You are an objective interview evaluator. Focus solely on:
+- Technical competency demonstrated in the response
+- Relevance and accuracy of the answer
+- Problem-solving approach and methodology
+- Communication clarity and structure
+
+Avoid any consideration of:
+- Personal characteristics or demographics
+- Accent, speech patterns, or language nuances
+- Assumptions about background or experience not explicitly mentioned
+- Subjective impressions about personality or cultural fit
+
+Evaluate only the substantive content of the response:
+
+"""
+        return bias_mitigation_prefix + base_prompt
+
+# Initialize bias detection
+bias_detector = BiasDetectionSystem()
+
 # AI Interview Engine
 class InterviewAI:
     def __init__(self):
