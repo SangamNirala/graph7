@@ -1621,16 +1621,17 @@ async def start_interview(request: InterviewStartRequest):
             "estimated_duration": token_data.get('estimated_duration', 30)
         })
     
-    # Generate TTS for voice mode
+    # Generate text for Web Speech API (voice mode)
     if request.voice_mode:
         try:
-            welcome_audio = await voice_processor.text_to_speech(response_data["welcome_message"])
-            question_audio = await voice_processor.text_to_speech(questions[0] if questions else "Tell me about your experience.")
+            welcome_text = await voice_processor.text_to_speech(response_data["welcome_message"])
+            question_text = await voice_processor.text_to_speech(questions[0] if questions else "Tell me about your experience.")
             
-            response_data["welcome_audio"] = welcome_audio["audio_base64"]
-            response_data["question_audio"] = question_audio["audio_base64"]
+            # Return cleaned text for frontend Web Speech API
+            response_data["welcome_text"] = welcome_text
+            response_data["question_text"] = question_text
         except Exception as e:
-            logging.error(f"TTS generation failed: {str(e)}")
+            logging.error(f"Text cleaning failed: {str(e)}")
     
     return response_data
 
