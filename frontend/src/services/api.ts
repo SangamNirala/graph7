@@ -19,6 +19,7 @@ const api = axios.create({
 export const apiService = {
   // Health check
   async healthCheck(): Promise<HealthResponse> {
+    console.log('Making health check request to:', `${API_BASE_URL}/api/health`);
     const response = await api.get<HealthResponse>('/api/health');
     return response.data;
   },
