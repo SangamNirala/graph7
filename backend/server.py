@@ -1188,17 +1188,32 @@ async def validate_token(request: TokenValidationRequest):
 
 @api_router.post("/candidate/start-interview")
 async def start_interview(request: InterviewStartRequest):
-    token_data = await db.tokens.find_one({"token": request.token})
+    # Try enhanced token first, then fallback to regular token
+    token_data = await db.enhanced_tokens.find_one({"token": request.token})
+    is_enhanced = True
+    
+    if not token_data:
+        token_data = await db.tokens.find_one({"token": request.token})
+        is_enhanced = False
+    
     if not token_data or token_data.get('used', False):
         raise HTTPException(status_code=401, detail="Invalid or used token")
     
     job_data = await db.jobs.find_one({"id": token_data['job_id']})
     
-    # Generate interview questions
-    questions = await interview_ai.generate_interview_questions(
-        token_data['resume_content'],
-        token_data['job_description']
-    )
+    # Generate interview questions with enhanced parameters if available
+    if is_enhanced:
+        questions = await interview_ai.generate_interview_questions(
+            token_data['resume_content'],
+            token_data['job_description'],
+            token_data.get('role_archetype', 'General'),
+            token_data.get('interview_focus', 'Balanced')
+        )
+    else:
+        questions = await interview_ai.generate_interview_questions(
+            token_data['resume_content'],
+            token_data['job_description']
+        )
     
     # Create interview session
     session_id = interview_ai.generate_session_id()
@@ -1218,18 +1233,29 @@ async def start_interview(request: InterviewStartRequest):
     
     await db.sessions.insert_one(session_data.dict())
     
-    # Store questions in session metadata
-    await db.session_metadata.insert_one({
+    # Store questions and enhanced features in session metadata
+    session_metadata = {
         "session_id": session_id,
         "questions": questions,
         "technical_evaluations": [],
         "behavioral_evaluations": [],
         "question_audios": [],
-        "answer_audios": []
-    })
+        "answer_audios": [],
+        "is_enhanced": is_enhanced
+    }
+    
+    if is_enhanced:
+        session_metadata.update({
+            "include_coding_challenge": token_data.get('include_coding_challenge', False),
+            "role_archetype": token_data.get('role_archetype', 'General'),
+            "interview_focus": token_data.get('interview_focus', 'Balanced')
+        })
+    
+    await db.session_metadata.insert_one(session_metadata)
     
     # Mark token as used
-    await db.tokens.update_one(
+    collection = db.enhanced_tokens if is_enhanced else db.tokens
+    await collection.update_one(
         {"token": request.token},
         {"$set": {"used": True}}
     )
@@ -1240,8 +1266,20 @@ async def start_interview(request: InterviewStartRequest):
         "question_number": 1,
         "total_questions": 8,
         "welcome_message": f"Welcome {request.candidate_name}! Ready to start your interview?",
-        "voice_mode": request.voice_mode or False
+        "voice_mode": request.voice_mode or False,
+        "is_enhanced": is_enhanced
     }
+    
+    # Add enhanced features to response
+    if is_enhanced:
+        response_data.update({
+            "features": {
+                "coding_challenge": token_data.get('include_coding_challenge', False),
+                "role_archetype": token_data.get('role_archetype', 'General'),
+                "interview_focus": token_data.get('interview_focus', 'Balanced')
+            },
+            "estimated_duration": token_data.get('estimated_duration', 30)
+        })
     
     # Generate TTS for voice mode
     if request.voice_mode:
