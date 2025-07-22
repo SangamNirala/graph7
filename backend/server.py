@@ -634,7 +634,7 @@ async def admin_login(request: AdminLoginRequest):
     return {"success": True, "message": "Admin authenticated successfully"}
 
 # Legacy Admin Route (for backward compatibility)
-@api_router.post("/admin/upload-job")
+@api_router.post("/admin/upload-job-enhanced")
 async def upload_job_enhanced(
     job_title: str = Form(...),
     job_description: str = Form(...),
