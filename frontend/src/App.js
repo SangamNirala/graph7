@@ -838,6 +838,116 @@ const AdminDashboard = ({ setCurrentPage }) => {
                 />
               </div>
 
+              {/* Interview Questions Configuration */}
+              <div className="bg-white/5 p-6 rounded-lg border border-white/10">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Interview Questions Configuration
+                </h3>
+                <p className="text-gray-300 text-sm mb-4">
+                  Set the range of questions to be asked during the interview. The system will dynamically adjust based on candidate responses.
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-white font-medium mb-2">
+                      Minimum Questions
+                      <span className="text-sm text-gray-300 ml-2">(Must be asked)</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="3"
+                        max="15"
+                        value={minQuestions}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          setMinQuestions(value);
+                          // Ensure max is at least equal to min
+                          if (maxQuestions < value) {
+                            setMaxQuestions(value);
+                          }
+                        }}
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="8"
+                        required
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Recommended: 6-10 questions</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-medium mb-2">
+                      Maximum Questions
+                      <span className="text-sm text-gray-300 ml-2">(If needed for assessment)</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={minQuestions}
+                        max="20"
+                        value={maxQuestions}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          setMaxQuestions(value);
+                          // Ensure min doesn't exceed max
+                          if (minQuestions > value) {
+                            setMinQuestions(value);
+                          }
+                        }}
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="12"
+                        required
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Recommended: 10-15 questions</p>
+                  </div>
+                </div>
+
+                {/* Question Distribution Preview */}
+                <div className="mt-4 p-4 bg-white/5 rounded-lg">
+                  <h4 className="text-sm font-medium text-white mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Expected Question Distribution
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex justify-between text-gray-300">
+                      <span>Technical Questions:</span>
+                      <span className="text-blue-300">{Math.ceil(minQuestions / 2)} - {Math.ceil(maxQuestions / 2)}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-300">
+                      <span>Behavioral Questions:</span>
+                      <span className="text-green-300">{Math.floor(minQuestions / 2)} - {Math.floor(maxQuestions / 2)}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-400">
+                    💡 The AI will adaptively adjust the number of questions based on candidate performance and responses
+                  </div>
+                </div>
+
+                {/* Interview Duration Estimation */}
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="text-gray-300">Estimated Interview Duration:</span>
+                  <span className="text-yellow-300 font-medium">
+                    {Math.ceil(minQuestions * 2.5)} - {Math.ceil(maxQuestions * 3)} minutes
+                  </span>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-white font-medium mb-2">
                   Resume File 
