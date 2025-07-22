@@ -1567,12 +1567,18 @@ async def start_interview(request: InterviewStartRequest):
             token_data['resume_content'],
             token_data['job_description'],
             token_data.get('role_archetype', 'General'),
-            token_data.get('interview_focus', 'Balanced')
+            token_data.get('interview_focus', 'Balanced'),
+            token_data.get('min_questions', 8),
+            token_data.get('max_questions', 12)
         )
     else:
         questions = await interview_ai.generate_interview_questions(
             token_data['resume_content'],
-            token_data['job_description']
+            token_data['job_description'],
+            'General',
+            'Balanced',
+            8,  # Default min questions for legacy tokens
+            12  # Default max questions for legacy tokens
         )
     
     # Create interview session
