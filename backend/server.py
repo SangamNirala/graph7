@@ -659,7 +659,7 @@ class InterviewAI:
                 question = line.split(': ', 1)[1] if ': ' in line else line
                 questions.append(question.strip())
         
-        return questions[:8]  # Ensure exactly 8 questions
+        return questions[:total_questions]  # Return the exact number of questions requested
     
     def _get_role_context(self, role_archetype: str) -> str:
         role_contexts = {
