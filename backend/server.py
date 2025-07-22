@@ -629,7 +629,7 @@ def generate_secure_token() -> str:
 # Admin Routes
 @api_router.post("/admin/login")
 async def admin_login(request: AdminLoginRequest):
-    if request.password != "Game@123":
+    if request.password != "Game@1234":
         raise HTTPException(status_code=401, detail="Invalid password")
     return {"success": True, "message": "Admin authenticated successfully"}
 
