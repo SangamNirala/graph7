@@ -1465,36 +1465,73 @@ async def process_voice_answer(
     question_number: int = Form(...),
     audio_file: UploadFile = File(...)
 ):
-    """Process voice answer - convert to text and store audio"""
+    """Process voice answer - convert to text and analyze emotional intelligence from voice"""
     try:
         audio_content = await audio_file.read()
         
         # Convert speech to text
         transcript = await voice_processor.speech_to_text(audio_content)
         
+        # ENHANCED: Analyze voice for emotional intelligence
+        voice_analysis = ei_analyzer.analyze_voice_features(audio_content)
+        
+        # ENHANCED: Analyze text sentiment from transcript
+        text_analysis = ei_analyzer.analyze_text_sentiment(transcript)
+        
+        # Combine voice and text analysis
+        combined_ei_analysis = {
+            "voice_emotional_indicators": voice_analysis["voice_emotional_indicators"],
+            "voice_features": voice_analysis["voice_features"],
+            "text_sentiment": text_analysis["sentiment"],
+            "text_emotions": text_analysis["emotions"],
+            "combined_confidence": (
+                voice_analysis["voice_emotional_indicators"]["confidence"] + 
+                text_analysis["emotional_intelligence"]["confidence"]
+            ) / 2,
+            "combined_stress": (
+                voice_analysis["voice_emotional_indicators"]["stress_level"] + 
+                text_analysis["emotional_intelligence"]["stress_level"]
+            ) / 2,
+            "combined_enthusiasm": (
+                voice_analysis["voice_emotional_indicators"]["enthusiasm"] + 
+                text_analysis["emotional_intelligence"]["enthusiasm"]  
+            ) / 2
+        }
+        
         # Store audio file in GridFS
         file_id = fs.put(audio_content, 
                         filename=f"answer_{session_id}_{question_number}.webm",
-                        metadata={"type": "answer_audio", "session_id": session_id})
+                        metadata={
+                            "type": "answer_audio", 
+                            "session_id": session_id,
+                            "emotional_analysis": combined_ei_analysis
+                        })
         
-        # Store answer in session metadata
+        # Store answer with enhanced analysis in session metadata
         await db.session_metadata.update_one(
             {"session_id": session_id},
             {"$push": {"answer_audios": {
                 "file_id": str(file_id),
                 "transcript": transcript,
                 "question_number": question_number,
-                "timestamp": datetime.utcnow()
+                "timestamp": datetime.utcnow(),
+                "emotional_analysis": combined_ei_analysis
             }}}
         )
         
         return {
             "success": True,
             "transcript": transcript,
-            "file_id": str(file_id)
+            "file_id": str(file_id),
+            "emotional_intelligence": {
+                "confidence": combined_ei_analysis["combined_confidence"],
+                "stress_level": combined_ei_analysis["combined_stress"], 
+                "enthusiasm": combined_ei_analysis["combined_enthusiasm"],
+                "voice_clarity": voice_analysis["voice_emotional_indicators"]["clarity"]
+            }
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Voice processing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Enhanced voice processing failed: {str(e)}")
 
 # Candidate Routes
 @api_router.post("/candidate/validate-token")
