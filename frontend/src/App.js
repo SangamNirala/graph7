@@ -1067,7 +1067,7 @@ function App() {
       case 'interview-session':
         return <InterviewSession setCurrentPage={setCurrentPage} />;
       default:
-        return <LandingPage setCurrentPage={setCurrentPage} />;
+        return <EnhancedLandingPage setCurrentPage={setCurrentPage} />;
     }
   };
 
