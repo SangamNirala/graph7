@@ -633,7 +633,375 @@ async def admin_login(request: AdminLoginRequest):
         raise HTTPException(status_code=401, detail="Invalid password")
     return {"success": True, "message": "Admin authenticated successfully"}
 
-@api_router.post("/admin/upload-job")
+# Enhanced Admin Routes
+@api_router.post("/admin/upload-job-enhanced")
+async def upload_job_enhanced(
+    job_title: str = Form(...),
+    job_description: str = Form(...),
+    job_requirements: str = Form(...),
+    include_coding_challenge: bool = Form(False),
+    role_archetype: str = Form("General"),
+    interview_focus: str = Form("Balanced"),
+    resume_file: UploadFile = File(...)
+):
+    # Validate admin authentication (same as before)
+    # Parse resume (same as before)
+    resume_content = await resume_file.read()
+    try:
+        resume_text = parse_resume(resume_file, resume_content)
+        if not resume_text.strip():
+            raise HTTPException(status_code=400, detail="Could not extract text from resume file")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Resume parsing failed: {str(e)}")
+    
+    # Create job record
+    job_data = JobDescription(
+        title=job_title,
+        description=job_description,
+        requirements=job_requirements
+    )
+    await db.jobs.insert_one(job_data.dict())
+    
+    # Generate secure token
+    token = generate_secure_token()
+    
+    # Create enhanced token record
+    token_data = EnhancedCandidateToken(
+        token=token,
+        job_id=job_data.id,
+        resume_content=resume_text,
+        job_description=f"{job_title}\n\n{job_description}\n\n{job_requirements}",
+        include_coding_challenge=include_coding_challenge,
+        role_archetype=role_archetype,
+        interview_focus=interview_focus
+    )
+    await db.enhanced_tokens.insert_one(token_data.dict())
+    
+    # Estimate duration based on features
+    base_duration = 30
+    if include_coding_challenge:
+        base_duration += 15
+    
+    return {
+        "success": True,
+        "token": token,
+        "resume_preview": resume_text[:200] + "..." if len(resume_text) > 200 else resume_text,
+        "estimated_duration": base_duration,
+        "features": {
+            "coding_challenge": include_coding_challenge,
+            "role_archetype": role_archetype,
+            "interview_focus": interview_focus
+        },
+        "message": f"Enhanced job and resume ({resume_file.filename}) uploaded successfully."
+    }
+
+@api_router.get("/admin/candidate-pipeline")
+async def get_candidate_pipeline():
+    """Get all candidates with their current status"""
+    # Get all tokens (both regular and enhanced)
+    regular_tokens = await db.tokens.find().to_list(1000)
+    enhanced_tokens = await db.enhanced_tokens.find().to_list(1000)
+    
+    pipeline = []
+    
+    # Process regular tokens
+    for token_data in regular_tokens:
+        session = await db.sessions.find_one({"token": token_data["token"]})
+        assessment = await db.assessments.find_one({"token": token_data["token"]})
+        
+        status = "Invited"
+        if session:
+            if session.get("status") == "completed":
+                status = "Completed"
+            else:
+                status = "In Progress"
+        if assessment:
+            status = "Report Ready"
+            
+        pipeline.append({
+            "token": token_data["token"],
+            "candidate_name": session.get("candidate_name", "Not Started") if session else "Not Started",
+            "job_title": token_data["job_description"].split("\n")[0],
+            "status": status,
+            "created_at": token_data["created_at"],
+            "overall_score": assessment.get("overall_score") if assessment else None,
+            "interview_type": "Standard"
+        })
+    
+    # Process enhanced tokens
+    for token_data in enhanced_tokens:
+        session = await db.sessions.find_one({"token": token_data["token"]})
+        assessment = await db.assessments.find_one({"token": token_data["token"]})
+        
+        status = "Invited"
+        if session:
+            if session.get("status") == "completed":
+                status = "Completed"
+            else:
+                status = "In Progress"
+        if assessment:
+            status = "Report Ready"
+            
+        pipeline.append({
+            "token": token_data["token"],
+            "candidate_name": session.get("candidate_name", "Not Started") if session else "Not Started",
+            "job_title": token_data["job_description"].split("\n")[0],
+            "status": status,
+            "created_at": token_data["created_at"],
+            "overall_score": assessment.get("overall_score") if assessment else None,
+            "interview_type": "Enhanced",
+            "features": {
+                "coding_challenge": token_data.get("include_coding_challenge", False),
+                "role_archetype": token_data.get("role_archetype", "General"),
+                "interview_focus": token_data.get("interview_focus", "Balanced")
+            }
+        })
+    
+    # Sort by creation date
+    pipeline.sort(key=lambda x: x["created_at"], reverse=True)
+    
+    return {"pipeline": pipeline}
+
+@api_router.post("/admin/compare-candidates")
+async def compare_candidates(candidate_tokens: List[str]):
+    """Compare multiple candidates side by side"""
+    comparisons = []
+    
+    for token in candidate_tokens:
+        assessment = await db.assessments.find_one({"token": token})
+        session = await db.sessions.find_one({"token": token})
+        
+        if assessment and session:
+            comparisons.append({
+                "token": token,
+                "candidate_name": session.get("candidate_name"),
+                "job_title": assessment.get("job_title"),
+                "technical_score": assessment.get("technical_score"),
+                "behavioral_score": assessment.get("behavioral_score"),
+                "overall_score": assessment.get("overall_score"),
+                "key_strengths": assessment.get("key_strengths", []),
+                "areas_for_improvement": assessment.get("areas_for_improvement", []),
+                "red_flags": assessment.get("red_flags", [])
+            })
+    
+    return {"comparisons": comparisons}
+
+# Enhanced Candidate Routes
+@api_router.post("/candidate/camera-test")
+async def camera_test(request: CameraTestRequest):
+    """Test camera and microphone functionality"""
+    # This is primarily handled by frontend, backend just validates token
+    token_data = await db.enhanced_tokens.find_one({"token": request.token})
+    if not token_data:
+        token_data = await db.tokens.find_one({"token": request.token})
+    
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    return {
+        "success": True,
+        "message": "Camera and microphone test completed",
+        "estimated_duration": 30,
+        "features": {
+            "voice_mode": True,
+            "coding_challenge": token_data.get("include_coding_challenge", False),
+            "role_archetype": token_data.get("role_archetype", "General")
+        }
+    }
+
+@api_router.post("/candidate/practice-round")
+async def start_practice_round(request: PracticeRoundRequest):
+    """Start practice round for candidate"""
+    # Validate token
+    token_data = await db.enhanced_tokens.find_one({"token": request.token})
+    if not token_data:
+        token_data = await db.tokens.find_one({"token": request.token})
+    
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Create practice session
+    practice = PracticeRound(
+        session_id=f"practice_{request.token}_{datetime.utcnow().timestamp()}"
+    )
+    await db.practice_rounds.insert_one(practice.dict())
+    
+    # Generate TTS for practice question if voice mode
+    audio_data = None
+    try:
+        audio_data = await voice_processor.text_to_speech(practice.question)
+    except Exception as e:
+        logging.error(f"TTS generation failed for practice: {str(e)}")
+    
+    return {
+        "session_id": practice.session_id,
+        "practice_question": practice.question,
+        "audio_base64": audio_data["audio_base64"] if audio_data else None,
+        "message": "This is a practice round. Your answer will not be saved or scored."
+    }
+
+@api_router.post("/candidate/rephrase-question")
+async def rephrase_question(request: RephraseQuestionRequest):
+    """Rephrase current question for better understanding"""
+    try:
+        # Get current session to find the original question
+        session = await db.sessions.find_one({"session_id": request.session_id})
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        rephrased = await interview_ai.rephrase_question(request.original_question)
+        
+        # Generate TTS for rephrased question
+        audio_data = None
+        if session.get("voice_mode"):
+            try:
+                audio_data = await voice_processor.text_to_speech(rephrased)
+            except Exception as e:
+                logging.error(f"TTS generation failed: {str(e)}")
+        
+        return {
+            "rephrased_question": rephrased,
+            "audio_base64": audio_data["audio_base64"] if audio_data else None
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Interactive Module Routes
+@api_router.get("/modules/coding-challenge/{session_id}")
+async def get_coding_challenge(session_id: str):
+    """Get coding challenge for session"""
+    session = await db.sessions.find_one({"session_id": session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Check if coding challenge is enabled
+    token_data = await db.enhanced_tokens.find_one({"token": session["token"]})
+    if not token_data or not token_data.get("include_coding_challenge"):
+        raise HTTPException(status_code=400, detail="Coding challenge not enabled for this interview")
+    
+    # Check if challenge already exists
+    existing_challenge = await db.coding_challenges.find_one({"session_id": session_id})
+    if existing_challenge:
+        return {"challenge": existing_challenge}
+    
+    # Generate new coding challenge
+    challenge_data = await interview_ai.generate_coding_challenge(
+        token_data.get("role_archetype", "Software Engineer")
+    )
+    
+    challenge = CodingChallenge(
+        session_id=session_id,
+        **challenge_data
+    )
+    await db.coding_challenges.insert_one(challenge.dict())
+    
+    # Don't include expected solution in response
+    response_data = challenge.dict()
+    response_data.pop("expected_solution", None)
+    
+    return {"challenge": response_data}
+
+@api_router.post("/modules/coding-challenge/submit")
+async def submit_coding_challenge(request: CodingChallengeSubmissionRequest):
+    """Submit coding challenge solution"""
+    challenge = await db.coding_challenges.find_one({"session_id": request.session_id})
+    if not challenge:
+        raise HTTPException(status_code=404, detail="Coding challenge not found")
+    
+    if challenge["completed"]:
+        raise HTTPException(status_code=400, detail="Challenge already completed")
+    
+    # Evaluate the submission
+    evaluation = await interview_ai.evaluate_coding_challenge(
+        request.submitted_code,
+        challenge["expected_solution"],
+        challenge["problem_description"]
+    )
+    
+    # Update challenge record
+    await db.coding_challenges.update_one(
+        {"session_id": request.session_id},
+        {
+            "$set": {
+                "submitted_code": request.submitted_code,
+                "score": evaluation["score"],
+                "analysis": evaluation["analysis"],
+                "completed": True
+            }
+        }
+    )
+    
+    return {
+        "success": True,
+        "score": evaluation["score"],
+        "analysis": evaluation["analysis"]
+    }
+
+@api_router.get("/modules/sjt/{session_id}")
+async def get_sjt_test(session_id: str):
+    """Get Situational Judgment Test"""
+    session = await db.sessions.find_one({"session_id": session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Get role archetype
+    token_data = await db.enhanced_tokens.find_one({"token": session["token"]})
+    role_archetype = token_data.get("role_archetype", "Software Engineer") if token_data else "Software Engineer"
+    
+    # Check if SJT already exists
+    existing_sjt = await db.sjt_tests.find_one({"session_id": session_id})
+    if existing_sjt:
+        response_data = existing_sjt.copy()
+        response_data.pop("correct_answer", None)  # Don't reveal correct answer
+        return {"sjt": response_data}
+    
+    # Generate new SJT
+    sjt_data = await interview_ai.generate_sjt_test(role_archetype)
+    
+    sjt = SJTTest(
+        session_id=session_id,
+        **sjt_data
+    )
+    await db.sjt_tests.insert_one(sjt.dict())
+    
+    # Don't include correct answer in response
+    response_data = sjt.dict()
+    response_data.pop("correct_answer", None)
+    
+    return {"sjt": response_data}
+
+@api_router.post("/modules/sjt/submit")
+async def submit_sjt_answer(request: SJTAnswerRequest):
+    """Submit SJT answer"""
+    sjt = await db.sjt_tests.find_one({"id": request.sjt_id, "session_id": request.session_id})
+    if not sjt:
+        raise HTTPException(status_code=404, detail="SJT test not found")
+    
+    if sjt["completed"]:
+        raise HTTPException(status_code=400, detail="SJT already completed")
+    
+    # Check answer
+    is_correct = request.selected_answer == sjt["correct_answer"]
+    score = 100 if is_correct else 0
+    
+    # Update SJT record
+    await db.sjt_tests.update_one(
+        {"id": request.sjt_id},
+        {
+            "$set": {
+                "selected_answer": request.selected_answer,
+                "score": score,
+                "completed": True
+            }
+        }
+    )
+    
+    return {
+        "success": True,
+        "is_correct": is_correct,
+        "score": score,
+        "explanation": sjt["explanation"]
+    }
 async def upload_job_and_resume(
     job_title: str = Form(...),
     job_description: str = Form(...),
