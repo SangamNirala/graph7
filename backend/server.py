@@ -602,7 +602,7 @@ class InterviewAI:
         chat.with_max_tokens(2048)
         return chat
     
-    async def generate_interview_questions(self, resume: str, job_description: str, role_archetype: str = "General", interview_focus: str = "Balanced") -> List[str]:
+    async def generate_interview_questions(self, resume: str, job_description: str, role_archetype: str = "General", interview_focus: str = "Balanced", min_questions: int = 8, max_questions: int = 12) -> List[str]:
         # Enhanced system message with bias mitigation and role archetype
         bias_mitigation = """
         BIAS MITIGATION INSTRUCTIONS:
