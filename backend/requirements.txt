@@ -28,6 +28,9 @@ PyPDF2
 python-docx
 google-cloud-texttospeech
 google-cloud-speech
+litellm
+lxml
+google-api-core
 # New ML and emotional intelligence dependencies
 librosa>=0.11.0
 textstat>=0.7.7
