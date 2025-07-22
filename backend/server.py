@@ -1002,6 +1002,49 @@ async def submit_sjt_answer(request: SJTAnswerRequest):
         "score": score,
         "explanation": sjt["explanation"]
     }
+
+# Legacy Admin Route (for backward compatibility)
+@api_router.post("/admin/upload-job")
+async def upload_job_legacy(
+    job_title: str = Form(...),
+    job_description: str = Form(...),
+    job_requirements: str = Form(...),
+    resume_file: UploadFile = File(...)
+):
+    resume_content = await resume_file.read()
+    try:
+        resume_text = parse_resume(resume_file, resume_content)
+        if not resume_text.strip():
+            raise HTTPException(status_code=400, detail="Could not extract text from resume file")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Resume parsing failed: {str(e)}")
+    
+    # Create job record
+    job_data = JobDescription(
+        title=job_title,
+        description=job_description,
+        requirements=job_requirements
+    )
+    await db.jobs.insert_one(job_data.dict())
+    
+    # Generate secure token
+    token = generate_secure_token()
+    
+    # Create token record
+    token_data = CandidateToken(
+        token=token,
+        job_id=job_data.id,
+        resume_content=resume_text,
+        job_description=f"{job_title}\n\n{job_description}\n\n{job_requirements}"
+    )
+    await db.tokens.insert_one(token_data.dict())
+    
+    return {
+        "success": True,
+        "token": token,
+        "resume_preview": resume_text[:200] + "..." if len(resume_text) > 200 else resume_text,
+        "message": f"Job and resume ({resume_file.filename}) uploaded successfully. Token generated for candidate."
+    }
 async def upload_job_and_resume(
     job_title: str = Form(...),
     job_description: str = Form(...),
