@@ -270,8 +270,26 @@ class InterviewAI:
         chat.with_max_tokens(2048)
         return chat
     
-    async def generate_interview_questions(self, resume: str, job_description: str) -> List[str]:
-        system_message = f"""You are an expert AI interviewer. Based on the resume and job description provided, create exactly 8 interview questions (4 technical and 4 behavioral).
+    async def generate_interview_questions(self, resume: str, job_description: str, role_archetype: str = "General", interview_focus: str = "Balanced") -> List[str]:
+        # Enhanced system message with bias mitigation and role archetype
+        bias_mitigation = """
+        BIAS MITIGATION INSTRUCTIONS:
+        - Evaluate candidates based ONLY on job-related competencies and qualifications
+        - Ignore accent, gender, age, race, religion, or other protected characteristics
+        - Focus on skills, experience, problem-solving ability, and cultural alignment
+        - Ensure questions are fair and relevant to the role requirements
+        """
+        
+        role_context = self._get_role_context(role_archetype)
+        focus_context = self._get_focus_context(interview_focus)
+        
+        system_message = f"""You are an expert AI interviewer conducting a fair and unbiased interview. {bias_mitigation}
+        
+        Role Archetype: {role_archetype}
+        Interview Focus: {interview_focus}
+        
+        {role_context}
+        {focus_context}
 
         IMPORTANT: Generate questions in plain text without any formatting like backticks, bold, or italics since these will be converted to speech.
 
@@ -303,6 +321,123 @@ class InterviewAI:
                 questions.append(question.strip())
         
         return questions[:8]  # Ensure exactly 8 questions
+    
+    def _get_role_context(self, role_archetype: str) -> str:
+        role_contexts = {
+            "Software Engineer": "Focus on technical skills, coding abilities, system design, and software development lifecycle knowledge.",
+            "Sales": "Emphasize communication skills, relationship building, negotiation abilities, and results-driven mindset.",
+            "Graduate": "Consider fresh perspective, learning potential, adaptability, and foundational knowledge rather than extensive experience.",
+            "General": "Balance technical competencies with behavioral traits suitable for the specific role."
+        }
+        return role_contexts.get(role_archetype, role_contexts["General"])
+    
+    def _get_focus_context(self, interview_focus: str) -> str:
+        focus_contexts = {
+            "Technical Deep-Dive": "Prioritize technical questions (6 technical, 2 behavioral) with detailed technical scenarios.",
+            "Cultural Fit": "Prioritize behavioral questions (6 behavioral, 2 technical) focusing on team dynamics and company culture.",
+            "Graduate Screening": "Balance foundational technical knowledge with potential and learning attitude.",
+            "Balanced": "Equal focus on technical competencies and behavioral traits."
+        }
+        return focus_contexts.get(interview_focus, focus_contexts["Balanced"])
+    
+    async def rephrase_question(self, original_question: str) -> str:
+        """Rephrase a question to help candidate understanding"""
+        system_message = """You are helping rephrase interview questions to make them clearer while maintaining the same intent and difficulty level.
+        
+        IMPORTANT: Generate rephrased questions in plain text without any formatting like backticks, bold, or italics since these will be converted to speech.
+        
+        Keep the core assessment objective the same but make the language clearer and more accessible."""
+        
+        session_id = self.generate_session_id()
+        chat = await self.create_chat_instance(session_id, system_message)
+        
+        user_message = UserMessage(text=f"Please rephrase this question to make it clearer: {original_question}")
+        response = await chat.send_message(user_message)
+        
+        return response.strip()
+    
+    async def generate_coding_challenge(self, role_archetype: str, difficulty: str = "medium") -> Dict[str, Any]:
+        """Generate a coding challenge based on role"""
+        challenges_by_role = {
+            "Software Engineer": [
+                {
+                    "title": "Array Sum Finder",
+                    "description": "Write a function that finds two numbers in an array that add up to a target sum.",
+                    "initial_code": "function findTwoSum(numbers, target) {\n  // Your code here\n  return [];\n}",
+                    "expected_solution": "Use hash map for O(n) solution"
+                },
+                {
+                    "title": "String Reversal",
+                    "description": "Write a function that reverses a string without using built-in reverse methods.",
+                    "initial_code": "function reverseString(str) {\n  // Your code here\n  return '';\n}",
+                    "expected_solution": "Use two-pointer technique or recursion"
+                }
+            ]
+        }
+        
+        role_challenges = challenges_by_role.get(role_archetype, challenges_by_role["Software Engineer"])
+        challenge = role_challenges[0]  # For now, use first challenge
+        
+        return {
+            "problem_title": challenge["title"],
+            "problem_description": challenge["description"],
+            "initial_code": challenge["initial_code"],
+            "expected_solution": challenge["expected_solution"],
+            "difficulty": difficulty,
+            "language": "javascript"
+        }
+    
+    async def generate_sjt_test(self, role_archetype: str) -> Dict[str, Any]:
+        """Generate a Situational Judgment Test"""
+        sjt_scenarios = {
+            "Software Engineer": {
+                "scenario": "You're working on a critical project with a tight deadline. A team member's code has a bug that could delay the release, but they're defensive about feedback.",
+                "question": "What's the best approach to handle this situation?",
+                "options": [
+                    {"id": "a", "text": "Fix the bug yourself without involving the team member"},
+                    {"id": "b", "text": "Schedule a private meeting to discuss the issue constructively"},
+                    {"id": "c", "text": "Bring up the issue in the team meeting publicly"},
+                    {"id": "d", "text": "Report the issue to management immediately"}
+                ],
+                "correct_answer": "b",
+                "explanation": "A private constructive discussion respects the team member while addressing the critical issue professionally."
+            }
+        }
+        
+        return sjt_scenarios.get(role_archetype, sjt_scenarios["Software Engineer"])
+    
+    async def evaluate_coding_challenge(self, submitted_code: str, expected_solution: str, problem_description: str) -> Dict[str, Any]:
+        """Evaluate submitted coding challenge"""
+        system_message = f"""You are evaluating a coding challenge submission. 
+        
+        Problem: {problem_description}
+        Expected approach: {expected_solution}
+        
+        Evaluate the code for:
+        1. Correctness (does it solve the problem?)
+        2. Efficiency (time/space complexity)
+        3. Code quality (readability, structure)
+        4. Edge case handling
+        
+        Provide a score out of 100 and detailed analysis."""
+        
+        session_id = self.generate_session_id()
+        chat = await self.create_chat_instance(session_id, system_message)
+        
+        user_message = UserMessage(text=f"Evaluate this code submission: {submitted_code}")
+        response = await chat.send_message(user_message)
+        
+        # Parse score from response (simplified)
+        try:
+            score_match = re.search(r'score.*?(\d+)', response.lower())
+            score = int(score_match.group(1)) if score_match else 70
+        except:
+            score = 70
+        
+        return {
+            "score": min(100, max(0, score)),
+            "analysis": response
+        }
     
     async def evaluate_answer(self, question: str, answer: str, question_type: str) -> Dict[str, Any]:
         system_message = f"""You are an expert interview evaluator. Evaluate the candidate's answer to this {question_type} question.
