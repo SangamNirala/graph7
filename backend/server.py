@@ -1583,6 +1583,11 @@ async def start_interview(request: InterviewStartRequest):
     
     # Create interview session
     session_id = interview_ai.generate_session_id()
+    
+    # Calculate technical and behavioral question distribution
+    total_questions = len(questions)
+    technical_count = (total_questions + 1) // 2  # Round up for technical (same logic as generation)
+    behavioral_count = total_questions - technical_count
     session_data = InterviewSession(
         token=request.token,
         session_id=session_id,
