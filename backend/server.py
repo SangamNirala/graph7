@@ -97,6 +97,65 @@ class InterviewAssessment(BaseModel):
     overall_feedback: str
     recommendations: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    # Enhanced fields for multi-vector assessment
+    competency_scores: Dict[str, int] = {}
+    key_strengths: List[str] = []
+    areas_for_improvement: List[str] = []
+    supporting_quotes: List[str] = []
+    red_flags: List[str] = []
+    module_performance: Dict[str, Dict[str, Any]] = {}
+
+# Enhanced Token model with coding challenge option
+class EnhancedCandidateToken(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    token: str
+    job_id: str
+    resume_content: str
+    job_description: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    used: bool = False
+    # New fields
+    include_coding_challenge: bool = False
+    role_archetype: str = "General"  # Software Engineer, Sales, Graduate, etc.
+    interview_focus: str = "Balanced"  # Technical Deep-Dive, Cultural Fit, Graduate Screening
+    estimated_duration: int = 30  # minutes
+
+# Practice Round model
+class PracticeRound(BaseModel):
+    session_id: str
+    question: str = "Tell me about a hobby you're passionate about."
+    completed: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# Coding Challenge model
+class CodingChallenge(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
+    problem_title: str
+    problem_description: str
+    initial_code: str
+    expected_solution: str
+    difficulty: str = "medium"  # easy, medium, hard
+    language: str = "javascript"
+    submitted_code: Optional[str] = None
+    score: Optional[int] = None
+    analysis: Optional[str] = None
+    completed: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# SJT (Situational Judgment Test) model
+class SJTTest(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
+    scenario: str
+    question: str
+    options: List[Dict[str, str]]  # [{"id": "a", "text": "Option A"}, ...]
+    selected_answer: Optional[str] = None
+    correct_answer: str
+    explanation: str
+    score: Optional[int] = None
+    completed: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class AdminLoginRequest(BaseModel):
     password: str
