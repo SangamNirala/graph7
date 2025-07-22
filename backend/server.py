@@ -1689,7 +1689,9 @@ async def send_interview_message(request: InterviewMessageRequest):
     
     # Apply bias detection to the evaluation process
     current_question = questions[current_q_num]
-    question_type = "technical" if current_q_num < 4 else "behavioral"
+    # Use dynamic question type based on actual technical/behavioral split
+    technical_count = session_metadata.get('technical_count', (len(questions) + 1) // 2)  # Fallback for legacy sessions
+    question_type = "technical" if current_q_num < technical_count else "behavioral"
     
     # Generate unbiased evaluation prompt
     unbiased_prompt = bias_detector.generate_unbiased_prompt(
