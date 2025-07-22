@@ -477,6 +477,21 @@ backend:
         -working: true
         -agent: "testing"
         -comment: "✅ TESTED: Backward compatibility fully maintained. Legacy /api/admin/upload-job endpoint working without new parameters, creating standard tokens. Both enhanced and regular tokens properly validated and processed by interview start endpoint. Enhanced tokens provide additional features while regular tokens maintain original functionality. No breaking changes to existing API contracts."
+
+  - task: "Interview Progression Fix - Can't Submit 6th Answer Bug"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "Fixed critical interview progression bug where users couldn't submit 6th answer and progress beyond question 5. ROOT CAUSE: Hardcoded total_questions=8 and question type logic assuming exactly 4 technical questions, but system generates 8-12 questions for enhanced interviews. SOLUTIONS: 1) Replaced hardcoded total_questions with dynamic len(questions), 2) Added technical_count/behavioral_count to session metadata, 3) Updated question type logic to use dynamic counts, 4) Fixed welcome message to show actual question distribution."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ CRITICAL BUG FIX VERIFIED: Successfully tested the interview progression fix with comprehensive verification. Users can now submit 6th answer and progress beyond question 5 - tested with 10-question interview completing successfully through all questions. Dynamic total_questions field working correctly (8, 9, 10 questions tested) instead of hardcoded 8. Enhanced interview flow with variable question counts (8-12) working properly. Question type logic works correctly with variable counts. Complete interview flow tested for interviews with more than 8 questions. Backward compatibility maintained with legacy tokens. The fix addresses all reported issues and interview progression now works correctly for all interview lengths."
   - task: "Gemini AI Integration with emergentintegrations"
     implemented: true
     working: true
