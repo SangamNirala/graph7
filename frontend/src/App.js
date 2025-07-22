@@ -5,6 +5,175 @@ import './App.css';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Emotional Intelligence Dashboard Component
+const EmotionalIntelligenceDashboard = ({ eiData, showRealTime = false }) => {
+  if (!eiData) return null;
+
+  const getEmotionColor = (value) => {
+    if (value >= 0.7) return 'text-green-400';
+    if (value >= 0.5) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const getEmotionBarWidth = (value) => `${Math.round(value * 100)}%`;
+
+  return (
+    <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 mb-6">
+      <h3 className="text-xl font-bold text-white mb-4">
+        🧠 Emotional Intelligence Analysis
+        {showRealTime && <span className="text-green-400 ml-2">• Live</span>}
+      </h3>
+      
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Confidence Meter */}
+        <div className="bg-white/5 rounded-lg p-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-white font-medium">Confidence</span>
+            <span className={`font-bold ${getEmotionColor(eiData.confidence || 0)}`}>
+              {Math.round((eiData.confidence || 0) * 100)}%
+            </span>
+          </div>
+          <div className="bg-gray-700 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: getEmotionBarWidth(eiData.confidence || 0) }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Enthusiasm Meter */}
+        <div className="bg-white/5 rounded-lg p-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-white font-medium">Enthusiasm</span>
+            <span className={`font-bold ${getEmotionColor(eiData.enthusiasm || 0)}`}>
+              {Math.round((eiData.enthusiasm || 0) * 100)}%
+            </span>
+          </div>
+          <div className="bg-gray-700 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-yellow-500 to-orange-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: getEmotionBarWidth(eiData.enthusiasm || 0) }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Stress Level */}
+        <div className="bg-white/5 rounded-lg p-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-white font-medium">Stress Level</span>
+            <span className={`font-bold ${getEmotionColor(1 - (eiData.stress_level || 0))}`}>
+              {Math.round((eiData.stress_level || 0) * 100)}%
+            </span>
+          </div>
+          <div className="bg-gray-700 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-green-500 to-red-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: getEmotionBarWidth(eiData.stress_level || 0) }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Emotional Stability */}
+        <div className="bg-white/5 rounded-lg p-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-white font-medium">Emotional Stability</span>
+            <span className={`font-bold ${getEmotionColor(eiData.emotional_stability || 0)}`}>
+              {Math.round((eiData.emotional_stability || 0) * 100)}%
+            </span>
+          </div>
+          <div className="bg-gray-700 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: getEmotionBarWidth(eiData.emotional_stability || 0) }}
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Real-time insights */}
+      {showRealTime && (
+        <div className="mt-4 p-3 bg-blue-600/20 rounded-lg border border-blue-400/30">
+          <div className="flex items-center text-blue-200">
+            <span className="mr-2">💡</span>
+            <span className="text-sm">
+              {eiData.stress_level > 0.7 ? 'Take a deep breath and stay calm.' :
+               eiData.confidence < 0.3 ? 'You\'re doing great! Stay confident.' :
+               eiData.enthusiasm > 0.8 ? 'Excellent energy level!' :
+               'Maintaining good emotional balance.'}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Predictive Analytics Component  
+const PredictiveAnalyticsDashboard = ({ predictiveData }) => {
+  if (!predictiveData) return null;
+
+  const getSuccessColor = (probability) => {
+    if (probability >= 0.75) return 'text-green-400';
+    if (probability >= 0.60) return 'text-yellow-400';
+    if (probability >= 0.45) return 'text-orange-400';
+    return 'text-red-400';
+  };
+
+  const getSuccessIcon = (probability) => {
+    if (probability >= 0.75) return '🚀';
+    if (probability >= 0.60) return '📈';
+    if (probability >= 0.45) return '⚖️';
+    return '📉';
+  };
+
+  return (
+    <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 mb-6">
+      <h3 className="text-xl font-bold text-white mb-4">🔮 Predictive Analytics</h3>
+      
+      <div className="text-center mb-6">
+        <div className="text-6xl mb-2">{getSuccessIcon(predictiveData.success_probability)}</div>
+        <div className={`text-3xl font-bold ${getSuccessColor(predictiveData.success_probability)} mb-2`}>
+          {Math.round(predictiveData.success_probability * 100)}%
+        </div>
+        <div className="text-lg text-white">{predictiveData.prediction}</div>
+        <div className="text-sm text-gray-300 mt-2">{predictiveData.recommendation}</div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Score Breakdown */}
+        <div className="bg-white/5 rounded-lg p-4">
+          <h4 className="font-semibold text-white mb-3">Score Breakdown</h4>
+          {Object.entries(predictiveData.score_breakdown || {}).map(([key, value]) => (
+            <div key={key} className="flex justify-between items-center mb-2">
+              <span className="text-gray-300 capitalize">{key.replace('_', ' ')}</span>
+              <span className="text-white font-bold">{Math.round(value * 100)}%</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Strengths & Improvements */}
+        <div className="bg-white/5 rounded-lg p-4">
+          <h4 className="font-semibold text-white mb-3">Key Insights</h4>
+          
+          <div className="mb-4">
+            <div className="text-green-400 font-medium mb-2">🟢 Strengths</div>
+            {(predictiveData.key_strengths || []).map((strength, index) => (
+              <div key={index} className="text-sm text-gray-300 ml-4">• {strength}</div>
+            ))}
+          </div>
+
+          <div>
+            <div className="text-orange-400 font-medium mb-2">🔶 Areas for Growth</div>
+            {(predictiveData.improvement_areas || []).map((area, index) => (
+              <div key={index} className="text-sm text-gray-300 ml-4">• {area}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Voice Recording Hook
 const useVoiceRecorder = (onRecordingComplete) => {
   const { status, startRecording, stopRecording, mediaBlobUrl } = useReactMediaRecorder({
