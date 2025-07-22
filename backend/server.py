@@ -1803,9 +1803,14 @@ async def send_interview_message(request: InterviewMessageRequest):
         
         response_data = {
             "completed": False,
-            "next_question": next_question,
+            "next_question": adaptive_response,
             "question_number": next_q_num + 1,
-            "total_questions": len(questions)
+            "total_questions": len(questions),
+            "emotional_insight": {
+                "confidence_level": confidence_level,
+                "enthusiasm": ei_analysis["emotional_intelligence"]["enthusiasm"],
+                "stress_indicators": stress_level < 0.3
+            }
         }
         
         # Generate TTS for voice mode
