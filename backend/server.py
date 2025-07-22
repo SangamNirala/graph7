@@ -30,10 +30,12 @@ import gridfs
 
 # Import libraries for sentiment analysis and emotional intelligence
 import librosa
+import numpy as np
 import torch
 import transformers
 from transformers import pipeline
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from textstat import flesch_reading_ease
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
