@@ -1310,8 +1310,29 @@ const InterviewSession = ({ setCurrentPage }) => {
       if (response.ok) {
         const data = await response.json();
         
+        // NEW: Update emotional intelligence from response
+        if (data.emotional_insight) {
+          setCurrentEI(data.emotional_insight);
+          setEIHistory(prev => [...prev, {
+            ...data.emotional_insight,
+            timestamp: new Date(),
+            questionNumber: data.question_number || interviewData.questionNumber
+          }]);
+        }
+        
         if (data.completed) {
           setCompleted(true);
+          
+          // NEW: Store final results if available
+          if (data.key_insights) {
+            setFinalResults({
+              success_probability: data.success_probability,
+              prediction: data.key_insights.prediction,
+              emotional_intelligence: data.key_insights.emotional_intelligence,
+              strengths: data.key_insights.strengths
+            });
+          }
+          
           setMessages(prev => [...prev, {
             type: 'ai',
             content: data.message,
