@@ -764,8 +764,12 @@ class InterviewAI:
             "analysis": response
         }
     
-    async def evaluate_answer(self, question: str, answer: str, question_type: str) -> Dict[str, Any]:
-        system_message = f"""You are an expert interview evaluator. Evaluate the candidate's answer to this {question_type} question.
+    async def evaluate_answer(self, question: str, answer: str, question_type: str, unbiased_prompt: str = None) -> Dict[str, Any]:
+        # Use unbiased prompt if provided, otherwise use standard prompt
+        if unbiased_prompt:
+            system_message = unbiased_prompt
+        else:
+            system_message = f"""You are an expert interview evaluator. Evaluate the candidate's answer to this {question_type} question.
 
         Question: {question}
         Answer: {answer}
