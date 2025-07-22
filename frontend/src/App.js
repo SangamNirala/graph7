@@ -1211,6 +1211,9 @@ const InterviewSession = ({ setCurrentPage }) => {
   const [interviewData, setInterviewData] = useState(null);
   const [completed, setCompleted] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [currentEI, setCurrentEI] = useState(null); // NEW: Current emotional intelligence data
+  const [eiHistory, setEIHistory] = useState([]); // NEW: EI history tracking
+  const [finalResults, setFinalResults] = useState(null); // NEW: Final assessment results
   const messagesEndRef = useRef(null);
 
   const handleRecordingComplete = async (audioBlob) => {
@@ -1230,6 +1233,17 @@ const InterviewSession = ({ setCurrentPage }) => {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // NEW: Update emotional intelligence from voice analysis
+        if (data.emotional_intelligence) {
+          setCurrentEI(data.emotional_intelligence);
+          setEIHistory(prev => [...prev, {
+            ...data.emotional_intelligence,
+            timestamp: new Date(),
+            questionNumber: interviewData.questionNumber
+          }]);
+        }
+        
         // Use the transcribed text as the answer
         handleSendMessage(data.transcript);
       } else {
