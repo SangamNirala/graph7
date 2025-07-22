@@ -18,8 +18,8 @@ import base64
 import tempfile
 from typing import Dict, Any, Optional
 
-# Backend URL - using localhost for testing since external URL has issues
-BASE_URL = "http://localhost:8001/api"
+# Backend URL - using the production URL from frontend .env
+BASE_URL = "https://80e78944-da09-4541-8bc2-91b40efae9d1.preview.emergentagent.com/api"
 
 class InterviewAgentTester:
     def __init__(self):
