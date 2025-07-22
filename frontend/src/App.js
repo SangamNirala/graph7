@@ -702,81 +702,80 @@ const AdminDashboard = ({ setCurrentPage }) => {
             </div>
           </div>
         )}
-                />
-              </div>
 
-              <div>
-                <label className="block text-white font-medium mb-2">
-                  Candidate Resume (PDF, Word, or TXT file)
-                </label>
-                <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-3 mb-2">
-                  <p className="text-blue-200 text-sm">
-                    ✅ <strong>Supported formats:</strong> PDF, DOC, DOCX, TXT files
-                  </p>
-                </div>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.txt"
-                  onChange={handleFileChange}
-                  className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-                  required
-                />
-                {resumeFile && (
-                  <div className="mt-2 text-sm text-green-200">
-                    📎 Selected: {resumeFile.name} ({(resumeFile.size / 1024).toFixed(1)} KB)
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
-              >
-                {loading ? 'Processing Resume & Generating Token...' : 'Generate Interview Token'}
-              </button>
-            </form>
-
-            {generatedToken && (
-              <div className="mt-8 space-y-4">
-                <div className="p-6 bg-green-600/20 border border-green-500/30 rounded-lg">
-                  <h3 className="text-xl font-bold text-green-200 mb-2">✅ Token Generated Successfully!</h3>
-                  <div className="bg-black/30 rounded-lg p-4 font-mono text-lg text-green-200">
-                    {generatedToken}
-                  </div>
-                  <p className="text-green-200 mt-2 text-sm">
-                    🎤 Provide this token to the candidate to start their voice interview.
-                  </p>
-                </div>
-                
-                {resumePreview && (
-                  <div className="p-6 bg-blue-600/20 border border-blue-500/30 rounded-lg">
-                    <h3 className="text-xl font-bold text-blue-200 mb-2">📄 Resume Preview</h3>
-                    <div className="bg-black/30 rounded-lg p-4 text-sm text-blue-200 max-h-32 overflow-y-auto">
-                      {resumePreview}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+        {/* Comparison Tab */}
+        {activeTab === 'comparison' && comparisonResults.length > 0 && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <h2 className="text-2xl font-bold text-white mb-6">⚖️ Candidate Comparison</h2>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/20">
+                    <th className="text-left text-white p-3">Candidate</th>
+                    <th className="text-center text-white p-3">Overall Score</th>
+                    <th className="text-center text-white p-3">Technical</th>
+                    <th className="text-center text-white p-3">Behavioral</th>
+                    <th className="text-left text-white p-3">Key Strengths</th>
+                    <th className="text-left text-white p-3">Areas for Improvement</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comparisonResults.map((candidate) => (
+                    <tr key={candidate.token} className="border-b border-white/10">
+                      <td className="p-3">
+                        <div className="text-white font-semibold">{candidate.candidate_name}</div>
+                        <div className="text-sm text-gray-300">{candidate.job_title}</div>
+                      </td>
+                      <td className="text-center p-3">
+                        <div className="text-2xl font-bold text-white">{candidate.overall_score}/100</div>
+                      </td>
+                      <td className="text-center p-3">
+                        <div className="text-xl font-bold text-blue-400">{candidate.technical_score}/100</div>
+                      </td>
+                      <td className="text-center p-3">
+                        <div className="text-xl font-bold text-green-400">{candidate.behavioral_score}/100</div>
+                      </td>
+                      <td className="p-3">
+                        <ul className="text-sm text-green-200">
+                          {candidate.key_strengths?.slice(0, 3).map((strength, idx) => (
+                            <li key={idx}>• {strength}</li>
+                          ))}
+                        </ul>
+                      </td>
+                      <td className="p-3">
+                        <ul className="text-sm text-yellow-200">
+                          {candidate.areas_for_improvement?.slice(0, 3).map((area, idx) => (
+                            <li key={idx}>• {area}</li>
+                          ))}
+                        </ul>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {/* Reports Tab */}
         {activeTab === 'reports' && (
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-6">🎤 Voice Interview Reports</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">📊 Assessment Reports</h2>
             
             <div className="space-y-4">
               {reports.length === 0 ? (
-                <p className="text-gray-300 text-center py-8">No voice interview reports available yet.</p>
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-4">📋 No assessment reports available yet</div>
+                  <p className="text-gray-300">Reports will appear here after candidates complete their interviews</p>
+                </div>
               ) : (
                 reports.map((report) => (
                   <div key={report.id} className="bg-white/10 rounded-lg p-6 border border-white/20">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h3 className="text-xl font-bold text-white flex items-center">
-                          🎤 {report.candidate_name}
+                          🎯 {report.candidate_name}
                         </h3>
                         <p className="text-gray-300">{report.job_title}</p>
                         <p className="text-sm text-gray-400">
