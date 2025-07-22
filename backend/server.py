@@ -633,8 +633,8 @@ async def admin_login(request: AdminLoginRequest):
         raise HTTPException(status_code=401, detail="Invalid password")
     return {"success": True, "message": "Admin authenticated successfully"}
 
-# Enhanced Admin Routes
-@api_router.post("/admin/upload-job-enhanced")
+# Legacy Admin Route (for backward compatibility)
+@api_router.post("/admin/upload-job")
 async def upload_job_enhanced(
     job_title: str = Form(...),
     job_description: str = Form(...),
