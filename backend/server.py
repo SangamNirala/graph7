@@ -858,11 +858,13 @@ class InterviewAI:
             recommendations="Continue developing relevant skills and gain more practical experience. Focus on areas where improvement was noted."
         )
 
-# Voice Processing Class
+# Voice Processing Class - Updated for Web Speech API
 class VoiceProcessor:
     def __init__(self):
-        self.tts_client = tts_client
-        self.stt_client = stt_client
+        # Web Speech API doesn't require server-side clients
+        # TTS is handled on the frontend
+        self.use_web_speech = True
+        logging.info("VoiceProcessor initialized for Web Speech API")
     
     def clean_text_for_speech(self, text: str) -> str:
         """Clean text for better TTS pronunciation by removing formatting characters"""
