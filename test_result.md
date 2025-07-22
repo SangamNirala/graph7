@@ -102,7 +102,17 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: AI-Powered Voice Interview Agent - Enhanced with multi-format resume support (PDF/Word/TXT) and voice interview capabilities using Google Cloud TTS/STT. Features include female AI voice questions, voice answer recording, real-time transcription, and comprehensive audio/text reporting.
+user_problem_statement: AI-Powered Voice Interview Agent - Enhanced with multi-format resume support (PDF/Word/TXT), voice interview capabilities using Google Cloud TTS/STT, and cutting-edge 2025 AI improvements including real-time sentiment analysis, predictive analytics, enhanced personalization, and advanced bias reduction. Features include female AI voice questions, voice answer recording, real-time transcription, comprehensive audio/text reporting, emotional intelligence assessment, adaptive questioning, and ML-powered performance prediction.
+
+ENHANCEMENT PLAN - 2025 AI IMPROVEMENTS:
+1. Real-Time Sentiment & Emotional Analysis - Voice tone analysis, confidence/stress detection, emotional intelligence scoring
+2. Advanced NLP & Context Awareness - Better context understanding, adaptive follow-ups, industry language adaptation  
+3. Predictive Analytics & Performance Scoring - ML success prediction, historical pattern recognition, hiring correlation
+4. Enhanced Personalization - Dynamic difficulty adjustment, adaptive questioning, personalized feedback
+5. Improved Bias Reduction - Advanced bias detection, anonymized scoring, diversity-aware recommendations
+6. Advanced Assessment Metrics - Communication effectiveness, problem-solving analysis, cultural fit prediction
+7. Enhanced User Experience - Progress indicators, difficulty rating, post-interview reflection
+8. Advanced Analytics Dashboard - Predictive success rates, bias reports, performance trends
 
 backend:
   - task: "Multi-Format Resume Parsing (PDF/Word/TXT)"
