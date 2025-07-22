@@ -927,21 +927,22 @@ const AdminDashboard = ({ setCurrentPage }) => {
           </div>
         )}
 
-        {/* Reports Tab */}
+        {/* Enhanced Reports Tab with AI Insights */}
         {activeTab === 'reports' && (
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-6">📊 Assessment Reports</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">📊 Enhanced AI Assessment Reports</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               {reports.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="text-gray-400 mb-4">📋 No assessment reports available yet</div>
-                  <p className="text-gray-300">Reports will appear here after candidates complete their interviews</p>
+                  <p className="text-gray-300">Enhanced reports with emotional intelligence analysis will appear here after candidates complete their interviews</p>
                 </div>
               ) : (
                 reports.map((report) => (
                   <div key={report.id} className="bg-white/10 rounded-lg p-6 border border-white/20">
-                    <div className="flex justify-between items-start mb-4">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-6">
                       <div>
                         <h3 className="text-xl font-bold text-white flex items-center">
                           🎯 {report.candidate_name}
@@ -956,28 +957,116 @@ const AdminDashboard = ({ setCurrentPage }) => {
                           {report.overall_score}/100
                         </div>
                         <div className="text-sm text-gray-300">Overall Score</div>
+                        {/* NEW: Success Probability */}
+                        {report.predictive_analytics && (
+                          <div className="mt-2 px-3 py-1 rounded-full text-xs bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-purple-200 border border-purple-500/30">
+                            {Math.round(report.predictive_analytics.success_probability * 100)}% Success Probability
+                          </div>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <div className="text-sm text-gray-300">Technical Score</div>
+                    {/* Enhanced Scores Grid */}
+                    <div className="grid md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Technical</div>
                         <div className="text-2xl font-bold text-blue-400">
                           {report.technical_score}/100
                         </div>
                       </div>
-                      <div>
-                        <div className="text-sm text-gray-300">Behavioral Score</div>
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Behavioral</div>
                         <div className="text-2xl font-bold text-green-400">
                           {report.behavioral_score}/100
                         </div>
                       </div>
+                      {/* NEW: Emotional Intelligence Score */}
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Emotional IQ</div>
+                        <div className="text-2xl font-bold text-purple-400">
+                          {report.emotional_intelligence_metrics ? 
+                            Math.round((
+                              report.emotional_intelligence_metrics.enthusiasm +
+                              report.emotional_intelligence_metrics.confidence +
+                              report.emotional_intelligence_metrics.emotional_stability +
+                              (1 - report.emotional_intelligence_metrics.stress_level)
+                            ) * 25) : 'N/A'}
+                        </div>
+                      </div>
+                      {/* NEW: Communication Score */}
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Communication</div>
+                        <div className="text-2xl font-bold text-orange-400">
+                          {report.communication_effectiveness ? 
+                            Math.round(report.communication_effectiveness * 100) : 'N/A'}
+                        </div>
+                      </div>
                     </div>
+
+                    {/* NEW: Emotional Intelligence Dashboard for Admin */}
+                    {report.emotional_intelligence_metrics && (
+                      <div className="mb-6">
+                        <EmotionalIntelligenceDashboard 
+                          eiData={report.emotional_intelligence_metrics} 
+                          showRealTime={false} 
+                        />
+                      </div>
+                    )}
+
+                    {/* NEW: Predictive Analytics Results */}
+                    {report.predictive_analytics && (
+                      <div className="mb-6">
+                        <PredictiveAnalyticsDashboard 
+                          predictiveData={report.predictive_analytics} 
+                        />
+                      </div>
+                    )}
+
+                    {/* NEW: Bias Analysis */}
+                    {report.bias_analysis && (
+                      <div className="bg-white/5 rounded-lg p-4 mb-4">
+                        <h4 className="font-semibold text-white mb-2 flex items-center">
+                          ⚖️ Bias Analysis
+                        </h4>
+                        <div className="grid md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-300">Evaluations Checked:</span>
+                            <span className="text-white ml-2">{report.bias_analysis.evaluations_checked}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-300">Bias Detected:</span>
+                            <span className={`ml-2 ${report.bias_analysis.bias_detected ? 'text-yellow-400' : 'text-green-400'}`}>
+                              {report.bias_analysis.bias_detected ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-300">Bias Score:</span>
+                            <span className="text-white ml-2">
+                              {Math.round(report.bias_analysis.bias_score * 100)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     
+                    {/* Traditional Feedback */}
                     <div className="text-sm text-gray-300">
                       <strong>Overall Feedback:</strong>
                       <p className="mt-1 text-white">{report.overall_feedback}</p>
                     </div>
+
+                    {/* NEW: AI Recommendation */}
+                    {report.predictive_analytics?.recommendation && (
+                      <div className="mt-4 p-4 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-lg border border-indigo-500/30">
+                        <div className="flex items-start">
+                          <span className="text-2xl mr-3">🤖</span>
+                          <div>
+                            <div className="font-semibold text-indigo-200 mb-1">AI Recommendation</div>
+                            <div className="text-indigo-100 text-sm">{report.predictive_analytics.recommendation}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
