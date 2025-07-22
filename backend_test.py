@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend Testing for AI-Powered Interview Agent
-Tests the complete interview flow end-to-end including:
-- Admin authentication and file upload
-- Multi-format resume parsing (PDF/Word/TXT)
-- Google Cloud TTS/STT integration
-- Voice interview session management
-- Token validation and interview start
-- Multi-turn interview conversation
-- Assessment generation and reporting
+Comprehensive Backend Testing for Elite AI Interview Platform
+Tests the enhanced backend features including:
+- Enhanced Admin APIs with role archetypes and coding challenges
+- Interactive Modules (Coding Challenges, SJT Tests)
+- Enhanced Interview Flow with practice rounds and question rephrasing
+- Advanced AI Features with bias mitigation and multi-vector scoring
+- Candidate Pipeline Management and Comparison Tools
+- Backward Compatibility with legacy endpoints
 """
 
 import requests
