@@ -1837,6 +1837,392 @@ async def send_interview_message(request: InterviewMessageRequest):
         
         return response_data
 
+# Advanced Video Analysis Endpoint
+@api_router.post("/analysis/video-frame")
+async def analyze_video_frame(request: dict):
+    """
+    Analyze a video frame for facial expressions, emotions, and engagement
+    Expected request: {"frame_data": "base64_encoded_frame", "session_id": "session_uuid"}
+    """
+    try:
+        frame_data = request.get("frame_data")
+        session_id = request.get("session_id")
+        
+        if not frame_data:
+            raise HTTPException(status_code=400, detail="No frame data provided")
+        
+        # Analyze the frame using emotion analyzer
+        analysis_result = emotion_analyzer.process_video_stream(frame_data)
+        
+        if analysis_result is None:
+            return {"analysis": None, "message": "No face detected in frame"}
+        
+        # Store analysis in database if session_id provided
+        if session_id:
+            try:
+                await db.video_analysis.insert_one({
+                    "session_id": session_id,
+                    "analysis": analysis_result,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+            except Exception as e:
+                logging.error(f"Failed to store video analysis: {e}")
+        
+        return {
+            "analysis": analysis_result,
+            "status": "success"
+        }
+        
+    except Exception as e:
+        logging.error(f"Video analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Video analysis failed: {str(e)}")
+
+# Advanced Audio Analysis Endpoint
+@api_router.post("/analysis/audio-stream")
+async def analyze_audio_stream(audio_file: UploadFile = File(...), session_id: str = Form(...)):
+    """
+    Analyze audio for speech patterns, emotion, and communication quality
+    """
+    try:
+        if not audio_file.content_type.startswith('audio/'):
+            raise HTTPException(status_code=400, detail="File must be audio format")
+        
+        # Read audio data
+        audio_data = await audio_file.read()
+        
+        # Analyze the audio using speech analyzer
+        analysis_result = speech_analyzer.process_audio_stream(audio_data)
+        
+        if analysis_result is None:
+            return {"analysis": None, "message": "Audio analysis failed"}
+        
+        # Store analysis in database
+        try:
+            await db.audio_analysis.insert_one({
+                "session_id": session_id,
+                "analysis": analysis_result,
+                "filename": audio_file.filename,
+                "timestamp": datetime.utcnow().isoformat()
+            })
+        except Exception as e:
+            logging.error(f"Failed to store audio analysis: {e}")
+        
+        return {
+            "analysis": analysis_result,
+            "status": "success"
+        }
+        
+    except Exception as e:
+        logging.error(f"Audio analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Audio analysis failed: {str(e)}")
+
+# Real-time Analysis Dashboard
+@api_router.get("/analysis/session-insights/{session_id}")
+async def get_session_insights(session_id: str):
+    """
+    Get comprehensive analysis insights for a session
+    """
+    try:
+        # Get video analysis data
+        video_analyses = await db.video_analysis.find({"session_id": session_id}).to_list(None)
+        audio_analyses = await db.audio_analysis.find({"session_id": session_id}).to_list(None)
+        
+        # Calculate aggregated metrics
+        insights = {
+            "session_id": session_id,
+            "video_metrics": _aggregate_video_metrics(video_analyses),
+            "audio_metrics": _aggregate_audio_metrics(audio_analyses),
+            "combined_insights": _generate_combined_insights(video_analyses, audio_analyses),
+            "analysis_count": {
+                "video_frames": len(video_analyses),
+                "audio_clips": len(audio_analyses)
+            }
+        }
+        
+        return insights
+        
+    except Exception as e:
+        logging.error(f"Session insights error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get session insights: {str(e)}")
+
+def _aggregate_video_metrics(video_analyses: List[Dict]) -> Dict:
+    """Aggregate video analysis metrics"""
+    if not video_analyses:
+        return {}
+    
+    # Extract metrics from analyses
+    engagement_scores = []
+    attention_levels = []
+    stress_scores = []
+    emotions = {}
+    
+    for analysis in video_analyses:
+        if 'analysis' in analysis:
+            data = analysis['analysis']
+            engagement_scores.append(data.get('engagement_score', 0))
+            attention_levels.append(data.get('attention_level', 0))
+            
+            # Stress indicators
+            stress_indicators = data.get('stress_indicators', {})
+            stress_scores.append(stress_indicators.get('overall_stress', 0))
+            
+            # Emotions
+            for emotion_data in data.get('emotions', []):
+                emotion = emotion_data['emotion']
+                confidence = emotion_data['confidence']
+                if emotion not in emotions:
+                    emotions[emotion] = []
+                emotions[emotion].append(confidence)
+    
+    # Calculate averages
+    avg_engagement = sum(engagement_scores) / len(engagement_scores) if engagement_scores else 0
+    avg_attention = sum(attention_levels) / len(attention_levels) if attention_levels else 0
+    avg_stress = sum(stress_scores) / len(stress_scores) if stress_scores else 0
+    
+    # Calculate dominant emotions
+    dominant_emotions = {}
+    for emotion, confidences in emotions.items():
+        dominant_emotions[emotion] = sum(confidences) / len(confidences)
+    
+    return {
+        "average_engagement": avg_engagement,
+        "average_attention": avg_attention,
+        "average_stress": avg_stress,
+        "dominant_emotions": dominant_emotions,
+        "total_frames_analyzed": len(video_analyses)
+    }
+
+def _aggregate_audio_metrics(audio_analyses: List[Dict]) -> Dict:
+    """Aggregate audio analysis metrics"""
+    if not audio_analyses:
+        return {}
+    
+    # Extract metrics from analyses
+    confidence_levels = []
+    fluency_scores = []
+    clarity_scores = []
+    overall_qualities = []
+    speaking_rates = []
+    stress_scores = []
+    emotional_tones = {}
+    
+    for analysis in audio_analyses:
+        if 'analysis' in analysis:
+            data = analysis['analysis']
+            
+            # Speech metrics
+            speech_metrics = data.get('speech_metrics', {})
+            confidence_levels.append(speech_metrics.get('confidence_level', 0))
+            speaking_rates.append(speech_metrics.get('speaking_rate', 0))
+            
+            # Quality scores
+            fluency_scores.append(data.get('fluency_score', 0))
+            clarity_scores.append(data.get('clarity_score', 0))
+            overall_qualities.append(data.get('overall_quality', 0))
+            
+            # Stress indicators
+            stress_indicators = data.get('stress_indicators', {})
+            stress_scores.append(stress_indicators.get('overall_stress', 0))
+            
+            # Emotional tones
+            for tone_data in data.get('emotional_tones', []):
+                emotion = tone_data['emotion']
+                confidence = tone_data['confidence']
+                if emotion not in emotional_tones:
+                    emotional_tones[emotion] = []
+                emotional_tones[emotion].append(confidence)
+    
+    # Calculate averages
+    return {
+        "average_confidence": sum(confidence_levels) / len(confidence_levels) if confidence_levels else 0,
+        "average_fluency": sum(fluency_scores) / len(fluency_scores) if fluency_scores else 0,
+        "average_clarity": sum(clarity_scores) / len(clarity_scores) if clarity_scores else 0,
+        "average_quality": sum(overall_qualities) / len(overall_qualities) if overall_qualities else 0,
+        "average_speaking_rate": sum(speaking_rates) / len(speaking_rates) if speaking_rates else 0,
+        "average_stress": sum(stress_scores) / len(stress_scores) if stress_scores else 0,
+        "emotional_tones": {emotion: sum(confidences) / len(confidences) 
+                           for emotion, confidences in emotional_tones.items()},
+        "total_audio_analyzed": len(audio_analyses)
+    }
+
+def _generate_combined_insights(video_analyses: List[Dict], audio_analyses: List[Dict]) -> Dict:
+    """Generate combined insights from video and audio analysis"""
+    video_metrics = _aggregate_video_metrics(video_analyses)
+    audio_metrics = _aggregate_audio_metrics(audio_analyses)
+    
+    insights = {
+        "overall_performance": "good",  # Default
+        "key_strengths": [],
+        "areas_for_improvement": [],
+        "confidence_assessment": "moderate",
+        "stress_level": "normal",
+        "engagement_level": "moderate"
+    }
+    
+    # Determine overall performance
+    if video_metrics and audio_metrics:
+        avg_engagement = video_metrics.get('average_engagement', 0.5)
+        avg_confidence = audio_metrics.get('average_confidence', 0.5)
+        avg_quality = audio_metrics.get('average_quality', 0.5)
+        
+        overall_score = (avg_engagement + avg_confidence + avg_quality) / 3
+        
+        if overall_score >= 0.75:
+            insights["overall_performance"] = "excellent"
+        elif overall_score >= 0.6:
+            insights["overall_performance"] = "good"
+        elif overall_score >= 0.4:
+            insights["overall_performance"] = "moderate"
+        else:
+            insights["overall_performance"] = "needs_improvement"
+    
+    # Assess confidence
+    if audio_metrics:
+        avg_confidence = audio_metrics.get('average_confidence', 0.5)
+        if avg_confidence >= 0.7:
+            insights["confidence_assessment"] = "high"
+            insights["key_strengths"].append("Confident communication")
+        elif avg_confidence >= 0.4:
+            insights["confidence_assessment"] = "moderate"
+        else:
+            insights["confidence_assessment"] = "low"
+            insights["areas_for_improvement"].append("Building confidence in responses")
+    
+    # Assess stress levels
+    video_stress = video_metrics.get('average_stress', 0.5) if video_metrics else 0.5
+    audio_stress = audio_metrics.get('average_stress', 0.5) if audio_metrics else 0.5
+    combined_stress = (video_stress + audio_stress) / 2
+    
+    if combined_stress <= 0.3:
+        insights["stress_level"] = "low"
+        insights["key_strengths"].append("Calm under pressure")
+    elif combined_stress <= 0.6:
+        insights["stress_level"] = "normal"
+    else:
+        insights["stress_level"] = "high"
+        insights["areas_for_improvement"].append("Managing interview stress")
+    
+    # Assess engagement
+    if video_metrics:
+        avg_engagement = video_metrics.get('average_engagement', 0.5)
+        if avg_engagement >= 0.7:
+            insights["engagement_level"] = "high"
+            insights["key_strengths"].append("Highly engaged and attentive")
+        elif avg_engagement >= 0.4:
+            insights["engagement_level"] = "moderate"
+        else:
+            insights["engagement_level"] = "low"
+            insights["areas_for_improvement"].append("Improving engagement and attention")
+    
+    # Add communication quality insights
+    if audio_metrics:
+        avg_fluency = audio_metrics.get('average_fluency', 0.5)
+        avg_clarity = audio_metrics.get('average_clarity', 0.5)
+        
+        if avg_fluency >= 0.7:
+            insights["key_strengths"].append("Fluent communication")
+        elif avg_fluency < 0.4:
+            insights["areas_for_improvement"].append("Speaking fluency and flow")
+            
+        if avg_clarity >= 0.7:
+            insights["key_strengths"].append("Clear articulation")
+        elif avg_clarity < 0.4:
+            insights["areas_for_improvement"].append("Speech clarity and pronunciation")
+    
+    return insights
+
+# Proctoring and Anti-cheating Features
+@api_router.post("/proctoring/monitor")
+async def monitor_candidate_behavior(request: dict):
+    """
+    Monitor candidate behavior for proctoring violations
+    Expected request: {"frame_data": "base64", "session_id": "uuid", "timestamp": "iso"}
+    """
+    try:
+        frame_data = request.get("frame_data")
+        session_id = request.get("session_id")
+        
+        if not frame_data or not session_id:
+            raise HTTPException(status_code=400, detail="Missing required data")
+        
+        # Analyze frame for proctoring violations
+        analysis = emotion_analyzer.process_video_stream(frame_data)
+        
+        violations = []
+        if analysis:
+            # Check for multiple faces (potential cheating)
+            # This is a simplified check - in production, use face detection
+            attention_level = analysis.get('attention_level', 0)
+            
+            if attention_level < 0.3:
+                violations.append({
+                    "type": "low_attention",
+                    "description": "Candidate appears to be looking away frequently",
+                    "severity": "medium"
+                })
+            
+            # Check for unusual stress patterns (may indicate cheating)
+            stress_indicators = analysis.get('stress_indicators', {})
+            overall_stress = stress_indicators.get('overall_stress', 0)
+            
+            if overall_stress > 0.8:
+                violations.append({
+                    "type": "unusual_stress",
+                    "description": "Unusual stress patterns detected",
+                    "severity": "low"
+                })
+        
+        # Store proctoring data
+        proctoring_record = {
+            "session_id": session_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "violations": violations,
+            "analysis_data": analysis
+        }
+        
+        await db.proctoring_logs.insert_one(proctoring_record)
+        
+        return {
+            "violations": violations,
+            "status": "monitored",
+            "alert_level": "high" if len(violations) > 2 else "normal"
+        }
+        
+    except Exception as e:
+        logging.error(f"Proctoring error: {e}")
+        raise HTTPException(status_code=500, detail=f"Proctoring failed: {str(e)}")
+
+@api_router.get("/proctoring/session-report/{session_id}")
+async def get_proctoring_report(session_id: str):
+    """Get proctoring report for a session"""
+    try:
+        logs = await db.proctoring_logs.find({"session_id": session_id}).to_list(None)
+        
+        # Aggregate violations
+        violation_summary = {}
+        total_violations = 0
+        
+        for log in logs:
+            for violation in log.get('violations', []):
+                v_type = violation['type']
+                if v_type not in violation_summary:
+                    violation_summary[v_type] = 0
+                violation_summary[v_type] += 1
+                total_violations += 1
+        
+        return {
+            "session_id": session_id,
+            "total_violations": total_violations,
+            "violation_breakdown": violation_summary,
+            "monitoring_duration": len(logs),
+            "integrity_score": max(0, 1 - (total_violations / max(len(logs), 1))),
+            "status": "clean" if total_violations == 0 else "flagged" if total_violations > 5 else "acceptable"
+        }
+        
+    except Exception as e:
+        logging.error(f"Proctoring report error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate report: {str(e)}")
+
 # Health check
 @api_router.get("/health")
 async def health_check():
