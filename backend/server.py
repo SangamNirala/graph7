@@ -1134,7 +1134,7 @@ async def start_practice_round(request: PracticeRoundRequest):
     return {
         "session_id": practice.session_id,
         "practice_question": practice.question,
-        "audio_base64": audio_data["audio_base64"] if audio_data else None,
+        "question_text": await voice_processor.text_to_speech(practice.question),
         "message": "This is a practice round. Your answer will not be saved or scored."
     }
 
