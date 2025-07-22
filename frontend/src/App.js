@@ -1651,6 +1651,27 @@ const InterviewSession = ({ setCurrentPage }) => {
           </>
         )}
 
+        {/* Voice Control Toggle - only show in voice mode */}
+        {interviewData.voiceMode && !completed && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20 mb-4">
+            <div className="flex items-center justify-between">
+              <span className="text-white text-sm">🎤 AI Voice</span>
+              <button
+                onClick={() => {
+                  if ('speechSynthesis' in window) {
+                    if (window.speechSynthesis.speaking) {
+                      window.speechSynthesis.cancel();
+                    }
+                  }
+                }}
+                className="bg-red-500/20 hover:bg-red-500/30 text-red-200 px-3 py-1 rounded-lg text-sm border border-red-500/30 transition-colors"
+              >
+                Stop Speaking
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Messages */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-6" style={{ minHeight: '400px', maxHeight: '500px', overflowY: 'auto' }}>
           <div className="space-y-4">
