@@ -1608,6 +1608,8 @@ async def start_interview(request: InterviewStartRequest):
     session_metadata = {
         "session_id": session_id,
         "questions": questions,
+        "technical_count": technical_count,  # Store for later use in question type determination
+        "behavioral_count": behavioral_count,
         "technical_evaluations": [],
         "behavioral_evaluations": [],
         "question_audios": [],
