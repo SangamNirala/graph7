@@ -235,7 +235,7 @@ const AdminLogin = ({ setCurrentPage, setIsAdmin }) => {
   );
 };
 
-// Admin Dashboard Component
+// Enhanced Admin Dashboard Component  
 const AdminDashboard = ({ setCurrentPage }) => {
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
@@ -246,12 +246,33 @@ const AdminDashboard = ({ setCurrentPage }) => {
   const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState([]);
   const [activeTab, setActiveTab] = useState('upload');
+  
+  // Enhanced features state
+  const [includeCodingChallenge, setIncludeCodingChallenge] = useState(false);
+  const [roleArchetype, setRoleArchetype] = useState('General');
+  const [interviewFocus, setInterviewFocus] = useState('Balanced');
+  const [candidatePipeline, setCandidatePipeline] = useState([]);
+  const [selectedCandidates, setSelectedCandidates] = useState([]);
+  const [comparisonResults, setComparisonResults] = useState([]);
+
+  const roleArchetypes = [
+    'General',
+    'Software Engineer',
+    'Sales',
+    'Graduate'
+  ];
+
+  const interviewFocusOptions = [
+    'Balanced',
+    'Technical Deep-Dive',
+    'Cultural Fit', 
+    'Graduate Screening'
+  ];
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setResumeFile(file);
     
-    // Show file info
     if (file) {
       const fileType = file.name.split('.').pop().toLowerCase();
       const supportedTypes = ['pdf', 'doc', 'docx', 'txt'];
@@ -271,10 +292,14 @@ const AdminDashboard = ({ setCurrentPage }) => {
     formData.append('job_title', jobTitle);
     formData.append('job_description', jobDescription);
     formData.append('job_requirements', jobRequirements);
+    formData.append('include_coding_challenge', includeCodingChallenge);
+    formData.append('role_archetype', roleArchetype);
+    formData.append('interview_focus', interviewFocus);
     formData.append('resume_file', resumeFile);
 
     try {
-      const response = await fetch(`${API}/admin/upload-job`, {
+      // Use enhanced endpoint
+      const response = await fetch(`${API}/admin/upload-job-enhanced`, {
         method: 'POST',
         body: formData,
       });
@@ -288,8 +313,16 @@ const AdminDashboard = ({ setCurrentPage }) => {
         setJobTitle('');
         setJobDescription('');
         setJobRequirements('');
+        setIncludeCodingChallenge(false);
+        setRoleArchetype('General');
+        setInterviewFocus('Balanced');
         setResumeFile(null);
         document.querySelector('input[type="file"]').value = '';
+        
+        // Refresh pipeline
+        if (activeTab === 'pipeline') {
+          fetchCandidatePipeline();
+        }
       } else {
         const errorData = await response.json();
         alert(`Upload failed: ${errorData.detail}`);
@@ -314,9 +347,66 @@ const AdminDashboard = ({ setCurrentPage }) => {
     }
   };
 
+  const fetchCandidatePipeline = async () => {
+    try {
+      const response = await fetch(`${API}/admin/candidate-pipeline`);
+      if (response.ok) {
+        const data = await response.json();
+        setCandidatePipeline(data.pipeline || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch candidate pipeline:', err);
+    }
+  };
+
+  const handleCandidateSelection = (token) => {
+    if (selectedCandidates.includes(token)) {
+      setSelectedCandidates(selectedCandidates.filter(t => t !== token));
+    } else {
+      setSelectedCandidates([...selectedCandidates, token]);
+    }
+  };
+
+  const compareCandidates = async () => {
+    if (selectedCandidates.length < 2) {
+      alert('Please select at least 2 candidates to compare');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API}/admin/compare-candidates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ candidate_tokens: selectedCandidates }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setComparisonResults(data.comparisons || []);
+        setActiveTab('comparison');
+      }
+    } catch (err) {
+      console.error('Failed to compare candidates:', err);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Invited': return 'bg-yellow-500/20 text-yellow-200 border-yellow-500/30';
+      case 'In Progress': return 'bg-blue-500/20 text-blue-200 border-blue-500/30';
+      case 'Completed': return 'bg-green-500/20 text-green-200 border-green-500/30';
+      case 'Report Ready': return 'bg-purple-500/20 text-purple-200 border-purple-500/30';
+      default: return 'bg-gray-500/20 text-gray-200 border-gray-500/30';
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'reports') {
       fetchReports();
+    } else if (activeTab === 'pipeline') {
+      fetchCandidatePipeline();
     }
   }, [activeTab]);
 
@@ -324,7 +414,7 @@ const AdminDashboard = ({ setCurrentPage }) => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-white">🎤 Voice Interview Admin</h1>
+          <h1 className="text-4xl font-bold text-white">🎯 Elite Interview Dashboard</h1>
           <button
             onClick={() => setCurrentPage('landing')}
             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
@@ -333,7 +423,7 @@ const AdminDashboard = ({ setCurrentPage }) => {
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* Enhanced Tabs */}
         <div className="mb-8">
           <nav className="flex space-x-1 bg-white/10 backdrop-blur-lg rounded-lg p-1">
             <button
@@ -344,7 +434,17 @@ const AdminDashboard = ({ setCurrentPage }) => {
                   : 'text-gray-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              📄 Upload Job & Resume
+              🚀 Create Interview
+            </button>
+            <button
+              onClick={() => setActiveTab('pipeline')}
+              className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-300 ${
+                activeTab === 'pipeline'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              👥 Candidate Pipeline
             </button>
             <button
               onClick={() => setActiveTab('reports')}
@@ -354,27 +454,81 @@ const AdminDashboard = ({ setCurrentPage }) => {
                   : 'text-gray-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              📊 Voice Interview Reports
+              📊 Assessment Reports
             </button>
+            {comparisonResults.length > 0 && (
+              <button
+                onClick={() => setActiveTab('comparison')}
+                className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-300 ${
+                  activeTab === 'comparison'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                ⚖️ Comparison
+              </button>
+            )}
           </nav>
         </div>
 
-        {/* Upload Tab */}
+        {/* Enhanced Upload Tab */}
         {activeTab === 'upload' && (
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-6">Create New Interview Token</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">Create Enhanced Interview Token</h2>
             
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-white font-medium mb-2">Job Title</label>
-                <input
-                  type="text"
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Senior Frontend Developer"
-                  required
-                />
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-white font-medium mb-2">Job Title</label>
+                  <input
+                    type="text"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Senior Frontend Developer"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">Role Archetype</label>
+                  <select
+                    value={roleArchetype}
+                    onChange={(e) => setRoleArchetype(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {roleArchetypes.map(role => (
+                      <option key={role} value={role} className="bg-gray-800">{role}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-white font-medium mb-2">Interview Focus</label>
+                  <select
+                    value={interviewFocus}
+                    onChange={(e) => setInterviewFocus(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {interviewFocusOptions.map(focus => (
+                      <option key={focus} value={focus} className="bg-gray-800">{focus}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center text-white">
+                    <input
+                      type="checkbox"
+                      checked={includeCodingChallenge}
+                      onChange={(e) => setIncludeCodingChallenge(e.target.checked)}
+                      className="mr-2 w-5 h-5 rounded border-white/30 bg-white/20 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                    />
+                    Include Coding Challenge
+                  </label>
+                </div>
               </div>
 
               <div>
@@ -398,6 +552,156 @@ const AdminDashboard = ({ setCurrentPage }) => {
                   className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Technical skills, experience requirements..."
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-white font-medium mb-2">
+                  Resume File 
+                  <span className="text-sm text-gray-300 ml-2">(PDF, DOC, DOCX, TXT - Max 10MB)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    accept=".pdf,.doc,.docx,.txt"
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                    required
+                  />
+                </div>
+                {resumeFile && (
+                  <div className="mt-2 text-sm text-gray-300">
+                    📎 {resumeFile.name} ({(resumeFile.size / 1024 / 1024).toFixed(2)} MB)
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !resumeFile}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
+              >
+                {loading ? 'Creating Enhanced Interview...' : '🚀 Create Enhanced Interview'}
+              </button>
+            </form>
+
+            {/* Success Display */}
+            {generatedToken && (
+              <div className="mt-8 p-6 bg-green-600/20 border border-green-500/30 rounded-2xl">
+                <h3 className="text-xl font-bold text-green-200 mb-4">✅ Enhanced Interview Created Successfully!</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-green-200 mb-2"><strong>Interview Token:</strong></p>
+                    <code className="block bg-black/30 p-3 rounded text-green-300 font-mono break-all">
+                      {generatedToken}
+                    </code>
+                  </div>
+                  <div>
+                    <p className="text-green-200 mb-2"><strong>Features Enabled:</strong></p>
+                    <div className="space-y-1">
+                      <div className="text-sm text-green-300">🎯 Role: {roleArchetype}</div>
+                      <div className="text-sm text-green-300">📊 Focus: {interviewFocus}</div>
+                      <div className="text-sm text-green-300">
+                        💻 Coding: {includeCodingChallenge ? 'Enabled' : 'Disabled'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {resumePreview && (
+                  <div className="mt-4">
+                    <p className="text-green-200 mb-2"><strong>Resume Preview:</strong></p>
+                    <div className="bg-black/30 p-3 rounded text-green-300 text-sm max-h-32 overflow-y-auto">
+                      {resumePreview}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Candidate Pipeline Tab */}
+        {activeTab === 'pipeline' && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">👥 Candidate Pipeline</h2>
+              <div className="flex space-x-3">
+                {selectedCandidates.length >= 2 && (
+                  <button
+                    onClick={compareCandidates}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
+                  >
+                    ⚖️ Compare Selected ({selectedCandidates.length})
+                  </button>
+                )}
+                <button
+                  onClick={fetchCandidatePipeline}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
+                >
+                  🔄 Refresh
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {candidatePipeline.map((candidate) => (
+                <div key={candidate.token} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedCandidates.includes(candidate.token)}
+                        onChange={() => handleCandidateSelection(candidate.token)}
+                        disabled={candidate.status !== 'Report Ready'}
+                        className="w-5 h-5 rounded border-white/30 bg-white/20 text-blue-600"
+                      />
+                      <div>
+                        <h3 className="text-white font-semibold">
+                          {candidate.candidate_name} - {candidate.job_title}
+                        </h3>
+                        <div className="flex items-center space-x-4 mt-1">
+                          <span className={`px-3 py-1 rounded-full text-xs border ${getStatusColor(candidate.status)}`}>
+                            {candidate.status}
+                          </span>
+                          <span className="text-gray-300 text-sm">
+                            {candidate.interview_type}
+                          </span>
+                          {candidate.features && (
+                            <div className="flex space-x-2">
+                              {candidate.features.coding_challenge && (
+                                <span className="bg-blue-500/20 text-blue-200 px-2 py-1 rounded text-xs">💻 Coding</span>
+                              )}
+                              <span className="bg-green-500/20 text-green-200 px-2 py-1 rounded text-xs">
+                                🎯 {candidate.features.role_archetype}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {candidate.overall_score && (
+                        <div className="text-2xl font-bold text-white mb-1">
+                          {candidate.overall_score}/100
+                        </div>
+                      )}
+                      <div className="text-sm text-gray-300">
+                        {new Date(candidate.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {candidatePipeline.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-4">📭 No candidates yet</div>
+                  <p className="text-gray-300">Create interview tokens to see candidates here</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
                 />
               </div>
 
