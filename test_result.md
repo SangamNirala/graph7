@@ -132,9 +132,9 @@ backend:
 
   - task: "Google Cloud Text-to-Speech Integration"
     implemented: true
-    working: true
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: false
     status_history:
@@ -144,6 +144,9 @@ backend:
         -working: true
         -agent: "testing"
         -comment: "✅ TESTED: Google Cloud TTS integration working perfectly. Successfully generated 60KB audio file from text input with female voice configuration. Base64 encoding working for real-time playback. Audio files properly stored in GridFS with unique file IDs. Service account authentication functioning correctly."
+        -working: false
+        -agent: "testing"
+        -comment: "❌ CRITICAL ISSUE IDENTIFIED: Google Cloud TTS authentication is failing with '401 Request had invalid authentication credentials' error. TTS endpoints are implemented correctly and accessible, but Google Cloud service cannot authenticate with provided credentials. This is the root cause of users not hearing AI voice - voice interviews work but produce no audio. Text cleaning for backticks is working correctly. REQUIRES: Fix Google Cloud TTS authentication credentials to restore audio generation."
 
   - task: "Google Cloud Speech-to-Text Integration"
     implemented: true
