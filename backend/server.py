@@ -986,8 +986,8 @@ async def upload_job_enhanced(
     )
     await db.enhanced_tokens.insert_one(token_data.dict())
     
-    # Estimate duration based on features
-    base_duration = 30
+    # Estimate duration based on features and question count
+    base_duration = max_questions * 3  # 3 minutes per question average
     if include_coding_challenge:
         base_duration += 15
     
@@ -999,7 +999,10 @@ async def upload_job_enhanced(
         "features": {
             "coding_challenge": include_coding_challenge,
             "role_archetype": role_archetype,
-            "interview_focus": interview_focus
+            "interview_focus": interview_focus,
+            "min_questions": min_questions,
+            "max_questions": max_questions,
+            "estimated_duration": base_duration
         },
         "message": f"Enhanced job and resume ({resume_file.filename}) uploaded successfully."
     }
