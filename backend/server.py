@@ -1596,7 +1596,7 @@ async def start_interview(request: InterviewStartRequest):
         voice_mode=request.voice_mode or False,
         messages=[{
             "type": "system",
-            "content": f"Welcome {request.candidate_name}! I'm your AI interviewer today. We'll have {len(questions)} questions - {(len(questions) + 1) // 2} technical and {len(questions) - (len(questions) + 1) // 2} behavioral. Let's begin!",
+            "content": f"Welcome {request.candidate_name}! I'm your AI interviewer today. We'll have {total_questions} questions - {technical_count} technical and {behavioral_count} behavioral. Let's begin!",
             "timestamp": datetime.utcnow().isoformat()
         }],
         current_question=0
