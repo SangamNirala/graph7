@@ -1159,7 +1159,7 @@ async def rephrase_question(request: RephraseQuestionRequest):
         
         return {
             "rephrased_question": rephrased,
-            "audio_base64": audio_data["audio_base64"] if audio_data else None
+            "question_text": await voice_processor.text_to_speech(rephrased)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
