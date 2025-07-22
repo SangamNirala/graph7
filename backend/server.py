@@ -133,6 +133,9 @@ class EnhancedCandidateToken(BaseModel):
     role_archetype: str = "General"  # Software Engineer, Sales, Graduate, etc.
     interview_focus: str = "Balanced"  # Technical Deep-Dive, Cultural Fit, Graduate Screening
     estimated_duration: int = 30  # minutes
+    # Question limits
+    min_questions: int = 8  # Minimum questions to be asked
+    max_questions: int = 12  # Maximum questions that can be asked
 
 # Practice Round model
 class PracticeRound(BaseModel):
