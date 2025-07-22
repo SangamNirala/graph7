@@ -1402,24 +1402,23 @@ const InterviewStart = ({ setCurrentPage, token, validatedJob }) => {
   );
 };
 
-// Interview Session Component
+// Interview Session Component - Step-by-Step Single Question Interface
 const InterviewSession = ({ setCurrentPage }) => {
-  const [messages, setMessages] = useState([]);
-  const [currentAnswer, setCurrentAnswer] = useState('');
+  const [currentQuestionData, setCurrentQuestionData] = useState(null);
+  const [userAnswer, setUserAnswer] = useState('');
   const [loading, setLoading] = useState(false);
   const [interviewData, setInterviewData] = useState(null);
   const [completed, setCompleted] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [currentEI, setCurrentEI] = useState(null); // NEW: Current emotional intelligence data
-  const [eiHistory, setEIHistory] = useState([]); // NEW: EI history tracking
-  const [finalResults, setFinalResults] = useState(null); // NEW: Final assessment results
-  const messagesEndRef = useRef(null);
+  const [isAnswering, setIsAnswering] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [currentEI, setCurrentEI] = useState(null);
+  const [eiHistory, setEIHistory] = useState([]);
+  const [finalResults, setFinalResults] = useState(null);
 
-  const handleRecordingComplete = async (audioBlob) => {
-    if (!audioBlob) return;
-
+  // Voice recording
+  const handleVoiceRecording = async (audioBlob) => {
+    setIsAnswering(true);
     try {
-      // Send audio to backend for processing
       const formData = new FormData();
       formData.append('session_id', interviewData.sessionId);
       formData.append('question_number', interviewData.questionNumber);
@@ -1433,7 +1432,6 @@ const InterviewSession = ({ setCurrentPage }) => {
       if (response.ok) {
         const data = await response.json();
         
-        // NEW: Update emotional intelligence from voice analysis
         if (data.emotional_intelligence) {
           setCurrentEI(data.emotional_intelligence);
           setEIHistory(prev => [...prev, {
@@ -1443,57 +1441,17 @@ const InterviewSession = ({ setCurrentPage }) => {
           }]);
         }
         
-        // Use the transcribed text as the answer
-        handleSendMessage(data.transcript);
-      } else {
-        console.error('Voice processing failed');
+        await handleAnswerSubmission(data.transcript);
       }
-    } catch (err) {
-      console.error('Failed to process voice answer:', err);
+    } catch (error) {
+      console.error('Voice processing error:', error);
+    } finally {
+      setIsAnswering(false);
     }
   };
 
-  const { status, startRecording, stopRecording, mediaBlobUrl } = useVoiceRecorder(handleRecordingComplete);
-
-  useEffect(() => {
-    const savedData = localStorage.getItem('interviewData');
-    if (savedData) {
-      const data = JSON.parse(savedData);
-      setInterviewData(data);
-      
-      const initialMessages = [
-        {
-          type: 'ai',
-          content: `Welcome ${data.candidateName}! I'm your AI interviewer today.`,
-          timestamp: new Date().toLocaleTimeString(),
-          audio: data.welcomeAudio
-        },
-        {
-          type: 'ai',
-          content: data.currentQuestion,
-          timestamp: new Date().toLocaleTimeString(),
-          questionNumber: data.questionNumber,
-          audio: data.questionAudio
-        }
-      ];
-      
-      setMessages(initialMessages);
-    }
-  }, []);
-
-  const handleSendMessage = async (messageText = currentAnswer) => {
-    if (!messageText.trim() || loading) return;
-
-    setLoading(true);
-
-    const userMessage = {
-      type: 'user',
-      content: messageText,
-      timestamp: new Date().toLocaleTimeString()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-
+  const handleAnswerSubmission = async (answerText) => {
+    setIsAnswering(true);
     try {
       const response = await fetch(`${API}/candidate/send-message`, {
         method: 'POST',
@@ -1502,14 +1460,13 @@ const InterviewSession = ({ setCurrentPage }) => {
         },
         body: JSON.stringify({ 
           token: interviewData.token, 
-          message: messageText 
+          message: answerText 
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
         
-        // NEW: Update emotional intelligence from response
         if (data.emotional_insight) {
           setCurrentEI(data.emotional_insight);
           setEIHistory(prev => [...prev, {
@@ -1522,7 +1479,6 @@ const InterviewSession = ({ setCurrentPage }) => {
         if (data.completed) {
           setCompleted(true);
           
-          // NEW: Store final results if available
           if (data.key_insights) {
             setFinalResults({
               success_probability: data.success_probability,
@@ -1531,131 +1487,234 @@ const InterviewSession = ({ setCurrentPage }) => {
               strengths: data.key_insights.strengths
             });
           }
-          
-          setMessages(prev => [...prev, {
-            type: 'ai',
-            content: data.message,
-            timestamp: new Date().toLocaleTimeString()
-          }]);
         } else {
-          const aiMessage = {
-            type: 'ai',
-            content: data.next_question,
-            timestamp: new Date().toLocaleTimeString(),
-            questionNumber: data.question_number,
-            audio: data.question_audio
-          };
-          
-          setMessages(prev => [...prev, aiMessage]);
-          
+          // Update for next question
           setInterviewData(prev => ({
             ...prev,
             questionNumber: data.question_number,
-            totalQuestions: data.total_questions
+            currentQuestion: data.next_question
           }));
+          
+          setCurrentQuestionData({
+            questionNumber: data.question_number,
+            question: data.next_question,
+            questionText: data.question_text
+          });
         }
+        
+        setUserAnswer('');
+        setShowWelcome(false);
+        
+      } else {
+        console.error('Failed to send message');
       }
-    } catch (err) {
-      console.error('Failed to send message:', err);
+    } catch (error) {
+      console.error('Error sending message:', error);
     } finally {
-      setCurrentAnswer('');
-      setLoading(false);
+      setIsAnswering(false);
     }
   };
 
-  const handleVoiceAnswer = () => {
-    if (status === 'recording') {
-      stopRecording();
-      setIsRecording(false);
-    } else {
-      startRecording();
-      setIsRecording(true);
+  const handleTextSubmit = (e) => {
+    e.preventDefault();
+    if (userAnswer.trim()) {
+      handleAnswerSubmission(userAnswer.trim());
     }
   };
 
+  // Initialize from localStorage
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const savedData = localStorage.getItem('interviewData');
+    if (savedData) {
+      const data = JSON.parse(savedData);
+      setInterviewData(data);
+      
+      // Set initial question
+      if (!completed) {
+        setCurrentQuestionData({
+          questionNumber: data.questionNumber,
+          question: data.currentQuestion,
+          questionText: data.currentQuestion
+        });
+      }
+    }
+  }, [completed]);
+
+  // Voice recording hook
+  const { status: recordingStatus, startRecording, stopRecording } = useVoiceRecorder(handleVoiceRecording);
 
   if (!interviewData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center">
-        <div className="text-white text-xl">Loading interview...</div>
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading interview...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (completed) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 p-4">
+        <div className="max-w-4xl mx-auto py-12">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">Interview Completed!</h2>
+            <p className="text-gray-300 mb-6">
+              Thank you for completing the {interviewData.voiceMode ? 'voice' : 'text'} interview. 
+              Your responses have been recorded and will be evaluated shortly.
+            </p>
+            <button
+              onClick={() => {
+                localStorage.removeItem('interviewData');
+                setCurrentPage('landing');
+              }}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              Return to Home
+            </button>
+          </div>
+
+          {/* Final Results with Predictive Analytics */}
+          {finalResults && (
+            <>
+              <PredictiveAnalyticsDashboard predictiveData={{
+                success_probability: finalResults.success_probability,
+                prediction: finalResults.prediction,
+                recommendation: `Based on comprehensive analysis including emotional intelligence assessment`,
+                score_breakdown: {
+                  technical: 0.75,
+                  behavioral: 0.68,
+                  emotional_intelligence: (
+                    finalResults.emotional_intelligence.enthusiasm +
+                    finalResults.emotional_intelligence.confidence +
+                    finalResults.emotional_intelligence.emotional_stability +
+                    (1 - finalResults.emotional_intelligence.stress_level)
+                  ) / 4,
+                  communication: 0.72
+                },
+                key_strengths: finalResults.strengths || [],
+                improvement_areas: ["Areas for development will be provided in detailed report"]
+              }} />
+              
+              <EmotionalIntelligenceDashboard 
+                eiData={finalResults.emotional_intelligence} 
+                showRealTime={false} 
+              />
+            </>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 p-4">
+      <div className="max-w-4xl mx-auto py-8">
         {/* Header */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-white flex items-center">
-                🎤 {interviewData.candidateName}
-              </h1>
+              <h1 className="text-2xl font-bold text-white">AI Interview</h1>
               <p className="text-gray-300">{interviewData.jobTitle}</p>
             </div>
             <div className="text-right">
-              {!completed && (
-                <div className="text-sm text-gray-300">
-                  Question {interviewData.questionNumber} of {interviewData.totalQuestions}
-                </div>
-              )}
-              <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                completed 
-                  ? 'bg-green-600/20 text-green-200 border border-green-500/30'
-                  : 'bg-blue-600/20 text-blue-200 border border-blue-500/30'
-              }`}>
-                {completed ? '✅ Completed' : '🎤 Recording'}
+              <div className="text-sm text-gray-300">
+                {currentQuestionData ? `Question ${currentQuestionData.questionNumber}` : 'Welcome'} of {interviewData.totalQuestions}
+              </div>
+              <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-600/20 text-green-200 border border-green-500/30">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                {interviewData.voiceMode ? 'Voice Interview' : 'Text Interview'}
               </div>
             </div>
           </div>
         </div>
 
-        {/* NEW: Real-time Emotional Intelligence Dashboard */}
-        {currentEI && !completed && (
+        {/* Real-time Emotional Intelligence Dashboard */}
+        {currentEI && (
           <EmotionalIntelligenceDashboard 
             eiData={currentEI} 
             showRealTime={true} 
           />
         )}
 
-        {/* NEW: Final Results with Predictive Analytics */}
-        {completed && finalResults && (
-          <>
-            <PredictiveAnalyticsDashboard predictiveData={{
-              success_probability: finalResults.success_probability,
-              prediction: finalResults.prediction,
-              recommendation: `Based on comprehensive analysis including emotional intelligence assessment`,
-              score_breakdown: {
-                technical: 0.75, // These would come from actual data
-                behavioral: 0.68,
-                emotional_intelligence: (
-                  finalResults.emotional_intelligence.enthusiasm +
-                  finalResults.emotional_intelligence.confidence +
-                  finalResults.emotional_intelligence.emotional_stability +
-                  (1 - finalResults.emotional_intelligence.stress_level)
-                ) / 4,
-                communication: 0.72
-              },
-              key_strengths: finalResults.strengths || [],
-              improvement_areas: ["Areas for development will be provided in detailed report"]
-            }} />
-            
-            <EmotionalIntelligenceDashboard 
-              eiData={finalResults.emotional_intelligence} 
-              showRealTime={false} 
-            />
-          </>
+        {/* Welcome Message - Only shown initially */}
+        {showWelcome && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">Welcome to Your AI Interview!</h2>
+              <p className="text-gray-300 mb-6">
+                {interviewData.voiceMode 
+                  ? `Hello ${interviewData.candidateName}! I'm your AI interviewer. I'll ask you questions using voice, and you can respond using voice or text. Each question will be presented on a separate screen for focused attention.`
+                  : `Hello ${interviewData.candidateName}! I'm your AI interviewer today. I'll ask you ${interviewData.totalQuestions} questions about your experience and qualifications. Each question will be shown individually.`
+                }
+              </p>
+              
+              {interviewData.voiceMode && (
+                <AIVoiceSpeaker 
+                  text={`Hello ${interviewData.candidateName}! Welcome to your AI interview. I'll ask you questions using voice, and you can respond using voice or text. Each question will be presented on a separate screen for your focused attention. Let's begin with your first question.`}
+                  voiceMode={interviewData.voiceMode}
+                  onSpeechComplete={() => console.log('Welcome message spoken')}
+                />
+              )}
+              
+              <button
+                onClick={() => setShowWelcome(false)}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 rounded-lg font-medium transition-all duration-300 transform hover:scale-105"
+              >
+                Start Interview
+              </button>
+            </div>
+          </div>
         )}
 
-        {/* Voice Control Toggle - only show in voice mode */}
-        {interviewData.voiceMode && !completed && (
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20 mb-4">
+        {/* Current Question - Clean Single Question Display */}
+        {currentQuestionData && !showWelcome && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-6">
+            <div className="mb-6">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-blue-300">Question {currentQuestionData.questionNumber}</h3>
+                  <p className="text-sm text-gray-400">AI Interviewer</p>
+                </div>
+              </div>
+              
+              {/* AI Voice Speaker */}
+              {interviewData.voiceMode && (
+                <AIVoiceSpeaker 
+                  text={currentQuestionData.question} 
+                  voiceMode={interviewData.voiceMode}
+                  onSpeechComplete={() => console.log('Question spoken')}
+                />
+              )}
+              
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <p className="text-white text-lg leading-relaxed font-medium">{currentQuestionData.question}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Voice Control - only show in voice mode */}
+        {interviewData.voiceMode && !showWelcome && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20 mb-6">
             <div className="flex items-center justify-between">
-              <span className="text-white text-sm">🎤 AI Voice</span>
+              <span className="text-white text-sm">🎤 AI Voice Control</span>
               <button
                 onClick={() => {
                   if ('speechSynthesis' in window) {
@@ -1672,147 +1731,74 @@ const InterviewSession = ({ setCurrentPage }) => {
           </div>
         )}
 
-        {/* Messages */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-6" style={{ minHeight: '400px', maxHeight: '500px', overflowY: 'auto' }}>
-          <div className="space-y-4">
-            {messages.map((message, index) => (
-              <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-lg p-4 ${
-                  message.type === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white/20 text-white border border-white/30'
-                }`}>
-                  {message.questionNumber && (
-                    <div className="text-xs text-gray-300 mb-2">🎤 Question {message.questionNumber}</div>
-                  )}
-                  
-                  {/* AI Voice Speaker for non-user messages in voice mode */}
-                  {message.type !== 'user' && interviewData.voiceMode && (
-                    <AIVoiceSpeaker 
-                      text={message.content} 
-                      voiceMode={interviewData.voiceMode}
-                      onSpeechComplete={() => console.log('AI finished speaking question')}
-                    />
-                  )}
-                  
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                  {message.audio && interviewData.voiceMode && (
-                    <div className="mt-3">
-                      <AudioPlayer audioBase64={message.audio} autoPlay={true} />
-                    </div>
-                  )}
-                  <div className="text-xs opacity-70 mt-2">{message.timestamp}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Form */}
-        {!completed && (
+        {/* Answer Input - Only shown when there's a current question */}
+        {currentQuestionData && !showWelcome && (
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-            {interviewData.voiceMode ? (
-              /* Voice Mode UI */
-              <div className="space-y-4">
-                <div className="text-center">
+            <h4 className="text-white font-medium mb-4">Your Answer:</h4>
+            
+            {/* Voice Recording Section */}
+            {interviewData.voiceMode && (
+              <div className="mb-6">
+                <div className="flex flex-col items-center space-y-4">
                   <button
-                    onClick={handleVoiceAnswer}
-                    disabled={loading}
-                    className={`w-32 h-32 rounded-full text-white font-bold text-lg transition-all duration-300 shadow-lg ${
-                      isRecording 
-                        ? 'bg-red-600 hover:bg-red-700 animate-pulse'
-                        : 'bg-green-600 hover:bg-green-700'
-                    } disabled:opacity-50`}
+                    onClick={recordingStatus === 'recording' ? stopRecording : startRecording}
+                    disabled={isAnswering}
+                    className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300 transform ${
+                      recordingStatus === 'recording'
+                        ? 'bg-red-600 hover:bg-red-700 animate-pulse scale-110'
+                        : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
+                    } ${isAnswering ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {isRecording ? '🔴 STOP' : '🎤 RECORD'}
+                    {recordingStatus === 'recording' ? (
+                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                        <rect x="6" y="6" width="12" height="12" rx="2"/>
+                      </svg>
+                    ) : (
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    )}
                   </button>
-                  <p className="text-white mt-4">
-                    {isRecording 
-                      ? 'Recording your answer...'
-                      : 'Click to record your voice answer'
+                  <p className="text-center text-gray-300 text-sm">
+                    {recordingStatus === 'recording' 
+                      ? '🔴 Recording... Click to stop' 
+                      : '🎤 Click to record your answer'
                     }
                   </p>
-                  {status === 'stopped' && mediaBlobUrl && (
-                    <div className="mt-4">
-                      <p className="text-green-200 mb-2">Your recorded answer:</p>
-                      <audio src={mediaBlobUrl} controls className="mx-auto" />
-                    </div>
-                  )}
                 </div>
-                
-                {/* Fallback text option */}
-                <details className="bg-white/10 rounded-lg p-4">
-                  <summary className="text-gray-300 cursor-pointer">
-                    💬 Or type your answer instead
-                  </summary>
-                  <div className="mt-4 space-y-4">
-                    <textarea
-                      value={currentAnswer}
-                      onChange={(e) => setCurrentAnswer(e.target.value)}
-                      rows={4}
-                      className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Type your answer here..."
-                    />
-                    <button
-                      onClick={() => handleSendMessage()}
-                      disabled={loading}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 disabled:opacity-50"
-                    >
-                      {loading ? 'Sending...' : 'Send Text Answer'}
-                    </button>
-                  </div>
-                </details>
               </div>
-            ) : (
-              /* Text Mode UI */
-              <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="space-y-4">
-                <div>
-                  <label className="block text-white font-medium mb-2">Your Answer</label>
-                  <textarea
-                    value={currentAnswer}
-                    onChange={(e) => setCurrentAnswer(e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Type your answer here..."
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
-                >
-                  {loading ? 'Sending...' : 'Send Answer'}
-                </button>
-              </form>
             )}
-          </div>
-        )}
 
-        {/* Completion Message */}
-        {completed && (
-          <div className="bg-green-600/20 border border-green-500/30 rounded-2xl p-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-green-200 mb-2">🎤 Voice Interview Completed!</h3>
-              <p className="text-green-200 mb-6">
-                Thank you for your time. Your voice responses have been recorded, transcribed, and evaluated. 
-                A comprehensive report has been generated for the hiring team.
-              </p>
-              <button
-                onClick={() => {
-                  localStorage.removeItem('interviewData');
-                  setCurrentPage('landing');
-                }}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-                Return to Home
-              </button>
+            {/* Text Input Section */}
+            <div className={interviewData.voiceMode ? 'border-t border-white/20 pt-6' : ''}>
+              {interviewData.voiceMode && (
+                <p className="text-gray-400 text-sm mb-4">Or type your answer:</p>
+              )}
+              <form onSubmit={handleTextSubmit} className="space-y-4">
+                <textarea
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  placeholder="Type your answer here..."
+                  className="w-full h-32 bg-white/10 border border-white/20 rounded-lg p-4 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-none"
+                  disabled={isAnswering}
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={!userAnswer.trim() || isAnswering}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 disabled:scale-100"
+                  >
+                    {isAnswering ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </div>
+                    ) : (
+                      'Submit Answer & Next Question'
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
