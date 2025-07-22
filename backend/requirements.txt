@@ -19,7 +19,7 @@ mypy>=1.8.0
 python-jose>=3.3.0
 requests>=2.31.0
 pandas>=2.2.0
-numpy>=1.26.0
+numpy>=2.1.3
 python-multipart>=0.0.9
 jq>=1.6.0
 typer>=0.9.0
@@ -31,8 +31,13 @@ google-cloud-speech
 litellm
 lxml
 google-api-core
-# New ML and emotional intelligence dependencies
+# Advanced AI Analysis Dependencies
 librosa>=0.11.0
+opencv-python>=4.12.0
+mediapipe>=0.10.14
+tensorflow>=2.19.0
+scipy>=1.16.0
+# ML and emotional intelligence dependencies
 textstat>=0.7.7
 torch>=2.7.0
 transformers>=4.53.0
