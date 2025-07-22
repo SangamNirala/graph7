@@ -176,6 +176,35 @@ class VoiceQuestionRequest(BaseModel):
     session_id: str
     question_text: str
 
+# Enhanced request models for new features
+class EnhancedJobUploadRequest(BaseModel):
+    job_title: str
+    job_description: str
+    job_requirements: str
+    include_coding_challenge: bool = False
+    role_archetype: str = "General"
+    interview_focus: str = "Balanced"
+
+class CameraTestRequest(BaseModel):
+    token: str
+
+class PracticeRoundRequest(BaseModel):
+    token: str
+    candidate_name: str
+
+class RephraseQuestionRequest(BaseModel):
+    session_id: str
+    original_question: str
+
+class CodingChallengeSubmissionRequest(BaseModel):
+    session_id: str
+    submitted_code: str
+
+class SJTAnswerRequest(BaseModel):
+    session_id: str
+    sjt_id: str
+    selected_answer: str
+
 # Document parsing utilities
 def extract_text_from_pdf(file_content: bytes) -> str:
     try:
