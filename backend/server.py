@@ -894,40 +894,18 @@ class VoiceProcessor:
         return text
     
     async def text_to_speech(self, text: str) -> str:
-        """Convert text to speech and return base64 audio data"""
+        """Prepare text for Web Speech API - return cleaned text instead of audio"""
         try:
-            # Clean text before synthesis
+            # Clean text before sending to frontend
             cleaned_text = self.clean_text_for_speech(text)
-            synthesis_input = texttospeech.SynthesisInput(text=cleaned_text)
-            voice = texttospeech.VoiceSelectionParams(
-                language_code="en-US",
-                ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
-            )
-            audio_config = texttospeech.AudioConfig(
-                audio_encoding=texttospeech.AudioEncoding.MP3
-            )
             
-            response = self.tts_client.synthesize_speech(
-                input=synthesis_input,
-                voice=voice,
-                audio_config=audio_config
-            )
+            # Return cleaned text for frontend Web Speech API processing
+            return cleaned_text
             
-            # Store in GridFS and return file ID
-            file_id = fs.put(response.audio_content, 
-                           filename=f"question_{str(uuid.uuid4())}.mp3",
-                           metadata={"type": "question_audio"})
-            
-            # Also return base64 for immediate playback
-            audio_base64 = base64.b64encode(response.audio_content).decode('utf-8')
-            
-            return {
-                "file_id": str(file_id),
-                "audio_base64": audio_base64
-            }
         except Exception as e:
-            logging.error(f"TTS Error: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Text-to-speech failed: {str(e)}")
+            logging.error(f"Text cleaning error: {str(e)}")
+            # Return original text if cleaning fails
+            return text
     
     async def speech_to_text(self, audio_data: bytes) -> str:
         """Convert speech audio to text"""
