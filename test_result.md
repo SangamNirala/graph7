@@ -147,6 +147,9 @@ backend:
         -working: false
         -agent: "testing"
         -comment: "❌ CRITICAL ISSUE IDENTIFIED: Google Cloud TTS authentication is failing with '401 Request had invalid authentication credentials' error. TTS endpoints are implemented correctly and accessible, but Google Cloud service cannot authenticate with provided credentials. This is the root cause of users not hearing AI voice - voice interviews work but produce no audio. Text cleaning for backticks is working correctly. REQUIRES: Fix Google Cloud TTS authentication credentials to restore audio generation."
+        -working: false
+        -agent: "testing"
+        -comment: "❌ UPDATED ISSUE: Google Cloud TTS error has changed from '401 authentication' to '500 string indices must be integers' error. This suggests partial progress in authentication but indicates a data structure issue in the TTS processing code. The endpoint is accessible and backend dependencies are resolved, but TTS audio generation still fails. Text cleaning function is working correctly. REQUIRES: Debug the data structure issue in TTS processing to restore audio generation capability."
 
   - task: "Google Cloud Speech-to-Text Integration"
     implemented: true
