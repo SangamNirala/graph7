@@ -4,6 +4,8 @@ Test Google Cloud TTS Authentication
 """
 import os
 import json
+from pathlib import Path
+from dotenv import load_dotenv
 from google.cloud import texttospeech
 from google.oauth2 import service_account
 
@@ -11,6 +13,11 @@ def test_tts_authentication():
     """Test Google Cloud TTS authentication and basic functionality"""
     try:
         print("🔍 Testing Google Cloud TTS Authentication...")
+        
+        # Load environment variables from backend/.env
+        env_path = Path("/app/backend/.env")
+        load_dotenv(env_path)
+        print(f"📁 Loaded environment from: {env_path}")
         
         # Get credentials from environment
         credentials_json_str = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', '{}')
