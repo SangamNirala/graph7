@@ -47,8 +47,13 @@ My role is to facilitate your understanding of legal procedures and provide you 
 How can I assist you?`
         }]);
         
-      } catch (error) {
-        console.error('Backend not ready:', error);
+      } catch (error: any) {
+        console.error('Backend health check failed:', error);
+        console.error('Error details:', {
+          message: error.message,
+          response: error.response,
+          config: error.config
+        });
         setError('Unable to connect to the backend. Please make sure the server is running.');
       }
     };
