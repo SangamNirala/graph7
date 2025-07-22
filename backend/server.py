@@ -980,7 +980,9 @@ async def upload_job_enhanced(
         job_description=f"{job_title}\n\n{job_description}\n\n{job_requirements}",
         include_coding_challenge=include_coding_challenge,
         role_archetype=role_archetype,
-        interview_focus=interview_focus
+        interview_focus=interview_focus,
+        min_questions=min_questions,
+        max_questions=max_questions
     )
     await db.enhanced_tokens.insert_one(token_data.dict())
     
