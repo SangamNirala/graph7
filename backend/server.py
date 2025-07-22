@@ -1824,13 +1824,13 @@ async def send_interview_message(request: InterviewMessageRequest):
             }
         }
         
-        # Generate TTS for voice mode
+        # Generate text for Web Speech API (voice mode)
         if session.get('voice_mode'):
             try:
-                question_audio = await voice_processor.text_to_speech(next_question)
-                response_data["question_audio"] = question_audio["audio_base64"]
+                question_text = await voice_processor.text_to_speech(next_question)
+                response_data["question_text"] = question_text
             except Exception as e:
-                logging.error(f"TTS generation failed: {str(e)}")
+                logging.error(f"Text cleaning failed: {str(e)}")
         
         return response_data
 
