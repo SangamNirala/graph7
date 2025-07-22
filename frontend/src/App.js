@@ -38,67 +38,105 @@ const AudioPlayer = ({ audioBase64, autoPlay = false }) => {
   );
 };
 
-// Landing Page Component
-const LandingPage = ({ setCurrentPage }) => {
+// Enhanced Landing Page Component
+const EnhancedLandingPage = ({ setCurrentPage }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <h1 className="text-6xl font-bold text-white mb-6">
-            🎤 AI-Powered Voice Interview Agent
+            🎯 Elite AI Interview Platform
           </h1>
-          <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
-            Experience the future of hiring with our advanced AI interviewer that conducts 
-            personalized voice interviews with female AI voice and supports PDF/Word resume uploads.
+          <p className="text-xl text-gray-300 mb-12 max-w-4xl mx-auto">
+            Experience the future of hiring with our advanced AI-powered interview system. 
+            Features interactive coding challenges, empathetic candidate workflow, multi-vector assessments, 
+            and comprehensive bias mitigation controls.
           </p>
-          <div className="flex justify-center space-x-6 mb-8">
+          <div className="flex flex-wrap justify-center gap-4 mb-8">
             <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3">
-              <span className="text-green-200">✅ Voice Interview Mode</span>
+              <span className="text-green-200">✅ Interactive Coding Challenges</span>
             </div>
             <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3">
-              <span className="text-blue-200">✅ PDF/Word/TXT Resume Support</span>
+              <span className="text-blue-200">✅ Voice Interview with AI</span>
             </div>
             <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-3">
-              <span className="text-purple-200">✅ AI Female Voice Questions</span>
+              <span className="text-purple-200">✅ Multi-Vector Assessments</span>
+            </div>
+            <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-3">
+              <span className="text-orange-200">✅ Bias Mitigation Controls</span>
             </div>
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
-          {/* Admin Login Card */}
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
+          {/* Enhanced Admin Portal Card */}
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 hover:bg-white/15 transition-all duration-300 transform hover:scale-105">
             <div className="text-center">
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H5m7 0v4m6-4v4M9 9h6m-6 4h6m-6 4h6" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-4">Admin Portal</h2>
-              <p className="text-gray-300 mb-6">Upload job descriptions, manage resumes (PDF/Word/TXT), and generate secure interview tokens.</p>
+              <h2 className="text-2xl font-bold text-white mb-4">Admin Dashboard</h2>
+              <p className="text-gray-300 mb-6">
+                Comprehensive hiring management with candidate pipeline, interview customization, 
+                coding challenges, and advanced multi-vector reporting with bias controls.
+              </p>
+              <div className="mb-6 space-y-2">
+                <div className="flex items-center justify-center text-sm text-gray-300">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                  Candidate Pipeline & Comparison Tools
+                </div>
+                <div className="flex items-center justify-center text-sm text-gray-300">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                  Role Archetypes & Interview Focus
+                </div>
+                <div className="flex items-center justify-center text-sm text-gray-300">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                  Interactive Coding Challenges
+                </div>
+              </div>
               <button 
                 onClick={() => setCurrentPage('admin-login')}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl"
               >
-                Admin Login
+                Access Admin Portal
               </button>
             </div>
           </div>
 
-          {/* Candidate Login Card */}
+          {/* Enhanced Candidate Portal Card */}
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 hover:bg-white/15 transition-all duration-300 transform hover:scale-105">
             <div className="text-center">
               <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-4">Candidate Portal</h2>
-              <p className="text-gray-300 mb-6">Enter your secure token for personalized voice interviews with AI interviewer.</p>
+              <h2 className="text-2xl font-bold text-white mb-4">Candidate Experience</h2>
+              <p className="text-gray-300 mb-6">
+                Interactive and empathetic interview experience with guided setup, practice rounds, 
+                question controls, and adaptive AI questioning for a fair assessment.
+              </p>
+              <div className="mb-6 space-y-2">
+                <div className="flex items-center justify-center text-sm text-gray-300">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                  Camera/Mic Check & Practice Round
+                </div>
+                <div className="flex items-center justify-center text-sm text-gray-300">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                  Question Cards with Thinking Time
+                </div>
+                <div className="flex items-center justify-center text-sm text-gray-300">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                  Interactive Modules & Coding Tasks
+                </div>
+              </div>
               <button 
                 onClick={() => setCurrentPage('candidate-login')}
                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl"
               >
-                Candidate Login
+                Start Interview Experience
               </button>
             </div>
           </div>
