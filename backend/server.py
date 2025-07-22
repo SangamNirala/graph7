@@ -1174,7 +1174,12 @@ async def process_voice_answer(
 # Candidate Routes
 @api_router.post("/candidate/validate-token")
 async def validate_token(request: TokenValidationRequest):
-    token_data = await db.tokens.find_one({"token": request.token})
+    # Try enhanced token first, then fallback to regular token
+    token_data = await db.enhanced_tokens.find_one({"token": request.token})
+    
+    if not token_data:
+        token_data = await db.tokens.find_one({"token": request.token})
+    
     if not token_data or token_data.get('used', False):
         raise HTTPException(status_code=401, detail="Invalid or used token")
     
