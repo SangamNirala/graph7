@@ -3,6 +3,12 @@ import { QueryRequest, QueryResponse, ChatSession, HealthResponse } from '../typ
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
+// Debug logging
+console.log('API_BASE_URL:', API_BASE_URL);
+console.log('Environment variables:', {
+  REACT_APP_BACKEND_URL: process.env.REACT_APP_BACKEND_URL
+});
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
