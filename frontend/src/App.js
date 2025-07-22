@@ -1001,6 +1001,12 @@ const AdminDashboard = ({ setCurrentPage }) => {
                       <div className="text-sm text-green-300">
                         💻 Coding: {includeCodingChallenge ? 'Enabled' : 'Disabled'}
                       </div>
+                      <div className="text-sm text-green-300">
+                        ❓ Questions: {minQuestions} - {maxQuestions}
+                      </div>
+                      <div className="text-sm text-green-300">
+                        ⏱️ Duration: {Math.ceil(minQuestions * 2.5)} - {Math.ceil(maxQuestions * 3)} min
+                      </div>
                     </div>
                   </div>
                 </div>
