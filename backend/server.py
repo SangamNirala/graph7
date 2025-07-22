@@ -1426,8 +1426,7 @@ async def generate_voice_question(request: VoiceQuestionRequest):
         
         return {
             "success": True,
-            "audio_base64": audio_data["audio_base64"],
-            "file_id": audio_data["file_id"]
+            "question_text": request.question_text
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
