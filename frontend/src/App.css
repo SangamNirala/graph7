@@ -66,7 +66,7 @@ body {
   animation: slideInUp 0.8s ease-out forwards;
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .workflow-step::before {
