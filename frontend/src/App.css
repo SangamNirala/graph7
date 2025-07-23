@@ -134,7 +134,7 @@ body {
 /* Arrows */
 .arrow {
   position: absolute;
-  color: rgba(255,255,255,0.8);
+  color: #374151;
   z-index: 10;
   opacity: 0;
   animation: fadeIn 0.6s ease-out forwards;
@@ -143,7 +143,7 @@ body {
 .arrow-icon {
   width: 2rem;
   height: 2rem;
-  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
 }
 
 .arrow-right {
