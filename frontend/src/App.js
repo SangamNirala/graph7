@@ -29,39 +29,27 @@ const CurvedArrow = ({ direction, delay = 0, style = {} }) => {
     switch(direction) {
       case 'arrow-right':
         return {
-          path: "M10,50 Q60,20 110,50 Q60,80 110,50",
-          marker: "M105,45 L115,50 L105,55 Z",
-          viewBox: "0 0 120 100"
+          path: "M5,30 Q40,10 75,30",
+          marker: "M70,25 L80,30 L70,35 Z",
+          viewBox: "0 0 85 60"
         };
       case 'arrow-down':
         return {
-          path: "M50,10 Q20,60 50,110 Q80,60 50,110", 
-          marker: "M45,105 L50,115 L55,105 Z",
-          viewBox: "0 0 100 120"
+          path: "M30,5 Q10,40 30,75", 
+          marker: "M25,70 L30,80 L35,70 Z",
+          viewBox: "0 0 60 85"
         };
       case 'arrow-left':
         return {
-          path: "M110,50 Q60,20 10,50 Q60,80 10,50",
-          marker: "M15,45 L5,50 L15,55 Z", 
-          viewBox: "0 0 120 100"
-        };
-      case 'arrow-down-right':
-        return {
-          path: "M20,20 Q70,30 90,70 Q60,50 90,70",
-          marker: "M85,65 L95,75 L85,75 Z",
-          viewBox: "0 0 100 100"
-        };
-      case 'arrow-down-left':
-        return {
-          path: "M80,20 Q30,30 10,70 Q40,50 10,70", 
-          marker: "M15,65 L5,75 L15,75 Z",
-          viewBox: "0 0 100 100"
+          path: "M75,30 Q40,10 5,30",
+          marker: "M10,25 L0,30 L10,35 Z", 
+          viewBox: "0 0 85 60"
         };
       default:
         return {
-          path: "M10,50 Q60,20 110,50",
-          marker: "M105,45 L115,50 L105,55 Z",
-          viewBox: "0 0 120 100"
+          path: "M5,30 Q40,10 75,30",
+          marker: "M70,25 L80,30 L70,35 Z",
+          viewBox: "0 0 85 60"
         };
     }
   };
@@ -85,30 +73,21 @@ const CurvedArrow = ({ direction, delay = 0, style = {} }) => {
             <stop offset="50%" stopColor="#dc2626" />
             <stop offset="100%" stopColor="#b91c1c" />
           </linearGradient>
-          <filter id="arrowGlow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge> 
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
         </defs>
         
         <path
           d={path}
           stroke={`url(#arrowGradient-${direction}-${delay})`}
-          strokeWidth="3"
+          strokeWidth="4"
           fill="none"
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter="url(#arrowGlow)"
           className="arrow-path"
         />
         
         <path
           d={marker}
           fill={`url(#arrowGradient-${direction}-${delay})`}
-          filter="url(#arrowGlow)"
           className="arrow-head"
         />
       </svg>
