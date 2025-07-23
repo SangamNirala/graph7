@@ -136,7 +136,7 @@ function App() {
             delay={200}
           />
 
-          <Arrow direction="arrow-right" delay={400} />
+          <CurvedArrow direction="arrow-right" delay={400} />
 
           {/* Step 2: LinkedIn Integration */}
           <WorkflowStep
