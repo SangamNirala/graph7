@@ -148,7 +148,7 @@ function App() {
             delay={600}
           />
 
-          <Arrow direction="arrow-down" delay={800} />
+          <CurvedArrow direction="arrow-down" delay={800} />
 
           {/* Step 3: ATS Scoring System */}
           <WorkflowStep
@@ -160,7 +160,7 @@ function App() {
             delay={1000}
           />
 
-          <Arrow direction="arrow-left" delay={1200} />
+          <CurvedArrow direction="arrow-left" delay={1200} />
 
           {/* Step 4: Automated Notifications (Round 1) */}
           <WorkflowStep
@@ -172,7 +172,7 @@ function App() {
             delay={1400}
           />
 
-          <Arrow direction="arrow-down" delay={1600} />
+          <CurvedArrow direction="arrow-down" delay={1600} />
 
           {/* Step 5: Phone Interviews */}
           <WorkflowStep
@@ -184,7 +184,7 @@ function App() {
             delay={1800}
           />
 
-          <Arrow direction="arrow-right" delay={2000} />
+          <CurvedArrow direction="arrow-right" delay={2000} />
 
           {/* Step 6: Automated Notifications (Round 2) */}
           <WorkflowStep
@@ -196,7 +196,7 @@ function App() {
             delay={2200}
           />
 
-          <Arrow direction="arrow-down" delay={2400} />
+          <CurvedArrow direction="arrow-down" delay={2400} />
 
           {/* Step 7: Schedule Meetings */}
           <WorkflowStep
@@ -208,7 +208,7 @@ function App() {
             delay={2600}
           />
 
-          <Arrow direction="arrow-left" delay={2800} />
+          <CurvedArrow direction="arrow-left" delay={2800} />
 
           {/* Step 8: AI Agent Meeting */}
           <WorkflowStep
@@ -220,7 +220,7 @@ function App() {
             delay={3000}
           />
 
-          <Arrow direction="arrow-down" delay={3200} />
+          <CurvedArrow direction="arrow-down" delay={3200} />
 
           {/* Step 9: Interview Scoring */}
           <WorkflowStep
@@ -232,7 +232,7 @@ function App() {
             delay={3400}
           />
 
-          <Arrow direction="arrow-right" delay={3600} />
+          <CurvedArrow direction="arrow-right" delay={3600} />
 
           {/* Step 10: Shortlist Notification */}
           <WorkflowStep
@@ -244,7 +244,7 @@ function App() {
             delay={3800}
           />
 
-          <Arrow direction="arrow-down" delay={4000} />
+          <CurvedArrow direction="arrow-down" delay={4000} />
 
           {/* Step 11: Final Shortlisting */}
           <WorkflowStep
@@ -256,7 +256,7 @@ function App() {
             delay={4200}
           />
 
-          <Arrow direction="arrow-left" delay={4400} />
+          <CurvedArrow direction="arrow-left" delay={4400} />
 
           {/* Step 12: Offer Letter Dispatch */}
           <WorkflowStep
@@ -268,7 +268,7 @@ function App() {
             delay={4600}
           />
 
-          <Arrow direction="arrow-down" delay={4800} />
+          <CurvedArrow direction="arrow-down" delay={4800} />
 
           {/* Step 13: Onboarding Steps */}
           <WorkflowStep
@@ -280,7 +280,7 @@ function App() {
             delay={5000}
           />
 
-          <Arrow direction="arrow-right" delay={5200} />
+          <CurvedArrow direction="arrow-right" delay={5200} />
 
           {/* Step 14: Orientation & Training */}
           <WorkflowStep
