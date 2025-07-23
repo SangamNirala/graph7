@@ -114,6 +114,66 @@ function App() {
             position="step-6"
             delay={2200}
           />
+
+          <Arrow direction="arrow-right" delay={2400} />
+
+          {/* Step 7: AI Agent Meeting */}
+          <WorkflowStep
+            title="AI Agent Meeting"
+            description="AI agent will take the meet and analyze the resume for 30-45 min"
+            bgColor="bg-teal-600"
+            icon="🤖"
+            position="step-7"
+            delay={2600}
+          />
+
+          <Arrow direction="arrow-down" delay={2800} />
+
+          {/* Step 8: Interview Scoring */}
+          <WorkflowStep
+            title="Interview Scoring"
+            description="Generate overall interview score and shortlist the top 10 ranking people"
+            bgColor="bg-cyan-600"
+            icon="📊"
+            position="step-8"
+            delay={3000}
+          />
+
+          <Arrow direction="arrow-left" delay={3200} />
+
+          {/* Step 9: Offer Letters */}
+          <WorkflowStep
+            title="Offer Letters"
+            description="Send email to selected along with personalized offer letter"
+            bgColor="bg-emerald-600"
+            icon="💌"
+            position="step-9"
+            delay={3400}
+          />
+
+          <Arrow direction="arrow-down" delay={3600} />
+
+          {/* Step 10: Document Collection */}
+          <WorkflowStep
+            title="Document Collection"
+            description="Document collection, system access provisioning, training assignment"
+            bgColor="bg-amber-600"
+            icon="📋"
+            position="step-10"
+            delay={3800}
+          />
+
+          <Arrow direction="arrow-right" delay={4000} />
+
+          {/* Step 11: Orientation & Training */}
+          <WorkflowStep
+            title="Orientation & Training"
+            description="Send email about their orientation and send training modules"
+            bgColor="bg-rose-600"
+            icon="🎓"
+            position="step-11"
+            delay={4200}
+          />
         </div>
 
         <div className="workflow-stats">
