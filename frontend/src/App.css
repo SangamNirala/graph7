@@ -174,9 +174,9 @@ body {
 }
 
 .stat-item {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.8);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(30,58,138,0.2);
   padding: 2rem;
   border-radius: 15px;
   text-align: center;
@@ -184,21 +184,22 @@ body {
 }
 
 .stat-item:hover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.9);
   transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(30,58,138,0.15);
 }
 
 .stat-number {
   display: block;
   font-size: 2.5rem;
   font-weight: 800;
-  color: white;
+  color: #1e3a8a;
   margin-bottom: 0.5rem;
 }
 
 .stat-label {
   font-size: 1rem;
-  color: rgba(255,255,255,0.8);
+  color: #374151;
   font-weight: 500;
 }
 
