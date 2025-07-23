@@ -33,16 +33,16 @@ body {
 .main-title {
   font-size: 3.5rem;
   font-weight: 800;
-  color: white;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  color: #1e3a8a;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
   margin-bottom: 1rem;
   letter-spacing: 2px;
 }
 
 .subtitle {
   font-size: 1.2rem;
-  color: rgba(255,255,255,0.9);
-  font-weight: 300;
+  color: #374151;
+  font-weight: 500;
 }
 
 /* Workflow Grid */
