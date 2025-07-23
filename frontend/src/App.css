@@ -210,7 +210,7 @@ body {
 }
 
 .workflow-footer p {
-  color: rgba(255,255,255,0.9);
+  color: #374151;
   font-size: 1.1rem;
   font-weight: 500;
 }
