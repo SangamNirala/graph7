@@ -192,7 +192,7 @@ body {
 
 .arrow-head {
   opacity: 0;
-  animation: arrowHeadAppear 0.5s ease-out 1.5s forwards;
+  animation: arrowHeadAppear 0.5s ease-out 1.8s forwards;
 }
 
 @keyframes arrowDraw {
