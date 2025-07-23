@@ -134,74 +134,63 @@ body {
 /* Curved Arrows */
 .curved-arrow {
   position: absolute;
-  z-index: 100;
+  z-index: 1000;
   opacity: 1;
-  transform: scale(0.9);
-  transition: all 0.3s ease;
-}
-
-.curved-arrow:hover {
-  transform: scale(1.1);
+  pointer-events: none;
 }
 
 .curved-arrow.arrow-right {
   top: 50%;
-  left: calc(100% + 0.5rem);
-  transform: translateY(-50%) scale(0.9);
-  width: 80px;
-  height: 60px;
-}
-
-.curved-arrow.arrow-right:hover {
-  transform: translateY(-50%) scale(1.1);
-}
-
-.curved-arrow.arrow-down {
-  top: calc(100% + 0.5rem);
-  left: 50%;
-  transform: translateX(-50%) scale(0.9);
-  width: 60px;
+  left: calc(100% - 20px);
+  transform: translateY(-50%);
+  width: 100px;
   height: 80px;
 }
 
-.curved-arrow.arrow-down:hover {
-  transform: translateX(-50%) scale(1.1);
+.curved-arrow.arrow-down {
+  top: calc(100% - 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 100px;
 }
 
 .curved-arrow.arrow-left {
   top: 50%;
-  right: calc(100% + 0.5rem);
-  transform: translateY(-50%) scale(0.9);
-  width: 80px;
-  height: 60px;
-}
-
-.curved-arrow.arrow-left:hover {
-  transform: translateY(-50%) scale(1.1);
+  right: calc(100% - 20px);
+  transform: translateY(-50%);
+  width: 100px;
+  height: 80px;
 }
 
 .arrow-svg {
-  filter: drop-shadow(0 2px 6px rgba(239, 68, 68, 0.4));
+  width: 100%;
+  height: 100%;
 }
 
 .arrow-path {
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
   animation: arrowDraw 2s ease-out forwards;
 }
 
 .arrow-head {
-  opacity: 0;
-  animation: arrowHeadAppear 0.5s ease-out 1.8s forwards;
+  animation: arrowHeadAppear 0.5s ease-out 2s forwards;
 }
 
 @keyframes arrowDraw {
+  from {
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+  }
   to {
+    stroke-dasharray: 200;
     stroke-dashoffset: 0;
   }
 }
 
 @keyframes arrowHeadAppear {
+  from {
+    opacity: 0;
+  }
   to {
     opacity: 1;
   }
