@@ -25,72 +25,89 @@ const WorkflowStep = ({
 );
 
 const CurvedArrow = ({ direction, delay = 0, style = {} }) => {
-  const getArrowPath = () => {
+  const getArrowElements = () => {
     switch(direction) {
       case 'arrow-right':
-        return {
-          path: "M5,30 Q40,10 75,30",
-          marker: "M70,25 L80,30 L70,35 Z",
-          viewBox: "0 0 85 60"
-        };
+        return (
+          <svg width="80" height="60" viewBox="0 0 80 60" className="arrow-svg">
+            <path
+              d="M5,30 Q40,10 75,30"
+              stroke="#ef4444"
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+              className="arrow-path"
+            />
+            <polygon
+              points="70,25 80,30 70,35"
+              fill="#ef4444"
+              className="arrow-head"
+            />
+          </svg>
+        );
       case 'arrow-down':
-        return {
-          path: "M30,5 Q10,40 30,75", 
-          marker: "M25,70 L30,80 L35,70 Z",
-          viewBox: "0 0 60 85"
-        };
+        return (
+          <svg width="60" height="80" viewBox="0 0 60 80" className="arrow-svg">
+            <path
+              d="M30,5 Q10,40 30,75"
+              stroke="#ef4444"
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+              className="arrow-path"
+            />
+            <polygon
+              points="25,70 30,80 35,70"
+              fill="#ef4444"
+              className="arrow-head"
+            />
+          </svg>
+        );
       case 'arrow-left':
-        return {
-          path: "M75,30 Q40,10 5,30",
-          marker: "M10,25 L0,30 L10,35 Z", 
-          viewBox: "0 0 85 60"
-        };
+        return (
+          <svg width="80" height="60" viewBox="0 0 80 60" className="arrow-svg">
+            <path
+              d="M75,30 Q40,10 5,30"
+              stroke="#ef4444"
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+              className="arrow-path"
+            />
+            <polygon
+              points="10,25 0,30 10,35"
+              fill="#ef4444"
+              className="arrow-head"
+            />
+          </svg>
+        );
       default:
-        return {
-          path: "M5,30 Q40,10 75,30",
-          marker: "M70,25 L80,30 L70,35 Z",
-          viewBox: "0 0 85 60"
-        };
+        return (
+          <svg width="80" height="60" viewBox="0 0 80 60" className="arrow-svg">
+            <path
+              d="M5,30 Q40,10 75,30"
+              stroke="#ef4444"
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+              className="arrow-path"
+            />
+            <polygon
+              points="70,25 80,30 70,35"
+              fill="#ef4444"
+              className="arrow-head"
+            />
+          </svg>
+        );
     }
   };
-
-  const { path, marker, viewBox } = getArrowPath();
 
   return (
     <div 
       className={`curved-arrow ${direction}`}
       style={{ animationDelay: `${delay}ms`, ...style }}
     >
-      <svg 
-        width="100%" 
-        height="100%" 
-        viewBox={viewBox}
-        className="arrow-svg"
-      >
-        <defs>
-          <linearGradient id={`arrowGradient-${direction}-${delay}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ef4444" />
-            <stop offset="50%" stopColor="#dc2626" />
-            <stop offset="100%" stopColor="#b91c1c" />
-          </linearGradient>
-        </defs>
-        
-        <path
-          d={path}
-          stroke={`url(#arrowGradient-${direction}-${delay})`}
-          strokeWidth="4"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="arrow-path"
-        />
-        
-        <path
-          d={marker}
-          fill={`url(#arrowGradient-${direction}-${delay})`}
-          className="arrow-head"
-        />
-      </svg>
+      {getArrowElements()}
     </div>
   );
 };
