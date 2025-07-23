@@ -29,9 +29,9 @@ const Arrow = ({ direction, delay = 0 }) => (
     className={`arrow ${direction}`}
     style={{ animationDelay: `${delay}ms` }}
   >
-    <svg viewBox="0 0 24 24" fill="currentColor" className="arrow-icon">
-      <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
-    </svg>
+    {direction === 'arrow-right' && '→'}
+    {direction === 'arrow-down' && '↓'}
+    {direction === 'arrow-left' && '←'}
   </div>
 );
 
