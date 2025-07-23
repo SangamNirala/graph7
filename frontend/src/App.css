@@ -131,33 +131,104 @@ body {
 .bg-purple-700 { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
 .bg-black { background: linear-gradient(135deg, #374151, #1f2937); }
 
-/* Arrows */
-.arrow {
+/* Curved Arrows */
+.curved-arrow {
   position: absolute;
-  color: #1e3a8a;
   z-index: 100;
-  opacity: 1;
-  font-size: 3rem;
-  font-weight: bold;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  opacity: 0;
+  animation: arrowSlideIn 0.8s ease-out forwards;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
 }
 
-.arrow-right {
+.curved-arrow:hover {
+  transform: scale(1);
+}
+
+.curved-arrow.arrow-right {
   top: 50%;
-  left: calc(100% + 1rem);
-  transform: translateY(-50%);
+  left: calc(100% + 0.5rem);
+  transform: translateY(-50%) scale(0.8);
+  width: 80px;
+  height: 60px;
 }
 
-.arrow-down {
-  top: calc(100% + 1rem);
+.curved-arrow.arrow-right:hover {
+  transform: translateY(-50%) scale(1);
+}
+
+.curved-arrow.arrow-down {
+  top: calc(100% + 0.5rem);
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(0.8);
+  width: 60px;
+  height: 80px;
 }
 
-.arrow-left {
+.curved-arrow.arrow-down:hover {
+  transform: translateX(-50%) scale(1);
+}
+
+.curved-arrow.arrow-left {
   top: 50%;
-  right: calc(100% + 1rem);
-  transform: translateY(-50%);
+  right: calc(100% + 0.5rem);
+  transform: translateY(-50%) scale(0.8);
+  width: 80px;
+  height: 60px;
+}
+
+.curved-arrow.arrow-left:hover {
+  transform: translateY(-50%) scale(1);
+}
+
+.curved-arrow.arrow-down-right {
+  top: calc(100% + 0.5rem);
+  right: calc(0% - 1rem);
+  transform: scale(0.8);
+  width: 70px;
+  height: 70px;
+}
+
+.curved-arrow.arrow-down-left {
+  top: calc(100% + 0.5rem);
+  left: calc(0% - 1rem);
+  transform: scale(0.8);
+  width: 70px;
+  height: 70px;
+}
+
+.arrow-svg {
+  filter: drop-shadow(0 2px 8px rgba(239, 68, 68, 0.3));
+}
+
+.arrow-path {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: arrowDraw 1.5s ease-out forwards;
+}
+
+.arrow-head {
+  opacity: 0;
+  animation: arrowHeadAppear 0.3s ease-out 1.2s forwards;
+}
+
+@keyframes arrowSlideIn {
+  to {
+    opacity: 1;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes arrowDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes arrowHeadAppear {
+  to {
+    opacity: 1;
+  }
 }
 
 /* Stats Section */
