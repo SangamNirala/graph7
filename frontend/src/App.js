@@ -107,9 +107,7 @@ const CurvedArrow = ({ direction, delay = 0, style = {} }) => {
       className={`curved-arrow ${direction}`}
       style={{ 
         animationDelay: `${delay}ms`, 
-        ...style,
-        background: 'rgba(255, 0, 0, 0.1)', // Debug background - will remove later
-        border: '1px solid red' // Debug border - will remove later
+        ...style
       }}
     >
       {getArrowElements()}
