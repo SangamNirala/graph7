@@ -49,11 +49,11 @@ body {
 .workflow-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-rows: repeat(4, 1fr);
   gap: 2rem;
   margin-bottom: 4rem;
   position: relative;
-  min-height: 600px;
+  min-height: 1200px;
 }
 
 /* Workflow Steps */
