@@ -128,6 +128,11 @@ body {
 .bg-green-600 { background: linear-gradient(135deg, #059669, #047857); }
 .bg-orange-600 { background: linear-gradient(135deg, #ea580c, #c2410c); }
 .bg-red-600 { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+.bg-teal-600 { background: linear-gradient(135deg, #0d9488, #0f766e); }
+.bg-cyan-600 { background: linear-gradient(135deg, #0891b2, #0e7490); }
+.bg-emerald-600 { background: linear-gradient(135deg, #059669, #047857); }
+.bg-amber-600 { background: linear-gradient(135deg, #d97706, #b45309); }
+.bg-rose-600 { background: linear-gradient(135deg, #e11d48, #be123c); }
 
 /* Arrows */
 .arrow {
