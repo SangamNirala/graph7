@@ -40,8 +40,8 @@ function App() {
     <div className="App">
       <div className="workflow-container">
         <header className="workflow-header">
-          <h1 className="main-title">HR AUTOMATION WORKFLOW</h1>
-          <p className="subtitle">Streamlined Recruitment Process</p>
+          <h1 className="main-title">HR AUTOMATION</h1>
+          <p className="subtitle">Professional Recruitment Process</p>
         </header>
 
         <div className="workflow-grid">
