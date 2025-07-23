@@ -257,11 +257,11 @@ body {
 @media (max-width: 768px) {
   .workflow-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: repeat(6, auto);
+    grid-template-rows: repeat(11, auto);
     gap: 1rem;
   }
   
-  .step-1, .step-2, .step-3, .step-4, .step-5, .step-6 {
+  .step-1, .step-2, .step-3, .step-4, .step-5, .step-6, .step-7, .step-8, .step-9, .step-10, .step-11 {
     grid-column: 1;
   }
   
@@ -271,6 +271,11 @@ body {
   .step-4 { grid-row: 4; }
   .step-5 { grid-row: 5; }
   .step-6 { grid-row: 6; }
+  .step-7 { grid-row: 7; }
+  .step-8 { grid-row: 8; }
+  .step-9 { grid-row: 9; }
+  .step-10 { grid-row: 10; }
+  .step-11 { grid-row: 11; }
   
   .arrow {
     display: none;
