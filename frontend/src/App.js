@@ -61,7 +61,7 @@ function App() {
           <WorkflowStep
             title="LinkedIn Integration"
             description="Collect resumes automatically (Limit: 1000 resumes or 2 days)"
-            bgColor="bg-indigo-600"
+            bgColor="bg-purple-600"
             icon="💼"
             position="step-2"
             delay={600}
@@ -73,7 +73,7 @@ function App() {
           <WorkflowStep
             title="ATS Scoring System"
             description="AI-powered scoring to shortlist top 50 candidates"
-            bgColor="bg-purple-600"
+            bgColor="bg-black"
             icon="🎯"
             position="step-3"
             delay={1000}
@@ -85,7 +85,7 @@ function App() {
           <WorkflowStep
             title="Automated Notifications"
             description="Mail/WhatsApp notifications for selections and rejections"
-            bgColor="bg-orange-600"
+            bgColor="bg-blue-700"
             icon="📧"
             position="step-4"
             delay={1400}
@@ -97,7 +97,7 @@ function App() {
           <WorkflowStep
             title="Phone Interviews"
             description="Round 2: Schedule and manage phone call interviews"
-            bgColor="bg-red-600"
+            bgColor="bg-purple-700"
             icon="📞"
             position="step-5"
             delay={1800}
@@ -109,7 +109,7 @@ function App() {
           <WorkflowStep
             title="Automated Notifications"
             description="Mail/WhatsApp notifications for selections and rejections"
-            bgColor="bg-orange-600"
+            bgColor="bg-blue-700"
             icon="📧"
             position="step-6"
             delay={2200}
@@ -120,8 +120,8 @@ function App() {
           {/* Step 7: Schedule Meetings */}
           <WorkflowStep
             title="Schedule Meetings"
-            description="User adds meeting time and credential for AI agent interview"
-            bgColor="bg-green-600"
+            description="User adds meeting time and credentials for AI agent interview"
+            bgColor="bg-black"
             icon="📅"
             position="step-7"
             delay={2600}
@@ -132,8 +132,8 @@ function App() {
           {/* Step 8: AI Agent Meeting */}
           <WorkflowStep
             title="AI Agent Meeting"
-            description="AI agent will take the meet and analyze the resume for 30-45 min"
-            bgColor="bg-teal-600"
+            description="AI agent will take the meet and analyze the resume for 30–45 mins"
+            bgColor="bg-purple-600"
             icon="🤖"
             position="step-8"
             delay={3000}
@@ -144,8 +144,8 @@ function App() {
           {/* Step 9: Interview Scoring */}
           <WorkflowStep
             title="Interview Scoring"
-            description="Generate overall interview score and shortlist the top 10 ranking people"
-            bgColor="bg-cyan-600"
+            description="Generate overall interview score and shortlist the top 10"
+            bgColor="bg-blue-600"
             icon="📊"
             position="step-9"
             delay={3400}
@@ -153,11 +153,11 @@ function App() {
 
           <Arrow direction="arrow-right" delay={3600} />
 
-          {/* Step 10: Send Mails to Shortlisted */}
+          {/* Step 10: Shortlist Notification */}
           <WorkflowStep
-            title="Company Head Meeting"
-            description="Send mails to shortlisted people which include meeting link with the company head"
-            bgColor="bg-emerald-600"
+            title="Shortlist Notification"
+            description="Send mail to shortlisted candidates with meeting link with company head"
+            bgColor="bg-black"
             icon="💌"
             position="step-10"
             delay={3800}
@@ -168,11 +168,47 @@ function App() {
           {/* Step 11: Final Shortlisting */}
           <WorkflowStep
             title="Final Shortlisting"
-            description="Shortlisting of further 5 people (manually by company heads)"
-            bgColor="bg-rose-600"
+            description="Company heads manually shortlist top 5 candidates"
+            bgColor="bg-purple-700"
             icon="✅"
             position="step-11"
             delay={4200}
+          />
+
+          <Arrow direction="arrow-left" delay={4400} />
+
+          {/* Step 12: Offer Letter Dispatch */}
+          <WorkflowStep
+            title="Offer Letter Dispatch"
+            description="Send email to selected candidates with personalized offer letter (PDF)"
+            bgColor="bg-blue-700"
+            icon="📄"
+            position="step-12"
+            delay={4600}
+          />
+
+          <Arrow direction="arrow-down" delay={4800} />
+
+          {/* Step 13: Onboarding Steps */}
+          <WorkflowStep
+            title="Onboarding Steps"
+            description="Send email for document collection, system provisioning, and training assignment"
+            bgColor="bg-black"
+            icon="📋"
+            position="step-13"
+            delay={5000}
+          />
+
+          <Arrow direction="arrow-right" delay={5200} />
+
+          {/* Step 14: Orientation & Training */}
+          <WorkflowStep
+            title="Orientation & Training"
+            description="Send email about orientation and training modules"
+            bgColor="bg-purple-600"
+            icon="🎓"
+            position="step-14"
+            delay={5400}
           />
         </div>
 
