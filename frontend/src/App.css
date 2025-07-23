@@ -345,7 +345,7 @@ body {
   .step-13 { grid-row: 13; }
   .step-14 { grid-row: 14; }
   
-  .arrow {
+  .curved-arrow {
     display: none;
   }
   
