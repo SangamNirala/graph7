@@ -137,6 +137,11 @@ body {
   z-index: 1000;
   opacity: 1;
   pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.workflow-step:hover + .curved-arrow {
+  transform: scale(1.1);
 }
 
 .curved-arrow.arrow-right {
@@ -166,31 +171,27 @@ body {
 .arrow-svg {
   width: 100%;
   height: 100%;
+  filter: drop-shadow(0 2px 8px rgba(239, 68, 68, 0.3));
 }
 
 .arrow-path {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
   animation: arrowDraw 2s ease-out forwards;
 }
 
 .arrow-head {
+  opacity: 0;
   animation: arrowHeadAppear 0.5s ease-out 2s forwards;
 }
 
 @keyframes arrowDraw {
-  from {
-    stroke-dasharray: 200;
-    stroke-dashoffset: 200;
-  }
   to {
-    stroke-dasharray: 200;
     stroke-dashoffset: 0;
   }
 }
 
 @keyframes arrowHeadAppear {
-  from {
-    opacity: 0;
-  }
   to {
     opacity: 1;
   }
