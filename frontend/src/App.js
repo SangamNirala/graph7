@@ -1,52 +1,144 @@
-import { useEffect } from "react";
+import React from "react";
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
+const WorkflowStep = ({ 
+  title, 
+  description, 
+  bgColor, 
+  textColor = "white", 
+  icon,
+  position,
+  delay = 0 
+}) => (
+  <div 
+    className={`workflow-step ${bgColor} ${textColor === "dark" ? "text-gray-800" : "text-white"} ${position}`}
+    style={{ animationDelay: `${delay}ms` }}
+  >
+    <div className="step-icon">
+      {icon}
     </div>
-  );
-};
+    <div className="step-content">
+      <h3 className="step-title">{title}</h3>
+      <p className="step-description">{description}</p>
+    </div>
+  </div>
+);
+
+const Arrow = ({ direction, delay = 0 }) => (
+  <div 
+    className={`arrow ${direction}`}
+    style={{ animationDelay: `${delay}ms` }}
+  >
+    <svg viewBox="0 0 24 24" fill="currentColor" className="arrow-icon">
+      <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+    </svg>
+  </div>
+);
 
 function App() {
   return (
     <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <div className="workflow-container">
+        <header className="workflow-header">
+          <h1 className="main-title">HR AUTOMATION WORKFLOW</h1>
+          <p className="subtitle">Streamlined Recruitment Process</p>
+        </header>
+
+        <div className="workflow-grid">
+          {/* Step 1: User Form */}
+          <WorkflowStep
+            title="Job Posting Form"
+            description="User submits job requirements, description, and criteria"
+            bgColor="bg-blue-600"
+            icon="📝"
+            position="step-1"
+            delay={200}
+          />
+
+          <Arrow direction="arrow-right" delay={400} />
+
+          {/* Step 2: LinkedIn Integration */}
+          <WorkflowStep
+            title="LinkedIn Integration"
+            description="Collect resumes automatically (Limit: 1000 resumes or 2 days)"
+            bgColor="bg-indigo-600"
+            icon="💼"
+            position="step-2"
+            delay={600}
+          />
+
+          <Arrow direction="arrow-down" delay={800} />
+
+          {/* Step 3: ATS Scoring */}
+          <WorkflowStep
+            title="ATS Scoring System"
+            description="AI-powered scoring to shortlist top 50 candidates"
+            bgColor="bg-purple-600"
+            icon="🎯"
+            position="step-3"
+            delay={1000}
+          />
+
+          <Arrow direction="arrow-left" delay={1200} />
+
+          {/* Step 4: Meeting Form */}
+          <WorkflowStep
+            title="Schedule Meetings"
+            description="User adds meeting time and Google Meet links"
+            bgColor="bg-green-600"
+            icon="📅"
+            position="step-4"
+            delay={1400}
+          />
+
+          <Arrow direction="arrow-down" delay={1600} />
+
+          {/* Step 5: Notifications */}
+          <WorkflowStep
+            title="Automated Notifications"
+            description="Mail/WhatsApp notifications for selections and rejections"
+            bgColor="bg-orange-600"
+            icon="📧"
+            position="step-5"
+            delay={1800}
+          />
+
+          <Arrow direction="arrow-right" delay={2000} />
+
+          {/* Step 6: Phone Interviews */}
+          <WorkflowStep
+            title="Phone Interviews"
+            description="Schedule and manage phone call interviews"
+            bgColor="bg-red-600"
+            icon="📞"
+            position="step-6"
+            delay={2200}
+          />
+        </div>
+
+        <div className="workflow-stats">
+          <div className="stat-item">
+            <span className="stat-number">1000+</span>
+            <span className="stat-label">Resumes Processed</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-number">50</span>
+            <span className="stat-label">Top Candidates</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-number">2 Days</span>
+            <span className="stat-label">Collection Time</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-number">100%</span>
+            <span className="stat-label">Automated</span>
+          </div>
+        </div>
+
+        <footer className="workflow-footer">
+          <p>🚀 Powered by AI-driven recruitment technology</p>
+        </footer>
+      </div>
     </div>
   );
 }
