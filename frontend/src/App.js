@@ -45,7 +45,7 @@ function App() {
         </header>
 
         <div className="workflow-grid">
-          {/* Step 1: User Form */}
+          {/* Step 1: Job Posting Form */}
           <WorkflowStep
             title="Job Posting Form"
             description="User submits job requirements, description, and criteria"
@@ -69,7 +69,7 @@ function App() {
 
           <Arrow direction="arrow-down" delay={800} />
 
-          {/* Step 3: ATS Scoring */}
+          {/* Step 3: ATS Scoring System */}
           <WorkflowStep
             title="ATS Scoring System"
             description="AI-powered scoring to shortlist top 50 candidates"
@@ -81,96 +81,96 @@ function App() {
 
           <Arrow direction="arrow-left" delay={1200} />
 
-          {/* Step 4: Meeting Form */}
+          {/* Step 4: Automated Notifications (Round 1) */}
           <WorkflowStep
-            title="Schedule Meetings"
-            description="User adds meeting time and Google Meet links"
-            bgColor="bg-green-600"
-            icon="📅"
+            title="Automated Notifications"
+            description="Mail/WhatsApp notifications for selections and rejections"
+            bgColor="bg-orange-600"
+            icon="📧"
             position="step-4"
             delay={1400}
           />
 
           <Arrow direction="arrow-down" delay={1600} />
 
-          {/* Step 5: Notifications */}
+          {/* Step 5: Phone Interviews */}
           <WorkflowStep
-            title="Automated Notifications"
-            description="Mail/WhatsApp notifications for selections and rejections"
-            bgColor="bg-orange-600"
-            icon="📧"
+            title="Phone Interviews"
+            description="Round 2: Schedule and manage phone call interviews"
+            bgColor="bg-red-600"
+            icon="📞"
             position="step-5"
             delay={1800}
           />
 
           <Arrow direction="arrow-right" delay={2000} />
 
-          {/* Step 6: Phone Interviews */}
+          {/* Step 6: Automated Notifications (Round 2) */}
           <WorkflowStep
-            title="Phone Interviews"
-            description="Schedule and manage phone call interviews"
-            bgColor="bg-red-600"
-            icon="📞"
+            title="Automated Notifications"
+            description="Mail/WhatsApp notifications for selections and rejections"
+            bgColor="bg-orange-600"
+            icon="📧"
             position="step-6"
             delay={2200}
           />
 
-          <Arrow direction="arrow-right" delay={2400} />
+          <Arrow direction="arrow-down" delay={2400} />
 
-          {/* Step 7: AI Agent Meeting */}
+          {/* Step 7: Schedule Meetings */}
+          <WorkflowStep
+            title="Schedule Meetings"
+            description="User adds meeting time and credential for AI agent interview"
+            bgColor="bg-green-600"
+            icon="📅"
+            position="step-7"
+            delay={2600}
+          />
+
+          <Arrow direction="arrow-left" delay={2800} />
+
+          {/* Step 8: AI Agent Meeting */}
           <WorkflowStep
             title="AI Agent Meeting"
             description="AI agent will take the meet and analyze the resume for 30-45 min"
             bgColor="bg-teal-600"
             icon="🤖"
-            position="step-7"
-            delay={2600}
+            position="step-8"
+            delay={3000}
           />
 
-          <Arrow direction="arrow-down" delay={2800} />
+          <Arrow direction="arrow-down" delay={3200} />
 
-          {/* Step 8: Interview Scoring */}
+          {/* Step 9: Interview Scoring */}
           <WorkflowStep
             title="Interview Scoring"
             description="Generate overall interview score and shortlist the top 10 ranking people"
             bgColor="bg-cyan-600"
             icon="📊"
-            position="step-8"
-            delay={3000}
-          />
-
-          <Arrow direction="arrow-left" delay={3200} />
-
-          {/* Step 9: Offer Letters */}
-          <WorkflowStep
-            title="Offer Letters"
-            description="Send email to selected along with personalized offer letter"
-            bgColor="bg-emerald-600"
-            icon="💌"
             position="step-9"
             delay={3400}
           />
 
-          <Arrow direction="arrow-down" delay={3600} />
+          <Arrow direction="arrow-right" delay={3600} />
 
-          {/* Step 10: Document Collection */}
+          {/* Step 10: Send Mails to Shortlisted */}
           <WorkflowStep
-            title="Document Collection"
-            description="Document collection, system access provisioning, training assignment"
-            bgColor="bg-amber-600"
-            icon="📋"
+            title="Company Head Meeting"
+            description="Send mails to shortlisted people which include meeting link with the company head"
+            bgColor="bg-emerald-600"
+            icon="💌"
             position="step-10"
             delay={3800}
           />
 
-          <Arrow direction="arrow-right" delay={4000} />
+          <Arrow direction="arrow-down" delay={4000} />
 
-          {/* Step 11: Orientation & Training */}
+          {/* Step 11: Final Shortlisting */}
           <WorkflowStep
-            title="Orientation & Training"
-            description="Send email about their orientation and send training modules"
+            title="Final Shortlisting"
+            description="Shortlisting of further 5 people (manually by company heads)"
             bgColor="bg-rose-600"
-            icon="🎓"
+            icon="✅"
             position="step-11"
             delay={4200}
           />
