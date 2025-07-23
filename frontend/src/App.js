@@ -29,17 +29,17 @@ const CurvedArrow = ({ direction, delay = 0, style = {} }) => {
     switch(direction) {
       case 'arrow-right':
         return (
-          <svg width="80" height="60" viewBox="0 0 80 60" className="arrow-svg">
+          <svg width="100" height="80" viewBox="0 0 100 80" className="arrow-svg">
             <path
-              d="M5,30 Q40,10 75,30"
+              d="M10,40 Q50,15 90,40"
               stroke="#ef4444"
-              strokeWidth="4"
+              strokeWidth="5"
               fill="none"
               strokeLinecap="round"
               className="arrow-path"
             />
             <polygon
-              points="70,25 80,30 70,35"
+              points="85,35 95,40 85,45"
               fill="#ef4444"
               className="arrow-head"
             />
@@ -47,17 +47,17 @@ const CurvedArrow = ({ direction, delay = 0, style = {} }) => {
         );
       case 'arrow-down':
         return (
-          <svg width="60" height="80" viewBox="0 0 60 80" className="arrow-svg">
+          <svg width="80" height="100" viewBox="0 0 80 100" className="arrow-svg">
             <path
-              d="M30,5 Q10,40 30,75"
+              d="M40,10 Q15,50 40,90"
               stroke="#ef4444"
-              strokeWidth="4"
+              strokeWidth="5"
               fill="none"
               strokeLinecap="round"
               className="arrow-path"
             />
             <polygon
-              points="25,70 30,80 35,70"
+              points="35,85 40,95 45,85"
               fill="#ef4444"
               className="arrow-head"
             />
@@ -65,17 +65,17 @@ const CurvedArrow = ({ direction, delay = 0, style = {} }) => {
         );
       case 'arrow-left':
         return (
-          <svg width="80" height="60" viewBox="0 0 80 60" className="arrow-svg">
+          <svg width="100" height="80" viewBox="0 0 100 80" className="arrow-svg">
             <path
-              d="M75,30 Q40,10 5,30"
+              d="M90,40 Q50,15 10,40"
               stroke="#ef4444"
-              strokeWidth="4"
+              strokeWidth="5"
               fill="none"
               strokeLinecap="round"
               className="arrow-path"
             />
             <polygon
-              points="10,25 0,30 10,35"
+              points="15,35 5,40 15,45"
               fill="#ef4444"
               className="arrow-head"
             />
@@ -83,17 +83,17 @@ const CurvedArrow = ({ direction, delay = 0, style = {} }) => {
         );
       default:
         return (
-          <svg width="80" height="60" viewBox="0 0 80 60" className="arrow-svg">
+          <svg width="100" height="80" viewBox="0 0 100 80" className="arrow-svg">
             <path
-              d="M5,30 Q40,10 75,30"
+              d="M10,40 Q50,15 90,40"
               stroke="#ef4444"
-              strokeWidth="4"
+              strokeWidth="5"
               fill="none"
               strokeLinecap="round"
               className="arrow-path"
             />
             <polygon
-              points="70,25 80,30 70,35"
+              points="85,35 95,40 85,45"
               fill="#ef4444"
               className="arrow-head"
             />
@@ -105,7 +105,12 @@ const CurvedArrow = ({ direction, delay = 0, style = {} }) => {
   return (
     <div 
       className={`curved-arrow ${direction}`}
-      style={{ animationDelay: `${delay}ms`, ...style }}
+      style={{ 
+        animationDelay: `${delay}ms`, 
+        ...style,
+        background: 'rgba(255, 0, 0, 0.1)', // Debug background - will remove later
+        border: '1px solid red' // Debug border - will remove later
+      }}
     >
       {getArrowElements()}
     </div>
