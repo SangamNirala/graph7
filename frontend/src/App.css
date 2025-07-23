@@ -1,38 +1,320 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
 .App {
-    text-align: center;
+  min-height: 100vh;
+  position: relative;
 }
 
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+.workflow-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  position: relative;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Header Styles */
+.workflow-header {
+  text-align: center;
+  margin-bottom: 4rem;
+  animation: fadeInDown 1s ease-out;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.main-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  margin-bottom: 1rem;
+  letter-spacing: 2px;
 }
 
-.App-link {
-    color: #61dafb;
+.subtitle {
+  font-size: 1.2rem;
+  color: rgba(255,255,255,0.9);
+  font-weight: 300;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Workflow Grid */
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2rem;
+  margin-bottom: 4rem;
+  position: relative;
+  min-height: 600px;
+}
+
+/* Workflow Steps */
+.workflow-step {
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  transform: translateY(20px);
+  opacity: 0;
+  animation: slideInUp 0.8s ease-out forwards;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.workflow-step::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
+  pointer-events: none;
+}
+
+.workflow-step:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.25);
+}
+
+.step-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.step-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.step-description {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  text-align: center;
+  opacity: 0.95;
+  font-weight: 400;
+}
+
+/* Step Positions */
+.step-1 { grid-column: 1; grid-row: 1; }
+.step-2 { grid-column: 2; grid-row: 1; }
+.step-3 { grid-column: 3; grid-row: 1; }
+.step-4 { grid-column: 3; grid-row: 2; }
+.step-5 { grid-column: 2; grid-row: 2; }
+.step-6 { grid-column: 1; grid-row: 2; }
+
+/* Background Colors */
+.bg-blue-600 { background: linear-gradient(135deg, #3b82f6, #1e40af); }
+.bg-indigo-600 { background: linear-gradient(135deg, #4f46e5, #3730a3); }
+.bg-purple-600 { background: linear-gradient(135deg, #9333ea, #7c3aed); }
+.bg-green-600 { background: linear-gradient(135deg, #059669, #047857); }
+.bg-orange-600 { background: linear-gradient(135deg, #ea580c, #c2410c); }
+.bg-red-600 { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+
+/* Arrows */
+.arrow {
+  position: absolute;
+  color: rgba(255,255,255,0.8);
+  z-index: 10;
+  opacity: 0;
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.arrow-icon {
+  width: 2rem;
+  height: 2rem;
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+}
+
+.arrow-right {
+  top: 50%;
+  left: calc(33.33% + 1rem);
+  transform: translateY(-50%);
+}
+
+.arrow-down {
+  top: calc(50% + 1rem);
+  left: 50%;
+  transform: translateX(-50%) rotate(90deg);
+}
+
+.arrow-left {
+  top: 50%;
+  right: calc(33.33% + 1rem);
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* Stats Section */
+.workflow-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+  animation: fadeInUp 1s ease-out 0.5s both;
+}
+
+.stat-item {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+  background: rgba(255,255,255,0.15);
+  transform: translateY(-5px);
+}
+
+.stat-number {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+}
+
+/* Footer */
+.workflow-footer {
+  text-align: center;
+  animation: fadeIn 1s ease-out 1s both;
+}
+
+.workflow-footer p {
+  color: rgba(255,255,255,0.9);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .workflow-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(6, auto);
+    gap: 1rem;
+  }
+  
+  .step-1, .step-2, .step-3, .step-4, .step-5, .step-6 {
+    grid-column: 1;
+  }
+  
+  .step-1 { grid-row: 1; }
+  .step-2 { grid-row: 2; }
+  .step-3 { grid-row: 3; }
+  .step-4 { grid-row: 4; }
+  .step-5 { grid-row: 5; }
+  .step-6 { grid-row: 6; }
+  
+  .arrow {
+    display: none;
+  }
+  
+  .main-title {
+    font-size: 2.5rem;
+  }
+  
+  .workflow-container {
+    padding: 1rem;
+  }
+  
+  .workflow-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .stat-number {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-title {
+    font-size: 2rem;
+  }
+  
+  .workflow-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .workflow-step {
+    padding: 1.5rem;
+  }
+}
+
+/* Loading animation for better UX */
+.workflow-step {
+  position: relative;
+}
+
+.workflow-step::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
 }
