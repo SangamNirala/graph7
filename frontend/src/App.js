@@ -223,11 +223,11 @@ function App() {
           </div>
           <div className="stat-item">
             <span className="stat-number">10</span>
-            <span className="stat-label">Final Selection</span>
+            <span className="stat-label">Interview Scored</span>
           </div>
           <div className="stat-item">
-            <span className="stat-number">2 Days</span>
-            <span className="stat-label">Collection Time</span>
+            <span className="stat-number">5</span>
+            <span className="stat-label">Final Selection</span>
           </div>
           <div className="stat-item">
             <span className="stat-number">30-45 Min</span>
