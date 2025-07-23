@@ -134,33 +134,35 @@ body {
 /* Arrows */
 .arrow {
   position: absolute;
-  color: #374151;
+  color: #1e3a8a;
   z-index: 10;
   opacity: 0;
   animation: fadeIn 0.6s ease-out forwards;
+  font-size: 2rem;
+  font-weight: bold;
 }
 
 .arrow-icon {
-  width: 2rem;
-  height: 2rem;
+  width: 3rem;
+  height: 3rem;
   filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
 }
 
 .arrow-right {
   top: 50%;
-  left: calc(33.33% + 1rem);
+  left: calc(50% + 8rem);
   transform: translateY(-50%);
 }
 
 .arrow-down {
-  top: calc(50% + 1rem);
+  top: calc(100% + 0.5rem);
   left: 50%;
   transform: translateX(-50%) rotate(90deg);
 }
 
 .arrow-left {
   top: 50%;
-  right: calc(33.33% + 1rem);
+  right: calc(50% + 8rem);
   transform: translateY(-50%) rotate(180deg);
 }
 
