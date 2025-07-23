@@ -101,3 +101,48 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Create a beautiful workflow for HR automation project. The workflow includes: 1) User submits job posting form, 2) LinkedIn integration to collect resumes (limit 1000 resumes or 2 days), 3) ATS scoring system to shortlist top 50 candidates, 4) User form to add meeting time and Google Meet links, 5) Automated mail/WhatsApp notifications for selections and rejections, 6) Phone call interview scheduling"
+
+backend:
+  - task: "Basic FastAPI server setup"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+        - working: true
+        - agent: "main"
+        - comment: "Basic FastAPI server with MongoDB connection is working"
+
+frontend:
+  - task: "Basic React frontend setup"
+    implemented: true
+    working: true
+    file: "App.js"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+        - working: true
+        - agent: "main"
+        - comment: "Basic React frontend with routing is working"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 0
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Plan HR automation workflow implementation"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    - agent: "main"
+    - message: "Starting HR automation project. Basic infrastructure is ready. Need to plan comprehensive workflow implementation with multiple third-party integrations."
