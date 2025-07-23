@@ -183,11 +183,19 @@ function App() {
           </div>
           <div className="stat-item">
             <span className="stat-number">50</span>
-            <span className="stat-label">Top Candidates</span>
+            <span className="stat-label">Initial Shortlist</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-number">10</span>
+            <span className="stat-label">Final Selection</span>
           </div>
           <div className="stat-item">
             <span className="stat-number">2 Days</span>
             <span className="stat-label">Collection Time</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-number">30-45 Min</span>
+            <span className="stat-label">AI Interview</span>
           </div>
           <div className="stat-item">
             <span className="stat-number">100%</span>
