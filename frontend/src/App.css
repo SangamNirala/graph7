@@ -137,52 +137,50 @@ body {
   z-index: 1000;
   opacity: 1;
   pointer-events: none;
-  transition: all 0.3s ease;
-}
-
-.workflow-step:hover + .curved-arrow {
-  transform: scale(1.1);
 }
 
 .curved-arrow.arrow-right {
   top: 50%;
-  left: calc(100% - 20px);
+  left: 100%;
   transform: translateY(-50%);
-  width: 100px;
+  width: 120px;
   height: 80px;
+  margin-left: -20px;
 }
 
 .curved-arrow.arrow-down {
-  top: calc(100% - 20px);
+  top: 100%;
   left: 50%;
   transform: translateX(-50%);
   width: 80px;
-  height: 100px;
+  height: 120px;
+  margin-top: -20px;
 }
 
 .curved-arrow.arrow-left {
   top: 50%;
-  right: calc(100% - 20px);
+  right: 100%;
   transform: translateY(-50%);
-  width: 100px;
+  width: 120px;
   height: 80px;
+  margin-right: -20px;
 }
 
 .arrow-svg {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 2px 8px rgba(239, 68, 68, 0.3));
+  filter: drop-shadow(0 3px 8px rgba(239, 68, 68, 0.4));
 }
 
 .arrow-path {
-  stroke-dasharray: 200;
-  stroke-dashoffset: 200;
+  stroke-dasharray: 150;
+  stroke-dashoffset: 150;
   animation: arrowDraw 2s ease-out forwards;
 }
 
 .arrow-head {
   opacity: 0;
-  animation: arrowHeadAppear 0.5s ease-out 2s forwards;
+  animation: arrowHeadAppear 0.3s ease-out 2s forwards;
 }
 
 @keyframes arrowDraw {
