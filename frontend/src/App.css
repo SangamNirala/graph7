@@ -131,63 +131,33 @@ body {
 .bg-purple-700 { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
 .bg-black { background: linear-gradient(135deg, #374151, #1f2937); }
 
-/* Curved Arrows */
+/* Curved Arrows - Simple and Always Visible */
 .curved-arrow {
-  position: absolute;
-  z-index: 1000;
+  position: absolute !important;
+  z-index: 9999 !important;
   opacity: 1 !important;
-  pointer-events: none;
   display: block !important;
+  pointer-events: none;
+  width: 120px !important;
+  height: 80px !important;
 }
 
 .curved-arrow.arrow-right {
-  top: 50%;
-  left: 100%;
-  transform: translateY(-50%);
-  width: 120px;
-  height: 80px;
-  margin-left: -20px;
+  top: 50% !important;
+  left: calc(100% + 10px) !important;
+  transform: translateY(-50%) !important;
 }
 
 .curved-arrow.arrow-down {
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 120px;
-  margin-top: -20px;
+  top: calc(100% + 10px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) rotate(90deg) !important;
 }
 
 .curved-arrow.arrow-left {
-  top: 50%;
-  right: 100%;
-  transform: translateY(-50%);
-  width: 120px;
-  height: 80px;
-  margin-right: -20px;
-}
-
-.arrow-svg {
-  width: 100% !important;
-  height: 100% !important;
-  display: block !important;
-  filter: drop-shadow(0 3px 8px rgba(239, 68, 68, 0.4));
-}
-
-.arrow-path {
-  stroke: #ef4444 !important;
-  stroke-width: 6 !important;
-  fill: none !important;
-  opacity: 1 !important;
-  stroke-linecap: round !important;
-  /* Remove animations that might hide the arrows */
-  stroke-dasharray: none !important;
-  stroke-dashoffset: 0 !important;
-}
-
-.arrow-head {
-  fill: #ef4444 !important;
-  opacity: 1 !important;
+  top: 50% !important;
+  right: calc(100% + 10px) !important;
+  transform: translateY(-50%) rotate(180deg) !important;
 }
 
 /* Stats Section */
