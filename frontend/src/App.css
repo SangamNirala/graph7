@@ -236,32 +236,17 @@ body {
 /* Responsive Design */
 @media (max-width: 768px) {
   .workflow-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(14, auto);
-    gap: 1rem;
+    gap: 2rem;
+    max-width: 90%;
   }
   
-  .step-1, .step-2, .step-3, .step-4, .step-5, .step-6, .step-7, .step-8, .step-9, .step-10, .step-11, .step-12, .step-13, .step-14 {
-    grid-column: 1;
+  .workflow-step {
+    padding: 1.5rem;
   }
   
-  .step-1 { grid-row: 1; }
-  .step-2 { grid-row: 2; }
-  .step-3 { grid-row: 3; }
-  .step-4 { grid-row: 4; }
-  .step-5 { grid-row: 5; }
-  .step-6 { grid-row: 6; }
-  .step-7 { grid-row: 7; }
-  .step-8 { grid-row: 8; }
-  .step-9 { grid-row: 9; }
-  .step-10 { grid-row: 10; }
-  .step-11 { grid-row: 11; }
-  .step-12 { grid-row: 12; }
-  .step-13 { grid-row: 13; }
-  .step-14 { grid-row: 14; }
-  
-  .curved-arrow {
-    display: none;
+  .curved-arrow.arrow-down {
+    width: 60px !important;
+    height: 100px !important;
   }
   
   .main-title {
@@ -293,6 +278,11 @@ body {
   
   .workflow-step {
     padding: 1.5rem;
+  }
+  
+  .curved-arrow.arrow-down {
+    width: 50px !important;
+    height: 80px !important;
   }
 }
 
