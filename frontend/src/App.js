@@ -25,92 +25,36 @@ const WorkflowStep = ({
 );
 
 const CurvedArrow = ({ direction, delay = 0, style = {} }) => {
-  const getArrowElements = () => {
-    switch(direction) {
-      case 'arrow-right':
-        return (
-          <svg width="120" height="80" viewBox="0 0 120 80" className="arrow-svg">
-            <path
-              d="M15,40 Q60,15 105,40"
-              stroke="#ef4444"
-              strokeWidth="6"
-              fill="none"
-              strokeLinecap="round"
-              className="arrow-path"
-            />
-            <polygon
-              points="98,33 110,40 98,47 105,40"
-              fill="#ef4444"
-              className="arrow-head"
-            />
-          </svg>
-        );
-      case 'arrow-down':
-        return (
-          <svg width="80" height="120" viewBox="0 0 80 120" className="arrow-svg">
-            <path
-              d="M40,15 Q15,60 40,105"
-              stroke="#ef4444"
-              strokeWidth="6"
-              fill="none"
-              strokeLinecap="round"
-              className="arrow-path"
-            />
-            <polygon
-              points="33,98 40,110 47,98 40,105"
-              fill="#ef4444"
-              className="arrow-head"
-            />
-          </svg>
-        );
-      case 'arrow-left':
-        return (
-          <svg width="120" height="80" viewBox="0 0 120 80" className="arrow-svg">
-            <path
-              d="M105,40 Q60,15 15,40"
-              stroke="#ef4444"
-              strokeWidth="6"
-              fill="none"
-              strokeLinecap="round"
-              className="arrow-path"
-            />
-            <polygon
-              points="22,33 10,40 22,47 15,40"
-              fill="#ef4444"
-              className="arrow-head"
-            />
-          </svg>
-        );
-      default:
-        return (
-          <svg width="120" height="80" viewBox="0 0 120 80" className="arrow-svg">
-            <path
-              d="M15,40 Q60,15 105,40"
-              stroke="#ef4444"
-              strokeWidth="6"
-              fill="none"
-              strokeLinecap="round"
-              className="arrow-path"
-            />
-            <polygon
-              points="98,33 110,40 98,47 105,40"
-              fill="#ef4444"
-              className="arrow-head"
-            />
-          </svg>
-        );
-    }
-  };
-
   return (
     <div 
       className={`curved-arrow ${direction}`}
       style={{ 
         animationDelay: `${delay}ms`, 
-        ...style
+        ...style,
+        position: 'absolute',
+        zIndex: 9999,
+        backgroundColor: 'rgba(255, 0, 0, 0.1)', // Debug background
+        border: '2px solid red' // Debug border
       }}
     >
-      {getArrowElements()}
+      <svg 
+        width="100%" 
+        height="100%" 
+        viewBox="0 0 120 80" 
+        style={{ display: 'block' }}
+      >
+        <path
+          d="M10,40 Q60,15 110,40"
+          stroke="#ff0000"
+          strokeWidth="8"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <polygon
+          points="105,35 115,40 105,45"
+          fill="#ff0000"
+        />
+      </svg>
     </div>
   );
 };
