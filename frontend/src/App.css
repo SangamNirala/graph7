@@ -135,8 +135,9 @@ body {
 .curved-arrow {
   position: absolute;
   z-index: 1000;
-  opacity: 1;
+  opacity: 1 !important;
   pointer-events: none;
+  display: block !important;
 }
 
 .curved-arrow.arrow-right {
@@ -167,32 +168,26 @@ body {
 }
 
 .arrow-svg {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
   filter: drop-shadow(0 3px 8px rgba(239, 68, 68, 0.4));
 }
 
 .arrow-path {
-  stroke-dasharray: 150;
-  stroke-dashoffset: 150;
-  animation: arrowDraw 2s ease-out forwards;
+  stroke: #ef4444 !important;
+  stroke-width: 6 !important;
+  fill: none !important;
+  opacity: 1 !important;
+  stroke-linecap: round !important;
+  /* Remove animations that might hide the arrows */
+  stroke-dasharray: none !important;
+  stroke-dashoffset: 0 !important;
 }
 
 .arrow-head {
-  opacity: 0;
-  animation: arrowHeadAppear 0.3s ease-out 2s forwards;
-}
-
-@keyframes arrowDraw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes arrowHeadAppear {
-  to {
-    opacity: 1;
-  }
+  fill: #ef4444 !important;
+  opacity: 1 !important;
 }
 
 /* Stats Section */
