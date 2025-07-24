@@ -131,7 +131,7 @@ function App() {
             delay={200}
           />
 
-          <CurvedArrow direction="arrow-right" delay={400} />
+          <CurvedArrow direction="arrow-down" delay={400} />
 
           {/* Step 2: LinkedIn Integration */}
           <WorkflowStep
@@ -155,7 +155,7 @@ function App() {
             delay={1000}
           />
 
-          <CurvedArrow direction="arrow-left" delay={1200} />
+          <CurvedArrow direction="arrow-down" delay={1200} />
 
           {/* Step 4: Automated Notifications (Round 1) */}
           <WorkflowStep
@@ -179,7 +179,7 @@ function App() {
             delay={1800}
           />
 
-          <CurvedArrow direction="arrow-right" delay={2000} />
+          <CurvedArrow direction="arrow-down" delay={2000} />
 
           {/* Step 6: Automated Notifications (Round 2) */}
           <WorkflowStep
@@ -203,7 +203,7 @@ function App() {
             delay={2600}
           />
 
-          <CurvedArrow direction="arrow-left" delay={2800} />
+          <CurvedArrow direction="arrow-down" delay={2800} />
 
           {/* Step 8: AI Agent Meeting */}
           <WorkflowStep
@@ -227,7 +227,7 @@ function App() {
             delay={3400}
           />
 
-          <CurvedArrow direction="arrow-right" delay={3600} />
+          <CurvedArrow direction="arrow-down" delay={3600} />
 
           {/* Step 10: Shortlist Notification */}
           <WorkflowStep
@@ -251,7 +251,7 @@ function App() {
             delay={4200}
           />
 
-          <CurvedArrow direction="arrow-left" delay={4400} />
+          <CurvedArrow direction="arrow-down" delay={4400} />
 
           {/* Step 12: Offer Letter Dispatch */}
           <WorkflowStep
@@ -275,7 +275,7 @@ function App() {
             delay={5000}
           />
 
-          <CurvedArrow direction="arrow-right" delay={5200} />
+          <CurvedArrow direction="arrow-down" delay={5200} />
 
           {/* Step 14: Orientation & Training */}
           <WorkflowStep
