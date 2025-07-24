@@ -45,15 +45,17 @@ body {
   font-weight: 500;
 }
 
-/* Workflow Grid */
+/* Workflow Grid - Single Column Layout */
 .workflow-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(7, 1fr);
-  gap: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rem;
   margin-bottom: 4rem;
   position: relative;
-  min-height: 2100px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Workflow Steps */
