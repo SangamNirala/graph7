@@ -32,6 +32,8 @@ litellm
 lxml
 google-api-core
 httpx
+aiohttp
+openai
 # Advanced AI Analysis Dependencies
 librosa>=0.11.0
 opencv-python>=4.12.0
