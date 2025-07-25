@@ -313,6 +313,14 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = fa
     };
   }, [text, voiceMode, onSpeechComplete, voicesLoaded, preventRepeats, uniqueId]);
 
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      console.log('Speech manually stopped');
+    }
+  };
+
   if (!voiceMode || !text) {
     return null;
   }
@@ -327,6 +335,13 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = fa
             <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
           </div>
           <span className="text-blue-300 text-sm font-medium">🎤 AI Interviewer is speaking...</span>
+          <button
+            onClick={stopSpeaking}
+            className="ml-2 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors"
+            title="Stop Speaking"
+          >
+            Stop
+          </button>
         </>
       )}
     </div>
