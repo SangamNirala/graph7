@@ -1979,6 +1979,7 @@ const InterviewSession = ({ setCurrentPage }) => {
               <AdvancedVideoAnalyzer
                 sessionId={interviewData?.sessionId}
                 isRecording={webcamActive}
+                isPreview={true}
                 onAnalysisUpdate={(analysis) => {
                   // Optional: Handle video analysis updates
                   console.log('Video analysis:', analysis);
