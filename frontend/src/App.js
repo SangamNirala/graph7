@@ -551,7 +551,7 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
 
       } catch (error) {
         console.error('Error initializing avatar interview:', error);
-        setError('Failed to initialize interview session');
+        setError(`Failed to initialize interview session: ${error.message}`);
       } finally {
         setLoading(false);
       }
