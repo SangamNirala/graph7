@@ -47,3 +47,4 @@ transformers>=4.53.0
 vaderSentiment>=3.3.2
 scikit-learn>=1.7.0
 multidict==6.6.3
+attrs
