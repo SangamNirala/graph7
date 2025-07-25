@@ -494,10 +494,22 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
   const isUnknownResponse = (text) => {
     const unknownPhrases = [
       "i don't know", "not sure", "no idea", "skip", "pass", "next question",
-      "i'm not sure", "don't know", "unsure", "can't answer", "no clue"
+      "i'm not sure", "don't know", "unsure", "can't answer", "no clue",
+      "i have no idea", "no answer", "can't think", "blank", "nothing"
     ];
     const lowerText = text.toLowerCase().trim();
     return unknownPhrases.some(phrase => lowerText.includes(phrase));
+  };
+
+  // Function to detect if candidate has started responding during waiting period
+  const detectCandidateResponse = (answer) => {
+    if (answer.trim() && (questionPhase === 'waiting' || questionPhase === 'follow-up')) {
+      console.log('Candidate started responding during waiting period, switching to collecting mode');
+      setQuestionPhase('collecting-answer');
+      setIsWaitingForResponse(false);
+      // Clear the follow-up timeout since candidate is responding
+      clearAllTimeouts();
+    }
   };
 
   // Function to start the response waiting period after question is spoken
