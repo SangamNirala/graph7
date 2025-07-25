@@ -1086,7 +1086,7 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
         )}
         
         {/* Manual Controls - Minimal and Clean */}
-        {!isAISpeaking && (
+        {!isAISpeaking && !isTransitioning && (
           <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 max-w-2xl mx-auto">
             <div className="space-y-4">
               {/* Voice Input Display */}
@@ -1107,7 +1107,7 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
               <div className="flex justify-between items-center">
                 <button
                   onClick={isListening ? stopListening : startListening}
-                  disabled={isAISpeaking}
+                  disabled={isAISpeaking || isTransitioning}
                   className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
                     isListening 
                       ? 'bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30' 
@@ -1119,16 +1119,19 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
                 
                 <button
                   onClick={handleSubmitAnswer}
-                  disabled={!candidateAnswer.trim() || isAISpeaking}
+                  disabled={!candidateAnswer.trim() || isAISpeaking || isTransitioning}
                   className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-2 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Submit Answer
                 </button>
               </div>
               
-              {/* Helpful Instructions */}
+              {/* Enhanced Helpful Instructions */}
               <div className="text-xs text-gray-400 text-center mt-4">
-                💡 The interview will automatically continue after 5 seconds of silence, or click "Submit Answer"
+                💡 {questionPhase === 'waiting' ? 'The AI will ask a follow-up question in 20 seconds if no response is detected' :
+                     questionPhase === 'follow-up' ? 'The AI will automatically move to the next question in 10 seconds if no response' :
+                     questionPhase === 'collecting-answer' ? 'The interview will automatically continue after 5 seconds of silence' :
+                     'The interview will automatically continue after 5 seconds of silence, or click "Submit Answer"'}
               </div>
             </div>
           </div>
