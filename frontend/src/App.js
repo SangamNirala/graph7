@@ -531,12 +531,12 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
   const [hasSpokenCurrentQuestion, setHasSpokenCurrentQuestion] = useState(false);
   const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
 
-  // Voice Activity Detection
-  const { isListening, audioLevel, startListening, stopListening } = useVoiceActivityDetection(
+  // Voice Activity Detection with improved callback
+  const { isListening, audioLevel, hasVoiceActivity, startListening, stopListening } = useVoiceActivityDetection(
     () => {
-      // 5-second silence detected - automatically submit answer if there's content
-      if (candidateAnswer.trim() && !isAISpeaking && !isTransitioning && questionPhase === 'collecting-answer') {
-        console.log('Silence detected, auto-submitting answer:', candidateAnswer.trim());
+      // Only auto-submit if we have an answer and we're waiting for one
+      if (candidateAnswer.trim() && isWaitingForAnswer && !isProcessingAnswer && !isAISpeaking) {
+        console.log('Voice silence detected, auto-submitting answer:', candidateAnswer.trim());
         handleSubmitAnswer();
       }
     },
