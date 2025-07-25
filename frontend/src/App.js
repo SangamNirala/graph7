@@ -630,67 +630,53 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
       try {
         setLoading(true);
         
-        // Debug logging
-        console.log('Avatar Interview - Debug Info:');
-        console.log('Token received:', token);
-        console.log('ValidatedJob:', validatedJob);
+        console.log('Initializing avatar interview with token:', token);
         
-        // Check if token is available
         if (!token) {
-          console.error('No token available for avatar interview');
           setError('Authentication token missing. Please start interview again.');
           return;
         }
         
-        // Get stored interview data (should already exist from InterviewStart)
+        // Get stored interview data
         const storedData = localStorage.getItem('interviewData');
-        console.log('Stored interview data:', storedData);
-        
         if (!storedData) {
           setError('No interview session found. Please start interview again.');
           return;
         }
 
         const parsedData = JSON.parse(storedData);
-        setInterviewData(parsedData);
         
-        // Check if we have session data from the previous start-interview call
         if (!parsedData.sessionId) {
           setError('Invalid interview session. Please start interview again.');
           return;
         }
         
-        console.log('Reusing existing interview session:', parsedData.sessionId);
+        console.log('Using existing interview session:', parsedData.sessionId);
         
-        // Create session data object from stored data
+        setInterviewData(parsedData);
+        
+        // Create session data
         const sessionData = {
           session_id: parsedData.sessionId,
           first_question: parsedData.currentQuestion,
-          question_number: parsedData.questionNumber,
-          total_questions: parsedData.totalQuestions,
-          voice_mode: true, // Force voice mode for avatar interview
-          questions: [parsedData.currentQuestion], // We'll load more as needed
-          welcome_audio: parsedData.welcomeAudio,
-          question_audio: parsedData.questionAudio
+          question_number: parsedData.questionNumber || 1,
+          total_questions: parsedData.totalQuestions || 8,
+          voice_mode: true
         };
         
-        console.log('Session data created:', sessionData);
         setSessionData(sessionData);
         
-        // Set first question from stored data
+        // Set first question
         if (parsedData.currentQuestion) {
-          // Wrap the question string in an object structure expected by the UI
-          setCurrentQuestion({ 
-            question: parsedData.currentQuestion 
-          });
-          setCurrentQuestionIndex(parsedData.questionNumber - 1 || 0); // questionNumber is 1-based
+          setCurrentQuestion({ question: parsedData.currentQuestion });
+          setCurrentQuestionIndex(0);
         }
 
         setIsInitialized(true);
 
       } catch (error) {
         console.error('Error initializing avatar interview:', error);
-        setError(`Failed to initialize interview session: ${error.message}`);
+        setError(`Failed to initialize interview: ${error.message}`);
       } finally {
         setLoading(false);
       }
