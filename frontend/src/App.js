@@ -2362,6 +2362,8 @@ function App() {
         return <CandidateLogin setCurrentPage={setCurrentPage} setToken={setToken} setValidatedJob={setValidatedJob} />;
       case 'interview-start':
         return <InterviewStart setCurrentPage={setCurrentPage} token={token} validatedJob={validatedJob} />;
+      case 'capture-image':
+        return <CaptureImage setCurrentPage={setCurrentPage} token={token} validatedJob={validatedJob} />;
       case 'interview-session':
         return <InterviewSession setCurrentPage={setCurrentPage} />;
       default:
