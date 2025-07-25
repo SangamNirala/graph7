@@ -1935,6 +1935,67 @@ const InterviewSession = ({ setCurrentPage }) => {
           </div>
         )}
       </div>
+      
+      {/* Webcam Preview - Bottom Right Corner */}
+      {webcamActive && (
+        <div className={`fixed ${webcamMinimized ? 'bottom-4 right-4' : 'bottom-4 right-4'} z-50 transition-all duration-300`}>
+          <div className="bg-white/10 backdrop-blur-lg rounded-lg border border-white/20 overflow-hidden shadow-xl">
+            {/* Webcam Header */}
+            <div className="bg-white/5 px-3 py-2 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-white text-xs font-medium">Camera</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setWebcamMinimized(!webcamMinimized)}
+                  className="text-white/70 hover:text-white transition-colors p-1"
+                  title={webcamMinimized ? "Expand" : "Minimize"}
+                >
+                  {webcamMinimized ? (
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12l-1.411-1.411L16 13.177V8a1 1 0 00-1-1h-4.764a1 1 0 00-.894.553L9 8H5a1 1 0 00-1 1v6a1 1 0 001 1h4l.342.447A1 1 0 0010.236 17H15a1 1 0 001-1v-5.177l2.589 2.588L20 12z" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={() => setWebcamActive(false)}
+                  className="text-white/70 hover:text-white transition-colors p-1"
+                  title="Close Camera"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            {/* Webcam Video */}
+            {!webcamMinimized && (
+              <AdvancedVideoAnalyzer
+                sessionId={interviewData?.sessionId}
+                isRecording={webcamActive}
+                onAnalysisUpdate={(analysis) => {
+                  // Optional: Handle video analysis updates
+                  console.log('Video analysis:', analysis);
+                }}
+              />
+            )}
+            
+            {webcamMinimized && (
+              <div className="w-16 h-12 bg-gray-800 flex items-center justify-center">
+                <svg className="w-6 h-6 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
