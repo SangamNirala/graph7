@@ -17,6 +17,10 @@ import io
 import base64
 import tempfile
 from typing import Dict, Any, Optional
+import urllib3
+
+# Suppress SSL warnings for testing
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Backend URL - using the production URL from frontend .env
 BASE_URL = "https://0333f662-5e6b-4f4b-a6c5-ab4fc14b9c53.preview.emergentagent.com/api"
