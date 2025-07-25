@@ -810,13 +810,364 @@ SKILLS:
         
         return results
 
+    def test_avatar_interview_token_creation(self) -> bool:
+        """Test creating enhanced token specifically for avatar interview testing"""
+        try:
+            # Create resume content for Avatar Interface Developer
+            resume_content = """Sarah Mitchell
+Avatar Interface Developer
+Email: sarah.mitchell@email.com
+Phone: (555) 999-8888
+
+EXPERIENCE:
+- 6+ years of frontend development with focus on interactive interfaces
+- Expert in React, JavaScript, and real-time web technologies
+- Built avatar-based applications using SVG animations and Web APIs
+- Experience with voice interfaces, WebRTC, and audio processing
+- Led development of conversational AI interfaces
+
+SKILLS:
+- React, JavaScript, TypeScript, HTML5, CSS3
+- SVG animations, Canvas API, Web Audio API
+- WebRTC, Speech Recognition API, Text-to-Speech
+- Real-time systems, WebSocket communication
+- Avatar design and animation frameworks
+
+EDUCATION:
+Master of Science in Human-Computer Interaction
+Tech Institute, 2017"""
+            
+            files = {
+                'resume_file': ('avatar_resume.txt', io.StringIO(resume_content), 'text/plain')
+            }
+            
+            data = {
+                'job_title': 'Avatar Interface Developer',
+                'job_description': 'We are seeking an experienced developer to enhance our AI-powered interview platform with realistic avatar interfaces. The role involves implementing human-like female interviewer avatars with lip-sync animation, voice-driven interactions, and seamless user experience.',
+                'job_requirements': 'Requirements: 5+ years frontend experience, React expertise, SVG animation skills, Web Speech API knowledge, real-time audio processing, avatar interface design experience.',
+                'include_coding_challenge': False,
+                'role_archetype': 'Software Engineer',
+                'interview_focus': 'Technical Deep-Dive'
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/admin/upload-job-enhanced",
+                files=files,
+                data=data,
+                timeout=15
+            )
+            
+            success = response.status_code == 200
+            if success:
+                result = response.json()
+                success = (result.get("success", False) and 
+                          "token" in result and 
+                          "features" in result)
+                if success:
+                    self.avatar_token = result["token"]
+                    # Verify avatar-specific features
+                    features = result.get("features", {})
+                    success = (features.get("role_archetype") == "Software Engineer" and
+                              features.get("interview_focus") == "Technical Deep-Dive")
+            
+            details = f"Status: {response.status_code}"
+            if success:
+                details += f", Token: {self.avatar_token[:8]}..., Role: {result['features']['role_archetype']}, Focus: {result['features']['interview_focus']}"
+            else:
+                details += f", Response: {response.text[:200]}"
+            
+            self.log_test("Avatar Interview Token Creation", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Avatar Interview Token Creation", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_avatar_token_validation(self) -> bool:
+        """Test validation of avatar interview token"""
+        if not hasattr(self, 'avatar_token') or not self.avatar_token:
+            self.log_test("Avatar Token Validation", False, "No avatar token available")
+            return False
+        
+        try:
+            payload = {"token": self.avatar_token}
+            response = self.session.post(
+                f"{self.base_url}/candidate/validate-token",
+                json=payload,
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = (data.get("valid", False) and 
+                          "job_title" in data and
+                          data.get("job_title") == "Avatar Interface Developer")
+            
+            details = f"Status: {response.status_code}"
+            if success:
+                details += f", Job Title: {data.get('job_title')}, Valid: {data.get('valid')}"
+            else:
+                details += f", Response: {response.text[:200]}"
+            
+            self.log_test("Avatar Token Validation", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Avatar Token Validation", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_avatar_interview_start_voice_mode(self) -> bool:
+        """Test starting avatar interview with voice_mode=true"""
+        if not hasattr(self, 'avatar_token') or not self.avatar_token:
+            self.log_test("Avatar Interview Start (Voice Mode)", False, "No avatar token available")
+            return False
+        
+        try:
+            payload = {
+                "token": self.avatar_token,
+                "candidate_name": "Sarah Mitchell",
+                "voice_mode": True
+            }
+            response = self.session.post(
+                f"{self.base_url}/candidate/start-interview",
+                json=payload,
+                timeout=25  # Longer timeout for voice processing
+            )
+            
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = ("session_id" in data and 
+                          "first_question" in data and 
+                          "voice_mode" in data and
+                          data.get("voice_mode") == True and
+                          "question_number" in data)
+                
+                if success:
+                    self.avatar_session_id = data["session_id"]
+                    # Check for avatar-specific features
+                    if "is_enhanced" in data:
+                        success = data.get("is_enhanced", False)
+            
+            details = f"Status: {response.status_code}"
+            if success:
+                details += f", Voice Mode: {data.get('voice_mode')}, Session: {self.avatar_session_id[:8] if hasattr(self, 'avatar_session_id') else 'None'}..."
+                details += f", Enhanced: {data.get('is_enhanced', False)}, Question: {data.get('first_question', '')[:50]}..."
+            else:
+                details += f", Response: {response.text[:200]}"
+            
+            self.log_test("Avatar Interview Start (Voice Mode)", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Avatar Interview Start (Voice Mode)", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_avatar_question_generation(self) -> bool:
+        """Test that avatar interview generates appropriate questions"""
+        if not hasattr(self, 'avatar_session_id') or not self.avatar_session_id:
+            self.log_test("Avatar Question Generation", False, "No avatar session available")
+            return False
+        
+        try:
+            # Test sending first answer to get next question
+            payload = {
+                "token": self.avatar_token,
+                "message": "I have extensive experience building avatar interfaces using React and SVG animations. I've implemented lip-sync functionality using Web Audio API and created real-time voice-driven interactions. My recent project involved developing a conversational AI interface with human-like avatars that could respond to voice commands and provide visual feedback through facial expressions and mouth movements."
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/candidate/send-message",
+                json=payload,
+                timeout=20
+            )
+            
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = ("next_question" in data and 
+                          "question_number" in data and
+                          not data.get("completed", False))
+                
+                # Verify question is relevant to avatar development
+                if success:
+                    next_question = data.get("next_question", "").lower()
+                    avatar_keywords = ["interface", "user", "experience", "frontend", "react", "javascript", "web", "api", "development", "technical"]
+                    has_relevant_content = any(keyword in next_question for keyword in avatar_keywords)
+                    success = has_relevant_content
+            
+            details = f"Status: {response.status_code}"
+            if success:
+                details += f", Question #{data.get('question_number')}, Next: {data.get('next_question', '')[:80]}..."
+            else:
+                details += f", Response: {response.text[:200]}"
+            
+            self.log_test("Avatar Question Generation", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Avatar Question Generation", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_avatar_interview_progression(self) -> bool:
+        """Test avatar interview can progress through multiple questions"""
+        if not hasattr(self, 'avatar_token') or not self.avatar_token:
+            self.log_test("Avatar Interview Progression", False, "No avatar token available")
+            return False
+        
+        # Sample answers for avatar interface developer role
+        avatar_answers = [
+            "I use React hooks like useState and useEffect to manage avatar state, combined with SVG animations for facial expressions. I implement real-time lip-sync by analyzing audio frequency data and mapping it to mouth shape keyframes.",
+            
+            "For voice integration, I use the Web Speech API for both recognition and synthesis. I handle browser compatibility issues with polyfills and implement fallback text interfaces. I also optimize audio processing for low latency.",
+            
+            "I ensure responsive avatar design using CSS media queries and scalable SVG elements. I test across different devices and screen sizes, implementing touch-friendly controls for mobile users while maintaining desktop functionality."
+        ]
+        
+        try:
+            questions_completed = 0
+            
+            for i, answer in enumerate(avatar_answers):
+                payload = {
+                    "token": self.avatar_token,
+                    "message": answer
+                }
+                
+                response = self.session.post(
+                    f"{self.base_url}/candidate/send-message",
+                    json=payload,
+                    timeout=20
+                )
+                
+                if response.status_code != 200:
+                    details = f"Failed at question {i+2}, Status: {response.status_code}"
+                    self.log_test("Avatar Interview Progression", False, details)
+                    return False
+                
+                data = response.json()
+                questions_completed += 1
+                
+                # Check if we have next question or completion
+                if data.get("completed", False):
+                    break
+                elif not data.get("next_question"):
+                    details = f"No next question provided at step {i+2}"
+                    self.log_test("Avatar Interview Progression", False, details)
+                    return False
+                
+                time.sleep(1)  # Brief delay between questions
+            
+            success = questions_completed >= 3  # Should complete at least 3 questions
+            details = f"Completed {questions_completed} questions successfully"
+            
+            self.log_test("Avatar Interview Progression", success, details)
+            return success
+            
+        except Exception as e:
+            self.log_test("Avatar Interview Progression", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_avatar_voice_mode_integration(self) -> bool:
+        """Test voice mode parameter handling for avatar interviews"""
+        if not hasattr(self, 'avatar_token') or not self.avatar_token:
+            self.log_test("Avatar Voice Mode Integration", False, "No avatar token available")
+            return False
+        
+        try:
+            # Test camera test endpoint for avatar interviews
+            payload = {"token": self.avatar_token}
+            response = self.session.post(
+                f"{self.base_url}/candidate/camera-test",
+                json=payload,
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = (data.get("success", False) and 
+                          "features" in data and
+                          data["features"].get("voice_mode", False))
+                
+                # Verify avatar-specific features
+                if success:
+                    features = data.get("features", {})
+                    success = (features.get("role_archetype") == "Software Engineer" and
+                              not features.get("coding_challenge", True))  # Should be False
+            
+            details = f"Status: {response.status_code}"
+            if success:
+                details += f", Voice Mode: {data['features']['voice_mode']}, Role: {data['features']['role_archetype']}"
+            else:
+                details += f", Response: {response.text[:200]}"
+            
+            self.log_test("Avatar Voice Mode Integration", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Avatar Voice Mode Integration", False, f"Exception: {str(e)}")
+            return False
+    
+    def run_avatar_interview_tests(self) -> Dict[str, bool]:
+        """Run avatar interview specific tests"""
+        print("=" * 70)
+        print("AVATAR INTERVIEW FUNCTIONALITY TESTING")
+        print("Testing Backend Support for Avatar Interface Features")
+        print("=" * 70)
+        print()
+        
+        results = {}
+        
+        # Admin authentication (required for token creation)
+        results["admin_login"] = self.test_admin_login()
+        
+        # Avatar-specific tests
+        results["avatar_token_creation"] = self.test_avatar_interview_token_creation()
+        results["avatar_token_validation"] = self.test_avatar_token_validation()
+        results["avatar_interview_start"] = self.test_avatar_interview_start_voice_mode()
+        results["avatar_question_generation"] = self.test_avatar_question_generation()
+        results["avatar_interview_progression"] = self.test_avatar_interview_progression()
+        results["avatar_voice_mode_integration"] = self.test_avatar_voice_mode_integration()
+        
+        # Summary
+        print("=" * 70)
+        print("AVATAR INTERVIEW TEST SUMMARY")
+        print("=" * 70)
+        
+        passed = sum(1 for result in results.values() if result)
+        total = len(results)
+        
+        categories = {
+            "Admin Authentication": ["admin_login"],
+            "Avatar Token Management": ["avatar_token_creation", "avatar_token_validation"],
+            "Avatar Interview Flow": ["avatar_interview_start", "avatar_question_generation", "avatar_interview_progression"],
+            "Voice Mode Integration": ["avatar_voice_mode_integration"]
+        }
+        
+        for category, test_names in categories.items():
+            print(f"\n{category}:")
+            for test_name in test_names:
+                if test_name in results:
+                    status = "✅ PASS" if results[test_name] else "❌ FAIL"
+                    print(f"  {status} {test_name}")
+        
+        print()
+        print(f"AVATAR TESTS: {passed}/{total} tests passed ({passed/total*100:.1f}%)")
+        
+        if passed == total:
+            print("🎉 ALL AVATAR TESTS PASSED! Backend fully supports avatar interview functionality.")
+        elif passed >= total * 0.8:
+            print("✅ MOSTLY WORKING! Avatar interview backend is functional with minor issues.")
+        else:
+            print("⚠️  Multiple avatar tests failed. Check the details above.")
+        
+        return results
+
 def main():
     """Main test execution"""
     tester = InterviewAgentTester()
-    results = tester.run_all_tests()
+    
+    # Run avatar interview tests as requested
+    avatar_results = tester.run_avatar_interview_tests()
     
     # Return exit code based on results
-    all_passed = all(results.values())
+    all_passed = all(avatar_results.values())
     return 0 if all_passed else 1
 
 if __name__ == "__main__":
