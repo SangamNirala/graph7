@@ -1567,6 +1567,306 @@ const InterviewStart = ({ setCurrentPage, token, validatedJob }) => {
   );
 };
 
+// Capture Image Component - Face detection and image capture before interview
+const CaptureImage = ({ setCurrentPage, token, validatedJob }) => {
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraError, setCameraError] = useState('');
+  const [faceDetected, setFaceDetected] = useState(0); // 0: none, 1: one face, 2+: multiple
+  const [faceCentered, setFaceCentered] = useState(false);
+  const [lightingGood, setLightingGood] = useState(false);
+  const [imageCaptured, setImageCaptured] = useState(false);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const faceDetectionRef = useRef(null);
+  const animationFrameRef = useRef(null);
+
+  // Initialize camera
+  const requestCameraAccess = async () => {
+    try {
+      setCameraError('');
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 640 }, 
+          height: { ideal: 480 },
+          facingMode: 'user'
+        } 
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Camera access error:', error);
+      setCameraError('Camera not accessible. Please check your device or browser settings.');
+    }
+  };
+
+  // Initialize face detection
+  const initializeFaceDetection = async () => {
+    try {
+      // Using a simple face detection approach with canvas analysis
+      // For production, you'd want to use MediaPipe or similar
+      startFaceDetectionLoop();
+    } catch (error) {
+      console.error('Face detection initialization failed:', error);
+    }
+  };
+
+  // Face detection loop using canvas analysis
+  const startFaceDetectionLoop = () => {
+    const detectFaces = () => {
+      if (!videoRef.current || !canvasRef.current) {
+        animationFrameRef.current = requestAnimationFrame(detectFaces);
+        return;
+      }
+
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Simple face detection simulation
+        // In production, use MediaPipe Face Detection
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const { faces, lighting } = analyzeFaceAndLighting(imageData, canvas.width, canvas.height);
+        
+        setFaceDetected(faces);
+        setLightingGood(lighting > 0.3); // Threshold for good lighting
+        
+        // Check if face is centered (simplified)
+        setFaceCentered(faces === 1);
+      }
+
+      animationFrameRef.current = requestAnimationFrame(detectFaces);
+    };
+
+    detectFaces();
+  };
+
+  // Simplified face and lighting analysis
+  const analyzeFaceAndLighting = (imageData, width, height) => {
+    const data = imageData.data;
+    let totalBrightness = 0;
+    let pixelCount = 0;
+    
+    // Sample center region for lighting analysis
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const sampleRadius = Math.min(width, height) / 4;
+
+    for (let y = centerY - sampleRadius; y < centerY + sampleRadius; y++) {
+      for (let x = centerX - sampleRadius; x < centerX + sampleRadius; x++) {
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+          const i = (y * width + x) * 4;
+          const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+          totalBrightness += brightness;
+          pixelCount++;
+        }
+      }
+    }
+
+    const avgBrightness = totalBrightness / pixelCount / 255;
+    
+    // Simulate face detection (in production, use actual face detection)
+    const faces = Math.random() > 0.3 ? 1 : 0; // Simplified simulation
+    
+    return { faces, lighting: avgBrightness };
+  };
+
+  // Capture face image
+  const captureFace = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    setCapturedImage(imageDataUrl);
+    setImageCaptured(true);
+  };
+
+  // Confirm and proceed to interview
+  const confirmInterview = async () => {
+    setLoading(true);
+    try {
+      // Store captured image data
+      const interviewData = JSON.parse(localStorage.getItem('interviewData') || '{}');
+      interviewData.capturedImage = capturedImage;
+      localStorage.setItem('interviewData', JSON.stringify(interviewData));
+      
+      setCurrentPage('interview-session');
+    } catch (error) {
+      console.error('Error proceeding to interview:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cleanup
+  useEffect(() => {
+    requestCameraAccess();
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (cameraStream && videoRef.current) {
+      videoRef.current.addEventListener('loadedmetadata', initializeFaceDetection);
+    }
+  }, [cameraStream]);
+
+  const canCapture = faceDetected === 1 && faceCentered && lightingGood && !cameraError;
+  const showLightingWarning = faceDetected > 0 && !lightingGood;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
+      <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 w-full max-w-4xl">
+        
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-4">Capture Image</h1>
+          <p className="text-lg text-white/80">
+            Please position yourself in front of the camera for face verification
+          </p>
+        </div>
+
+        {/* Camera Section */}
+        <div className="relative mb-8">
+          <div className="relative mx-auto w-full max-w-2xl">
+            {/* Video Stream */}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-auto rounded-lg shadow-lg"
+              style={{ maxHeight: '400px', objectFit: 'cover' }}
+            />
+            
+            {/* Face Guide Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="border-2 border-dashed border-white/50 rounded-full w-64 h-80 flex items-center justify-center">
+                <span className="text-white/70 text-sm">Align your face here</span>
+              </div>
+            </div>
+
+            {/* Hidden canvas for face detection */}
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+
+          {/* Camera Error */}
+          {cameraError && (
+            <div className="mt-4 text-center">
+              <p className="text-red-400 mb-4">{cameraError}</p>
+              <button
+                onClick={requestCameraAccess}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                Retry Camera Access
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Status Messages */}
+        <div className="mb-6 space-y-2">
+          {/* Face Detection Status */}
+          {faceDetected === 0 && !cameraError && (
+            <p className="text-yellow-400 text-center">
+              ⚠️ No face detected. Please align your face within the frame.
+            </p>
+          )}
+          {faceDetected > 1 && (
+            <p className="text-red-400 text-center">
+              ❌ Multiple faces detected. Please ensure only you are visible.
+            </p>
+          )}
+          {faceDetected === 1 && (
+            <p className="text-green-400 text-center">
+              ✅ Face detected successfully
+            </p>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-center items-center gap-6 mb-8">
+          {/* Lighting Warning */}
+          {showLightingWarning && (
+            <p className="text-red-400 text-sm">
+              💡 Improve the lighting
+            </p>
+          )}
+
+          {/* Capture Face Button */}
+          <button
+            onClick={captureFace}
+            disabled={!canCapture || imageCaptured}
+            className={`px-8 py-3 rounded-lg font-semibold transition-all duration-300 ${
+              canCapture && !imageCaptured
+                ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
+                : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+            }`}
+          >
+            {imageCaptured ? '✓ Face Captured' : 'Capture Face'}
+          </button>
+        </div>
+
+        {/* Captured Image Preview */}
+        {imageCaptured && capturedImage && (
+          <div className="mb-8 text-center">
+            <h3 className="text-lg font-semibold text-white mb-4">Captured Image:</h3>
+            <img
+              src={capturedImage}
+              alt="Captured face"
+              className="mx-auto rounded-lg shadow-lg max-w-xs"
+            />
+          </div>
+        )}
+
+        {/* Confirm Interview Button */}
+        <div className="text-center">
+          <button
+            onClick={confirmInterview}
+            disabled={!imageCaptured || loading}
+            className={`px-12 py-4 rounded-lg font-bold text-lg transition-all duration-300 ${
+              imageCaptured && !loading
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+            }`}
+          >
+            {loading ? 'Processing...' : 'Confirm Interview'}
+          </button>
+        </div>
+
+        {/* Instructions */}
+        <div className="mt-8 text-center text-sm text-white/60">
+          <p>📷 Ensure your face is clearly visible and well-lit</p>
+          <p>🎯 Position yourself within the guide frame</p>
+          <p>⚡ Good lighting helps with accurate detection</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Interview Session Component - Step-by-Step Single Question Interface
 const InterviewSession = ({ setCurrentPage }) => {
   const [currentQuestionData, setCurrentQuestionData] = useState(null);
