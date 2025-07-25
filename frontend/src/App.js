@@ -1785,8 +1785,28 @@ const CaptureImage = ({ setCurrentPage, token, validatedJob }) => {
             
             {/* Face Guide Overlay */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="border-2 border-dashed border-white/50 rounded-full w-64 h-80 flex items-center justify-center">
-                <span className="text-white/70 text-sm">Align your face here</span>
+              <div className={`border-4 rounded-full w-64 h-80 flex items-center justify-center transition-all duration-300 ${
+                faceDetected === 1 && faceCentered && lightingGood 
+                  ? 'border-green-400 border-solid shadow-lg shadow-green-400/50' 
+                  : faceDetected === 1 
+                    ? 'border-yellow-400 border-dashed'
+                    : 'border-white/50 border-dashed'
+              }`}>
+                <div className="text-center">
+                  <div className={`text-2xl mb-2 ${
+                    faceDetected === 1 && faceCentered && lightingGood 
+                      ? 'text-green-400' 
+                      : 'text-white/70'
+                  }`}>
+                    {faceDetected === 1 && faceCentered && lightingGood ? '✓' : '👤'}
+                  </div>
+                  <span className="text-white/70 text-sm">
+                    {faceDetected === 1 && faceCentered && lightingGood 
+                      ? 'Perfect!' 
+                      : 'Align your face here'
+                    }
+                  </span>
+                </div>
               </div>
             </div>
 
