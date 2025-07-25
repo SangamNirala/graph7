@@ -38,7 +38,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from textstat import flesch_reading_ease
 
 # Advanced Analysis Engines
-from emotion_analyzer import emotion_analyzer
+# from emotion_analyzer import emotion_analyzer
 from speech_analyzer import speech_analyzer
 
 ROOT_DIR = Path(__file__).parent
