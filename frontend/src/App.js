@@ -511,7 +511,7 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
     
     // Set 20-second timeout for follow-up prompt
     const timeoutId = setTimeout(() => {
-      if (!candidateAnswer.trim() && !followUpAsked) {
+      if (!candidateAnswer.trim() && !followUpAsked && !isTransitioning) {
         askFollowUpQuestion();
       }
     }, 20000); // 20 seconds
@@ -529,15 +529,76 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
     const followUpText = "Do you know the answer, or should I move to the next question?";
     speakFollowUpQuestion(followUpText);
     
-    // Set 10-second timeout for auto-skip
+    // Set 10-second timeout for enhanced auto-skip with announcement
     const timeoutId = setTimeout(() => {
-      if (!candidateAnswer.trim()) {
-        console.log('No response to follow-up, moving to next question...');
-        moveToNextQuestion();
+      if (!candidateAnswer.trim() && !isTransitioning) {
+        console.log('No response to follow-up, announcing transition...');
+        announceTransitionAndMoveToNext();
       }
     }, 10000); // 10 seconds
     
     setTimeoutIds([timeoutId]);
+  };
+
+  // Enhanced function to announce transition before moving to next question
+  const announceTransitionAndMoveToNext = () => {
+    console.log('Announcing transition to next question...');
+    setIsTransitioning(true);
+    setQuestionPhase('transitioning');
+    
+    // Clear any existing timeouts
+    clearAllTimeouts();
+    
+    // Announce the transition
+    const transitionText = "Since you're not responding, let's move to the next question.";
+    speakTransitionAnnouncement(transitionText);
+    
+    // Set short timeout to actually move to next question after announcement
+    const timeoutId = setTimeout(() => {
+      moveToNextQuestion();
+    }, 3000); // 3 seconds after announcement
+    
+    setTimeoutIds([timeoutId]);
+  };
+
+  // Function to speak transition announcement
+  const speakTransitionAnnouncement = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsAISpeaking(true);
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      utterance.volume = 0.8;
+      
+      // Try to get a female voice
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes('female') || 
+        voice.name.toLowerCase().includes('woman') ||
+        voice.name.toLowerCase().includes('samantha') ||
+        voice.name.toLowerCase().includes('karen') ||
+        voice.name.toLowerCase().includes('zira') ||
+        voice.lang.includes('en')
+      );
+      
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
+      
+      utterance.onend = () => {
+        setIsAISpeaking(false);
+        console.log('Transition announcement finished speaking');
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('Transition announcement speech error:', event);
+        setIsAISpeaking(false);
+      };
+      
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
   // Function to speak follow-up question
