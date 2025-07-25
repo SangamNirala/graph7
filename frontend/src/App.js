@@ -1844,12 +1844,11 @@ const InterviewSession = ({ setCurrentPage }) => {
               {/* AI Voice Speaker - Only speak once per question */}
               {interviewData.voiceMode && (
                 <AIVoiceSpeaker 
-                  text={!spokenQuestions.has(currentQuestionData.questionNumber) ? currentQuestionData.question : null} 
+                  text={currentQuestionData.question} 
                   voiceMode={interviewData.voiceMode}
-                  onSpeechComplete={() => {
-                    console.log('Question spoken');
-                    setSpokenQuestions(prev => new Set([...prev, currentQuestionData.questionNumber]));
-                  }}
+                  preventRepeats={true}
+                  uniqueId={`question-${currentQuestionData.questionNumber}`}
+                  onSpeechComplete={() => console.log(`Question ${currentQuestionData.questionNumber} spoken`)}
                 />
               )}
               
