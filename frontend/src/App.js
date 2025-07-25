@@ -732,9 +732,12 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
           };
           
           utterance.onend = () => {
-            console.log('Avatar AI finished speaking');
+            console.log('Avatar AI finished speaking, starting response waiting period');
             setIsAISpeaking(false);
             if (onSpeechEnd) onSpeechEnd();
+            
+            // Start the 20-second waiting period after AI finishes speaking
+            startResponseWaitingPeriod();
             
             // Auto-start listening after AI finishes speaking
             setTimeout(() => {
@@ -754,7 +757,7 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
           
         }, 100);
       }
-    }, [text, isInitialized, currentQuestionIndex]);
+    }, [text, isInitialized, currentQuestionIndex, hasSpokenQuestion]);
 
     return null; // This component only handles speech, no visual elements
   };
