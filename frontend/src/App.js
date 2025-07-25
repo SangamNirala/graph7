@@ -934,171 +934,122 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
     );
   }
 
+  // Main interview interface
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="max-w-6xl mx-auto p-4">
         
         {/* AI Voice Speaker Component */}
         {currentQuestion && (
-          <AvatarAIVoiceSpeaker 
-            text={currentQuestion.question}
-            onSpeechStart={() => setIsAISpeaking(true)}
-            onSpeechEnd={() => setIsAISpeaking(false)}
-          />
+          <SpeakQuestion questionText={currentQuestion.question} />
         )}
-        
+
         {/* Avatar Section */}
-        <div className="text-center mb-8 pt-8">
-          <RealisticFemaleAvatar 
-            isSpeaking={isAISpeaking}
-            isListening={isListening && !isAISpeaking}
-            currentQuestion={currentQuestion?.question || ''}
-          />
-        </div>
-        
-        {/* Question Display - Minimal UI */}
-        {currentQuestion && (
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-6 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="mb-4">
-                <span className="inline-block bg-blue-500/20 text-blue-200 px-4 py-2 rounded-full text-sm border border-blue-500/30">
-                  Question {currentQuestionIndex + 1} of {sessionData?.questions?.length || 8}
-                </span>
-              </div>
-              <p className="text-white text-xl leading-relaxed font-medium mb-6">
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          
+          {/* Avatar Container */}
+          <div className="mb-8">
+            <RealisticFemaleAvatar 
+              isSpeaking={isAISpeaking}
+              isListening={isWaitingForAnswer && hasVoiceActivity}
+              currentQuestion={currentQuestion?.question}
+            />
+          </div>
+
+          {/* Question Display */}
+          {currentQuestion && (
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-8 max-w-4xl">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                Question {currentQuestionIndex + 1} of {sessionData?.total_questions || 8}
+              </h3>
+              <p className="text-gray-200 text-lg leading-relaxed">
                 {currentQuestion.question}
               </p>
             </div>
-          </div>
-        )}
-        
-        {/* Enhanced Status Indicators */}
-        {isWaitingForResponse && !isAISpeaking && (
-          <div className="bg-yellow-500/20 backdrop-blur-lg rounded-xl p-4 border border-yellow-500/30 mb-6 max-w-2xl mx-auto">
-            <div className="flex items-center justify-center space-x-4">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full mr-2 animate-pulse"></div>
-                <span className="text-yellow-200">Waiting for your response...</span>
-              </div>
-              <div className="text-yellow-300 text-sm">
-                {followUpAsked ? "(Follow-up question asked)" : "(20 seconds to respond)"}
-              </div>
-            </div>
-          </div>
-        )}
+          )}
 
-        {isTransitioning && (
-          <div className="bg-purple-500/20 backdrop-blur-lg rounded-xl p-4 border border-purple-500/30 mb-6 max-w-2xl mx-auto">
-            <div className="flex items-center justify-center space-x-4">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-purple-400 rounded-full mr-2 animate-pulse"></div>
-                <span className="text-purple-200">Transitioning to next question...</span>
+          {/* Status Indicators */}
+          <div className="mb-6">
+            {isAISpeaking && (
+              <div className="flex items-center space-x-2 text-blue-300">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <span>Sarah is speaking...</span>
               </div>
-            </div>
+            )}
+            
+            {isWaitingForAnswer && !isAISpeaking && (
+              <div className="flex items-center space-x-2 text-green-300">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span>I'm listening to your answer...</span>
+              </div>
+            )}
+            
+            {isProcessingAnswer && (
+              <div className="flex items-center space-x-2 text-yellow-300">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                <span>Processing your answer...</span>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Voice Activity Indicator */}
-        {isListening && !isAISpeaking && !isTransitioning && (
-          <div className="bg-green-500/20 backdrop-blur-lg rounded-xl p-4 border border-green-500/30 mb-6 max-w-2xl mx-auto">
-            <div className="flex items-center justify-center space-x-4">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                <span className="text-green-200">I'm listening to your answer...</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                {[...Array(10)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-1 bg-green-400 rounded transition-all duration-100"
-                    style={{
-                      height: `${Math.max(4, (audioLevel / 8) + (Math.random() * 8))}px`,
-                      opacity: audioLevel > (i * 8) ? 1 : 0.3
-                    }}
-                  ></div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* AI Speaking Indicator */}
-        {isAISpeaking && (
-          <div className="bg-blue-500/20 backdrop-blur-lg rounded-xl p-4 border border-blue-500/30 mb-6 max-w-2xl mx-auto">
-            <div className="flex items-center justify-center space-x-4">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-400 rounded-full mr-2 animate-pulse"></div>
-                <span className="text-blue-200">
-                  {questionPhase === 'speaking' ? 'AI Interviewer is asking the question...' : 
-                   questionPhase === 'follow-up' ? 'AI Interviewer is asking follow-up...' :
-                   questionPhase === 'transitioning' ? 'AI Interviewer is announcing transition...' :
-                   'AI Interviewer is speaking...'}
-                </span>
-              </div>
-              <div className="flex space-x-1">
-                {[...Array(3)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
-                    style={{ animationDelay: `${i * 0.1}s` }}
-                  ></div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Manual Controls - Minimal and Clean */}
-        {!isAISpeaking && !isTransitioning && (
-          <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 max-w-2xl mx-auto">
-            <div className="space-y-4">
-              {/* Voice Input Display */}
-              <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
-                  Your Response {isListening ? '(Voice Active)' : '(Voice Inactive)'}
-                </label>
-                <textarea
-                  value={candidateAnswer}
-                  onChange={(e) => setCandidateAnswer(e.target.value)}
-                  placeholder={isListening ? "Speak your answer or type here as backup..." : "Click 'Start Voice' or type your response..."}
-                  className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows="3"
+          {/* Voice Activity Visualization */}
+          {isListening && (
+            <div className="mb-6 flex items-center space-x-1">
+              <span className="text-sm text-gray-300 mr-3">Voice Level:</span>
+              {[...Array(10)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-2 h-8 rounded-full transition-colors duration-200 ${
+                    audioLevel > (i * 10) ? 'bg-green-400' : 'bg-gray-600'
+                  }`}
                 />
-              </div>
-              
-              {/* Control Buttons */}
-              <div className="flex justify-between items-center">
+              ))}
+            </div>
+          )}
+
+          {/* Answer Input */}
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 w-full max-w-4xl">
+            <label className="block text-sm font-medium text-white mb-2">
+              Your Answer (Voice input active - or type below):
+            </label>
+            <textarea
+              value={candidateAnswer}
+              onChange={(e) => setCandidateAnswer(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+              rows="4"
+              placeholder="Speak your answer or type here..."
+              disabled={isProcessingAnswer}
+            />
+            
+            <div className="flex justify-between items-center mt-4">
+              {isListening ? (
                 <button
-                  onClick={isListening ? stopListening : startListening}
-                  disabled={isAISpeaking || isTransitioning}
-                  className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
-                    isListening 
-                      ? 'bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30' 
-                      : 'bg-blue-500/20 text-blue-200 border border-blue-500/30 hover:bg-blue-500/30'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  onClick={stopListening}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+                  disabled={isProcessingAnswer}
                 >
-                  {isListening ? '🛑 Stop Voice' : '🎤 Start Voice'}
+                  Stop Listening
                 </button>
-                
+              ) : (
                 <button
-                  onClick={handleSubmitAnswer}
-                  disabled={!candidateAnswer.trim() || isAISpeaking || isTransitioning}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-2 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={startListening}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
+                  disabled={isProcessingAnswer || isAISpeaking}
                 >
-                  Submit Answer
+                  Start Voice Input
                 </button>
-              </div>
+              )}
               
-              {/* Enhanced Helpful Instructions */}
-              <div className="text-xs text-gray-400 text-center mt-4">
-                💡 {questionPhase === 'waiting' ? 'The AI will ask a follow-up question in 20 seconds if no response is detected' :
-                     questionPhase === 'follow-up' ? 'The AI will automatically move to the next question in 10 seconds if no response' :
-                     questionPhase === 'collecting-answer' ? 'The interview will automatically continue after 5 seconds of silence' :
-                     'The interview will automatically continue after 5 seconds of silence, or click "Submit Answer"'}
-              </div>
+              <button
+                onClick={handleManualSubmit}
+                disabled={!candidateAnswer.trim() || isProcessingAnswer || isAISpeaking}
+                className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                {isProcessingAnswer ? 'Submitting...' : 'Submit Answer'}
+              </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
