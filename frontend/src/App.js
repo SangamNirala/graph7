@@ -679,6 +679,13 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
     }
   }, [token, validatedJob]);
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      clearAllTimeouts();
+    };
+  }, []);
+
   // Enhanced AI Voice Speaker with timing control
   const AvatarAIVoiceSpeaker = ({ text, onSpeechStart, onSpeechEnd }) => {
     useEffect(() => {
