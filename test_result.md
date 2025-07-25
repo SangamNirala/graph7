@@ -468,7 +468,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Capture Image Screen Implementation"
+    - "Avatar Interview Backend Support"
   stuck_tasks:
     - "Google Cloud Text-to-Speech Integration"
   test_all: false
