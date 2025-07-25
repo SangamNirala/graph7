@@ -208,10 +208,11 @@ const AudioPlayer = ({ audioBase64, autoPlay = false }) => {
   );
 };
 
-// Text-to-Speech Component for AI Interviewer Voice
-const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete }) => {
+// Text-to-Speech Component for AI Interviewer Voice - Enhanced with repeat prevention
+const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = false, uniqueId = null }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voicesLoaded, setVoicesLoaded] = useState(false);
+  const [spokenTexts, setSpokenTexts] = useState(new Set());
 
   // Ensure voices are loaded
   useEffect(() => {
@@ -237,6 +238,13 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete }) => {
 
   useEffect(() => {
     if (voiceMode && text && text.trim() && 'speechSynthesis' in window && voicesLoaded) {
+      // Check if this text should not be repeated
+      const textKey = uniqueId || text;
+      if (preventRepeats && spokenTexts.has(textKey)) {
+        console.log('Skipping repeat speech for:', textKey);
+        return;
+      }
+      
       // Cancel any ongoing speech
       window.speechSynthesis.cancel();
       
@@ -272,6 +280,10 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete }) => {
         utterance.onstart = () => {
           setIsSpeaking(true);
           console.log('AI Interviewer started speaking');
+          // Mark this text as spoken
+          if (preventRepeats) {
+            setSpokenTexts(prev => new Set([...prev, textKey]));
+          }
         };
         
         utterance.onend = () => {
@@ -296,7 +308,7 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete }) => {
         window.speechSynthesis.cancel();
       }
     };
-  }, [text, voiceMode, onSpeechComplete, voicesLoaded]);
+  }, [text, voiceMode, onSpeechComplete, voicesLoaded, preventRepeats, uniqueId, spokenTexts]);
 
   if (!voiceMode || !text) {
     return null;
