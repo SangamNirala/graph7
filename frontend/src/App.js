@@ -513,7 +513,7 @@ const useVoiceActivityDetection = (onSilenceDetected, silenceThreshold = 5000) =
   return { isListening, audioLevel, hasVoiceActivity, startListening, stopListening };
 };
 
-// Avatar Interview Container - Integrates with existing interview system
+// Avatar Interview Container - Fixed version with simplified state management
 const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
   const [interviewData, setInterviewData] = useState(null);
   const [sessionData, setSessionData] = useState(null);
@@ -526,13 +526,10 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [completed, setCompleted] = useState(false);
   
-  // Enhanced timing states
-  const [questionPhase, setQuestionPhase] = useState('waiting'); // 'speaking', 'waiting', 'follow-up', 'collecting-answer', 'transitioning'
-  const [timeoutIds, setTimeoutIds] = useState([]);
-  const [hasSpokenQuestion, setHasSpokenQuestion] = useState(false);
-  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
-  const [followUpAsked, setFollowUpAsked] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  // Simplified state management
+  const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(false);
+  const [hasSpokenCurrentQuestion, setHasSpokenCurrentQuestion] = useState(false);
+  const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
 
   // Voice Activity Detection
   const { isListening, audioLevel, startListening, stopListening } = useVoiceActivityDetection(
