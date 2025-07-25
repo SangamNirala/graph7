@@ -2181,7 +2181,8 @@ async def monitor_candidate_behavior(request: dict):
             raise HTTPException(status_code=400, detail="Missing required data")
         
         # Analyze frame for proctoring violations
-        analysis = emotion_analyzer.process_video_stream(frame_data)
+        # analysis = emotion_analyzer.process_video_stream(frame_data)
+        analysis = None  # Emotion analyzer disabled
         
         violations = []
         if analysis:
