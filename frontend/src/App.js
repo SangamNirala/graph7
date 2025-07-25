@@ -211,6 +211,30 @@ const AudioPlayer = ({ audioBase64, autoPlay = false }) => {
 // Global spoken texts tracking to persist across component re-renders
 const globalSpokenTexts = new Set();
 
+// Global voice configuration for consistency
+const AVATAR_VOICE_CONFIG = {
+  rate: 0.9,
+  pitch: 1.1,
+  volume: 0.8,
+  lang: 'en-US'
+};
+
+// Function to get consistent female voice
+const getConsistentFemaleVoice = () => {
+  const voices = window.speechSynthesis.getVoices();
+  // Prioritize specific female voices
+  const femaleVoice = voices.find(voice => 
+    voice.name.toLowerCase().includes('samantha') ||
+    voice.name.toLowerCase().includes('karen') ||
+    voice.name.toLowerCase().includes('zira') ||
+    voice.name.toLowerCase().includes('aria') ||
+    voice.name.toLowerCase().includes('female') ||
+    voice.name.toLowerCase().includes('woman') ||
+    (voice.lang.includes('en') && voice.name.toLowerCase().includes('en'))
+  );
+  return femaleVoice || null;
+};
+
 // Utility function to clear spoken texts (useful for debugging and fresh starts)
 window.clearSpokenTexts = () => {
   globalSpokenTexts.clear();
