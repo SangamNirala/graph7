@@ -769,6 +769,21 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
     try {
       setLoading(true);
       
+      // Clear all timeouts when answer is submitted
+      clearAllTimeouts();
+      
+      // Check if this is a response indicating they don't know
+      if (followUpAsked && isUnknownResponse(candidateAnswer.trim())) {
+        console.log('Candidate indicated they don\'t know, moving to next question');
+        moveToNextQuestion();
+        setLoading(false);
+        return;
+      }
+      
+      // Set phase to collecting answer
+      setQuestionPhase('collecting-answer');
+      setIsWaitingForResponse(false);
+      
       // Stop listening during submission
       if (isListening) {
         stopListening();
@@ -802,9 +817,15 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
 
       // Move to next question
       const nextIndex = currentQuestionIndex + 1;
-      if (sessionData.questions && nextIndex < sessionData.questions.length) {
+      if (result.next_question) {
+        // Reset states for next question
+        setFollowUpAsked(false);
+        setIsWaitingForResponse(false);
+        setQuestionPhase('waiting');
+        setHasSpokenQuestion(false);
+        
         setCurrentQuestionIndex(nextIndex);
-        setCurrentQuestion(sessionData.questions[nextIndex]);
+        setCurrentQuestion({ question: result.next_question });
         setCandidateAnswer('');
         
         // Small delay before AI speaks next question
