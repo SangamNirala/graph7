@@ -1539,6 +1539,10 @@ const InterviewSession = ({ setCurrentPage }) => {
   const [currentEI, setCurrentEI] = useState(null);
   const [eiHistory, setEIHistory] = useState([]);
   const [finalResults, setFinalResults] = useState(null);
+  
+  // Webcam state
+  const [webcamActive, setWebcamActive] = useState(false);
+  const [webcamMinimized, setWebcamMinimized] = useState(false);
 
   // Voice recording
   const handleVoiceRecording = async (audioBlob) => {
