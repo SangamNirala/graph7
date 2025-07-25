@@ -242,7 +242,7 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = fa
     if (voiceMode && text && text.trim() && 'speechSynthesis' in window && voicesLoaded) {
       // Check if this text should not be repeated
       const textKey = uniqueId || text;
-      if (preventRepeats && spokenTexts.has(textKey)) {
+      if (preventRepeats && globalSpokenTexts.has(textKey)) {
         console.log('Skipping repeat speech for:', textKey);
         return;
       }
