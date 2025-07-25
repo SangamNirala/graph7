@@ -679,10 +679,10 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
     }
   }, [token, validatedJob]);
 
-  // Enhanced AI Voice Speaker with avatar control
+  // Enhanced AI Voice Speaker with timing control
   const AvatarAIVoiceSpeaker = ({ text, onSpeechStart, onSpeechEnd }) => {
     useEffect(() => {
-      if (text && text.trim() && 'speechSynthesis' in window && isInitialized) {
+      if (text && text.trim() && 'speechSynthesis' in window && isInitialized && !hasSpokenQuestion) {
         const textKey = `avatar-question-${currentQuestionIndex}`;
         
         // Check if already spoken using existing prevention system
@@ -691,10 +691,14 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
           return;
         }
 
+        console.log('Starting to speak question:', text);
+        setQuestionPhase('speaking');
+        setIsAISpeaking(true);
+        setHasSpokenQuestion(true);
+        if (onSpeechStart) onSpeechStart();
+
         // Cancel any ongoing speech
         window.speechSynthesis.cancel();
-        setIsAISpeaking(true);
-        if (onSpeechStart) onSpeechStart();
 
         // Small delay to ensure speech synthesis is ready
         setTimeout(() => {
