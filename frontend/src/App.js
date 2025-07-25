@@ -494,51 +494,39 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
           return;
         }
         
-        // Get stored interview data
+        // Get stored interview data (should already exist from InterviewStart)
         const storedData = localStorage.getItem('interviewData');
         console.log('Stored interview data:', storedData);
         
         if (!storedData) {
-          setError('No interview data found');
+          setError('No interview session found. Please start interview again.');
           return;
         }
 
         const parsedData = JSON.parse(storedData);
         setInterviewData(parsedData);
         
-        const requestPayload = {
-          token: token,
-          candidate_name: parsedData.candidateName || 'Candidate',
-          voice_mode: true // Force voice mode for avatar interview
-        };
-        
-        console.log('Making request to start-interview with payload:', requestPayload);
-
-        // Start interview session using existing API
-        const response = await fetch(`${API}/candidate/start-interview`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestPayload),
-        });
-
-        console.log('Response status:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('API Error Response:', errorText);
-          
-          if (response.status === 401) {
-            setError('Authentication failed. Token may be invalid or expired. Please try generating a new token.');
-          } else {
-            setError(`Failed to start interview session. Status: ${response.status}`);
-          }
+        // Check if we have session data from the previous start-interview call
+        if (!parsedData.sessionId) {
+          setError('Invalid interview session. Please start interview again.');
           return;
         }
-
-        const sessionData = await response.json();
-        console.log('Session data received:', sessionData);
+        
+        console.log('Reusing existing interview session:', parsedData.sessionId);
+        
+        // Create session data object from stored data
+        const sessionData = {
+          session_id: parsedData.sessionId,
+          first_question: parsedData.currentQuestion,
+          question_number: parsedData.questionNumber,
+          total_questions: parsedData.totalQuestions,
+          voice_mode: true, // Force voice mode for avatar interview
+          questions: [parsedData.currentQuestion], // We'll load more as needed
+          welcome_audio: parsedData.welcomeAudio,
+          question_audio: parsedData.questionAudio
+        };
+        
+        console.log('Session data created:', sessionData);
         setSessionData(sessionData);
         
         // Set first question
