@@ -1555,9 +1555,6 @@ const InterviewSession = ({ setCurrentPage }) => {
   // Webcam state
   const [webcamActive, setWebcamActive] = useState(false);
   const [webcamMinimized, setWebcamMinimized] = useState(false);
-  
-  // Question speech tracking state
-  const [spokenQuestions, setSpokenQuestions] = useState(new Set());
 
   // Voice recording
   const handleVoiceRecording = async (audioBlob) => {
