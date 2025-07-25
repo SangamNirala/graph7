@@ -211,6 +211,12 @@ const AudioPlayer = ({ audioBase64, autoPlay = false }) => {
 // Global spoken texts tracking to persist across component re-renders
 const globalSpokenTexts = new Set();
 
+// Utility function to clear spoken texts (useful for debugging and fresh starts)
+window.clearSpokenTexts = () => {
+  globalSpokenTexts.clear();
+  console.log('Manually cleared all spoken texts');
+};
+
 // Text-to-Speech Component for AI Interviewer Voice - Enhanced with repeat prevention
 const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = false, uniqueId = null }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
