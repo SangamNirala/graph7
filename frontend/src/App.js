@@ -934,7 +934,8 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
         }, 1000);
       } else {
         // No more questions, complete interview
-        setCurrentPage('interview-session');
+        console.log('Avatar interview completed - no more questions available');
+        setCompleted(true);
       }
 
     } catch (error) {
