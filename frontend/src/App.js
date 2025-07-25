@@ -2783,6 +2783,8 @@ function App() {
         return <InterviewStart setCurrentPage={setCurrentPage} token={token} validatedJob={validatedJob} />;
       case 'capture-image':
         return <CaptureImage setCurrentPage={setCurrentPage} token={token} validatedJob={validatedJob} />;
+      case 'avatar-interview':
+        return <AvatarInterviewContainer setCurrentPage={setCurrentPage} token={token} validatedJob={validatedJob} />;
       case 'interview-session':
         return <InterviewSession setCurrentPage={setCurrentPage} />;
       default:
