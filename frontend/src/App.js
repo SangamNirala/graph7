@@ -2090,7 +2090,7 @@ const CaptureImage = ({ setCurrentPage, token, validatedJob }) => {
     setImageCaptured(true);
   };
 
-  // Confirm and proceed to interview
+  // Confirm and proceed to avatar interview
   const confirmInterview = async () => {
     setLoading(true);
     try {
@@ -2099,9 +2099,15 @@ const CaptureImage = ({ setCurrentPage, token, validatedJob }) => {
       interviewData.capturedImage = capturedImage;
       localStorage.setItem('interviewData', JSON.stringify(interviewData));
       
-      setCurrentPage('interview-session');
+      // Clear any previously spoken texts for fresh interview
+      if (typeof globalSpokenTexts !== 'undefined') {
+        globalSpokenTexts.clear();
+        console.log('Cleared spoken texts for new avatar interview session');
+      }
+      
+      setCurrentPage('avatar-interview');
     } catch (error) {
-      console.error('Error proceeding to interview:', error);
+      console.error('Error proceeding to avatar interview:', error);
     } finally {
       setLoading(false);
     }
