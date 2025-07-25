@@ -1805,6 +1805,8 @@ const InterviewSession = ({ setCurrentPage }) => {
                 <AIVoiceSpeaker 
                   text={`Hello ${interviewData.candidateName}! Welcome to your AI interview. I'll ask you questions using voice, and you can respond using voice or text. Each question will be presented on a separate screen for your focused attention. Let's begin with your first question.`}
                   voiceMode={interviewData.voiceMode}
+                  preventRepeats={true}
+                  uniqueId="welcome-message"
                   onSpeechComplete={() => console.log('Welcome message spoken')}
                 />
               )}
