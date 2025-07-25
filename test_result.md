@@ -164,6 +164,9 @@ backend:
         -working: false
         -agent: "testing"
         -comment: "❌ UPDATED ISSUE: Google Cloud TTS error has changed from '401 authentication' to '500 string indices must be integers' error. This suggests partial progress in authentication but indicates a data structure issue in the TTS processing code. The endpoint is accessible and backend dependencies are resolved, but TTS audio generation still fails. Text cleaning function is working correctly. REQUIRES: Debug the data structure issue in TTS processing to restore audio generation capability."
+        -working: false
+        -agent: "testing"
+        -comment: "❌ CRITICAL TTS AUTHENTICATION ISSUE CONFIRMED: Comprehensive testing reveals Google Cloud TTS is completely non-functional due to authentication failure. DETAILED FINDINGS: 1) Voice Interview Start: ✅ Voice mode interviews start successfully but NO audio data is generated (welcome_audio and question_audio fields missing), 2) Direct TTS Endpoint: ❌ /api/voice/generate-question returns 500 error 'string indices must be integers, not str' indicating data structure issues in TTS processing, 3) Text Cleaning: ✅ Text cleaning function working correctly - questions generated without backticks or formatting, 4) Impact: Users can start voice interviews but hear NO AI voice - interviews are completely silent. ROOT CAUSE: Google Cloud TTS service account authentication is failing, preventing any audio generation. This is the core issue preventing users from hearing AI interviewer voice. REQUIRES: Fix Google Cloud TTS service account credentials and resolve data structure issues in TTS processing code to restore audio generation capability."
 
   - task: "Google Cloud Speech-to-Text Integration"
     implemented: true
