@@ -380,8 +380,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Audio Player and TTS Integration"
+  current_focus: []
   stuck_tasks:
     - "Google Cloud Text-to-Speech Integration"
   test_all: false
