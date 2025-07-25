@@ -761,6 +761,11 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
     };
   }, []);
 
+  // Monitor candidate answer changes to detect responses during waiting period
+  useEffect(() => {
+    detectCandidateResponse(candidateAnswer);
+  }, [candidateAnswer, questionPhase]);
+
   // Enhanced AI Voice Speaker with timing control
   const AvatarAIVoiceSpeaker = ({ text, onSpeechStart, onSpeechEnd }) => {
     useEffect(() => {
