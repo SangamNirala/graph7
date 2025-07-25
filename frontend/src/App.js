@@ -1829,12 +1829,15 @@ const InterviewSession = ({ setCurrentPage }) => {
                 </div>
               </div>
               
-              {/* AI Voice Speaker */}
+              {/* AI Voice Speaker - Only speak once per question */}
               {interviewData.voiceMode && (
                 <AIVoiceSpeaker 
-                  text={currentQuestionData.question} 
+                  text={!spokenQuestions.has(currentQuestionData.questionNumber) ? currentQuestionData.question : null} 
                   voiceMode={interviewData.voiceMode}
-                  onSpeechComplete={() => console.log('Question spoken')}
+                  onSpeechComplete={() => {
+                    console.log('Question spoken');
+                    setSpokenQuestions(prev => new Set([...prev, currentQuestionData.questionNumber]));
+                  }}
                 />
               )}
               
