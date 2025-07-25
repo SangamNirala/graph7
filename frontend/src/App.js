@@ -844,8 +844,16 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
       
       // Check if this is a response indicating they don't know
       if (followUpAsked && isUnknownResponse(candidateAnswer.trim())) {
-        console.log('Candidate indicated they don\'t know, moving to next question');
-        moveToNextQuestion();
+        console.log('Candidate indicated they don\'t know, acknowledging and moving to next question');
+        // Acknowledge the response before moving to next question
+        speakTransitionAnnouncement("I understand. Let's move to the next question.");
+        
+        // Set timeout to move to next question after acknowledgment
+        const timeoutId = setTimeout(() => {
+          moveToNextQuestion();
+        }, 2000); // 2 seconds after acknowledgment
+        
+        setTimeoutIds([timeoutId]);
         setLoading(false);
         return;
       }
@@ -853,6 +861,7 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
       // Set phase to collecting answer
       setQuestionPhase('collecting-answer');
       setIsWaitingForResponse(false);
+      setIsTransitioning(false);
       
       // Stop listening during submission
       if (isListening) {
