@@ -11,7 +11,7 @@ import io
 from typing import Dict, Any, Optional
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://d1bd61d9-f8ed-4370-8731-a7b95142bd83.preview.emergentagent.com/api"
+BASE_URL = "https://0333f662-5e6b-4f4b-a6c5-ab4fc14b9c53.preview.emergentagent.com/api"
 
 class WebcamTokenTester:
     def __init__(self):
