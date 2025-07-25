@@ -16,6 +16,7 @@ import time
 import io
 import base64
 import tempfile
+import os
 from typing import Dict, Any, Optional
 import urllib3
 
