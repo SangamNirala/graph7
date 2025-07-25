@@ -463,6 +463,7 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
+  const [completed, setCompleted] = useState(false);
   
   // Enhanced timing states
   const [questionPhase, setQuestionPhase] = useState('waiting'); // 'speaking', 'waiting', 'follow-up', 'collecting-answer', 'transitioning'
