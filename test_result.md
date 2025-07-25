@@ -381,7 +381,6 @@ test_plan:
     - "Audio Player and TTS Integration"
   stuck_tasks:
     - "Google Cloud Text-to-Speech Integration"
-    - "Audio Player and TTS Integration"
   test_all: false
   test_priority: "high_first"
 
