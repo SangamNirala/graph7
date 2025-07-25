@@ -49,6 +49,131 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Avatar Animations */
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+.animate-blink {
+  animation: blink 0.15s ease-in-out;
+}
+
+@keyframes mouth-speaking {
+  0% { transform: scaleY(1); }
+  25% { transform: scaleY(1.4) scaleX(0.8); }
+  50% { transform: scaleY(0.6) scaleX(1.2); }
+  75% { transform: scaleY(1.2) scaleX(0.9); }
+  100% { transform: scaleY(1); }
+}
+
+.animate-mouth-speaking {
+  animation: mouth-speaking 0.8s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+@keyframes mouth-listening {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.8); }
+}
+
+.animate-mouth-listening {
+  animation: mouth-listening 2s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+/* Sound wave animations */
+@keyframes sound-wave {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.5);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+}
+
+.sound-wave {
+  animation: sound-wave 1s ease-in-out infinite;
+}
+
+/* Voice activity detection bars */
+@keyframes voice-bar {
+  0%, 100% { height: 4px; }
+  50% { height: 20px; }
+}
+
+.voice-bar {
+  animation: voice-bar 0.5s ease-in-out infinite;
+}
+
+/* Professional interview layout */
+.interview-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #1e293b 0%, #4c1d95 50%, #1e293b 100%);
+}
+
+/* Avatar container styling */
+.avatar-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.avatar-frame {
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Question display styling */
+.question-display {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
+  padding: 2rem;
+  margin: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Voice activity styling */
+.voice-activity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(10px);
+}
+
+/* Responsive design for avatar */
+@media (max-width: 768px) {
+  .avatar-container {
+    padding: 1rem;
+  }
+  
+  .question-display {
+    margin: 0.5rem;
+    padding: 1.5rem;
+  }
+}
+
 .hover-scale {
   transition: transform 0.3s ease;
 }
