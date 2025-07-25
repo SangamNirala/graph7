@@ -452,6 +452,390 @@ const useVoiceActivityDetection = (onSilenceDetected, silenceThreshold = 5000) =
   return { isListening, audioLevel, startListening, stopListening };
 };
 
+// Avatar Interview Container - Integrates with existing interview system
+const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
+  const [interviewData, setInterviewData] = useState(null);
+  const [sessionData, setSessionData] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [candidateAnswer, setCandidateAnswer] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Voice Activity Detection
+  const { isListening, audioLevel, startListening, stopListening } = useVoiceActivityDetection(
+    () => {
+      // 5-second silence detected - automatically submit answer if there's content
+      if (candidateAnswer.trim() && !isAISpeaking) {
+        console.log('Silence detected, auto-submitting answer:', candidateAnswer.trim());
+        handleSubmitAnswer();
+      }
+    },
+    5000 // 5 second silence threshold
+  );
+
+  // Initialize interview session
+  useEffect(() => {
+    const initializeInterview = async () => {
+      try {
+        setLoading(true);
+        
+        // Get stored interview data
+        const storedData = localStorage.getItem('interviewData');
+        if (!storedData) {
+          setError('No interview data found');
+          return;
+        }
+
+        const parsedData = JSON.parse(storedData);
+        setInterviewData(parsedData);
+
+        // Start interview session using existing API
+        const response = await fetch(`${API}/candidate/start-interview`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: token,
+            candidate_name: parsedData.candidateName || 'Candidate',
+            voice_mode: true // Force voice mode for avatar interview
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to start interview session');
+        }
+
+        const sessionData = await response.json();
+        setSessionData(sessionData);
+        
+        // Set first question
+        if (sessionData.questions && sessionData.questions.length > 0) {
+          setCurrentQuestion(sessionData.questions[0]);
+          setCurrentQuestionIndex(0);
+        }
+
+        setIsInitialized(true);
+
+      } catch (error) {
+        console.error('Error initializing avatar interview:', error);
+        setError('Failed to initialize interview session');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (token && validatedJob) {
+      initializeInterview();
+    }
+  }, [token, validatedJob]);
+
+  // Enhanced AI Voice Speaker with avatar control
+  const AvatarAIVoiceSpeaker = ({ text, onSpeechStart, onSpeechEnd }) => {
+    useEffect(() => {
+      if (text && text.trim() && 'speechSynthesis' in window && isInitialized) {
+        const textKey = `avatar-question-${currentQuestionIndex}`;
+        
+        // Check if already spoken using existing prevention system
+        if (typeof globalSpokenTexts !== 'undefined' && globalSpokenTexts.has(textKey)) {
+          console.log('Skipping repeat speech for avatar question:', textKey);
+          return;
+        }
+
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+        setIsAISpeaking(true);
+        if (onSpeechStart) onSpeechStart();
+
+        // Small delay to ensure speech synthesis is ready
+        setTimeout(() => {
+          const utterance = new SpeechSynthesisUtterance(text);
+          
+          // Configure voice for professional female interviewer
+          utterance.rate = 0.9;
+          utterance.pitch = 1.1;
+          utterance.volume = 0.8;
+          
+          // Try to get a female voice
+          const voices = window.speechSynthesis.getVoices();
+          const femaleVoice = voices.find(voice => 
+            voice.name.toLowerCase().includes('female') || 
+            voice.name.toLowerCase().includes('woman') ||
+            voice.name.toLowerCase().includes('samantha') ||
+            voice.name.toLowerCase().includes('karen') ||
+            voice.name.toLowerCase().includes('zira') ||
+            voice.name.toLowerCase().includes('aria')
+          );
+          
+          if (femaleVoice) {
+            utterance.voice = femaleVoice;
+          }
+          
+          utterance.onstart = () => {
+            console.log('Avatar AI started speaking:', text.substring(0, 50) + '...');
+            if (typeof globalSpokenTexts !== 'undefined') {
+              globalSpokenTexts.add(textKey);
+            }
+          };
+          
+          utterance.onend = () => {
+            console.log('Avatar AI finished speaking');
+            setIsAISpeaking(false);
+            if (onSpeechEnd) onSpeechEnd();
+            
+            // Auto-start listening after AI finishes speaking
+            setTimeout(() => {
+              if (!isListening) {
+                startListening();
+              }
+            }, 500);
+          };
+          
+          utterance.onerror = (event) => {
+            console.error('Speech synthesis error:', event);
+            setIsAISpeaking(false);
+            if (onSpeechEnd) onSpeechEnd();
+          };
+          
+          window.speechSynthesis.speak(utterance);
+          
+        }, 100);
+      }
+    }, [text, isInitialized, currentQuestionIndex]);
+
+    return null; // This component only handles speech, no visual elements
+  };
+
+  // Submit answer and move to next question
+  const handleSubmitAnswer = async () => {
+    if (!candidateAnswer.trim() || !sessionData) return;
+
+    try {
+      setLoading(true);
+      
+      // Stop listening during submission
+      if (isListening) {
+        stopListening();
+      }
+
+      // Submit answer using existing API
+      const response = await fetch(`${API}/candidate/submit-answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: sessionData.session_id,
+          message: candidateAnswer.trim(),
+          voice_mode: true
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit answer');
+      }
+
+      const result = await response.json();
+      
+      // Check if interview is complete
+      if (result.interview_complete) {
+        // Interview finished, redirect to completion
+        setCurrentPage('interview-session'); // Use existing completion flow
+        return;
+      }
+
+      // Move to next question
+      const nextIndex = currentQuestionIndex + 1;
+      if (sessionData.questions && nextIndex < sessionData.questions.length) {
+        setCurrentQuestionIndex(nextIndex);
+        setCurrentQuestion(sessionData.questions[nextIndex]);
+        setCandidateAnswer('');
+        
+        // Small delay before AI speaks next question
+        setTimeout(() => {
+          setIsInitialized(true);
+        }, 1000);
+      } else {
+        // No more questions, complete interview
+        setCurrentPage('interview-session');
+      }
+
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+      setError('Failed to submit answer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Loading state
+  if (loading && !isInitialized) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-white text-lg">Initializing AI Interviewer...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 text-center">
+          <p className="text-red-300 text-lg mb-4">{error}</p>
+          <button
+            onClick={() => setCurrentPage('interview-start')}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="max-w-6xl mx-auto p-4">
+        
+        {/* AI Voice Speaker Component */}
+        {currentQuestion && (
+          <AvatarAIVoiceSpeaker 
+            text={currentQuestion.question}
+            onSpeechStart={() => setIsAISpeaking(true)}
+            onSpeechEnd={() => setIsAISpeaking(false)}
+          />
+        )}
+        
+        {/* Avatar Section */}
+        <div className="text-center mb-8 pt-8">
+          <RealisticFemaleAvatar 
+            isSpeaking={isAISpeaking}
+            isListening={isListening && !isAISpeaking}
+            currentQuestion={currentQuestion?.question || ''}
+          />
+        </div>
+        
+        {/* Question Display - Minimal UI */}
+        {currentQuestion && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-6 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="mb-4">
+                <span className="inline-block bg-blue-500/20 text-blue-200 px-4 py-2 rounded-full text-sm border border-blue-500/30">
+                  Question {currentQuestionIndex + 1} of {sessionData?.questions?.length || 8}
+                </span>
+              </div>
+              <p className="text-white text-xl leading-relaxed font-medium mb-6">
+                {currentQuestion.question}
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {/* Voice Activity Indicator */}
+        {isListening && !isAISpeaking && (
+          <div className="bg-green-500/20 backdrop-blur-lg rounded-xl p-4 border border-green-500/30 mb-6 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center space-x-4">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                <span className="text-green-200">I'm listening to your answer...</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                {[...Array(10)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-1 bg-green-400 rounded transition-all duration-100"
+                    style={{
+                      height: `${Math.max(4, (audioLevel / 8) + (Math.random() * 8))}px`,
+                      opacity: audioLevel > (i * 8) ? 1 : 0.3
+                    }}
+                  ></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* AI Speaking Indicator */}
+        {isAISpeaking && (
+          <div className="bg-blue-500/20 backdrop-blur-lg rounded-xl p-4 border border-blue-500/30 mb-6 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center space-x-4">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-blue-400 rounded-full mr-2 animate-pulse"></div>
+                <span className="text-blue-200">AI Interviewer is speaking...</span>
+              </div>
+              <div className="flex space-x-1">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  ></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Manual Controls - Minimal and Clean */}
+        {!isAISpeaking && (
+          <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 max-w-2xl mx-auto">
+            <div className="space-y-4">
+              {/* Voice Input Display */}
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-2">
+                  Your Response {isListening ? '(Voice Active)' : '(Voice Inactive)'}
+                </label>
+                <textarea
+                  value={candidateAnswer}
+                  onChange={(e) => setCandidateAnswer(e.target.value)}
+                  placeholder={isListening ? "Speak your answer or type here as backup..." : "Click 'Start Voice' or type your response..."}
+                  className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows="3"
+                />
+              </div>
+              
+              {/* Control Buttons */}
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={isListening ? stopListening : startListening}
+                  disabled={isAISpeaking}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
+                    isListening 
+                      ? 'bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30' 
+                      : 'bg-blue-500/20 text-blue-200 border border-blue-500/30 hover:bg-blue-500/30'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {isListening ? '🛑 Stop Voice' : '🎤 Start Voice'}
+                </button>
+                
+                <button
+                  onClick={handleSubmitAnswer}
+                  disabled={!candidateAnswer.trim() || isAISpeaking}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-2 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Submit Answer
+                </button>
+              </div>
+              
+              {/* Helpful Instructions */}
+              <div className="text-xs text-gray-400 text-center mt-4">
+                💡 The interview will automatically continue after 5 seconds of silence, or click "Submit Answer"
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Enhanced AI Avatar Interview Component
 const AIAvatarInterviewSession = ({ interviewData, onAnswerSubmit, onInterviewComplete }) => {
   const [currentQuestion, setCurrentQuestion] = useState('');
