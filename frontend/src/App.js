@@ -217,6 +217,377 @@ window.clearSpokenTexts = () => {
   console.log('Manually cleared all spoken texts');
 };
 
+// Realistic Female Avatar Component with Mouth Animation
+const RealisticFemaleAvatar = ({ isSpeaking, isListening, currentQuestion }) => {
+  const [eyeBlink, setEyeBlink] = useState(false);
+  
+  // Random eye blink animation
+  useEffect(() => {
+    const blinkInterval = setInterval(() => {
+      if (Math.random() < 0.1) { // 10% chance every 500ms
+        setEyeBlink(true);
+        setTimeout(() => setEyeBlink(false), 150);
+      }
+    }, 500);
+    
+    return () => clearInterval(blinkInterval);
+  }, []);
+
+  return (
+    <div className="relative w-80 h-80 mx-auto">
+      {/* Professional Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-200 to-slate-300 rounded-full shadow-2xl"></div>
+      
+      {/* Avatar Container */}
+      <svg
+        viewBox="0 0 300 300"
+        className="w-full h-full relative z-10"
+      >
+        {/* Face Shape */}
+        <ellipse
+          cx="150"
+          cy="140"
+          rx="85"
+          ry="95"
+          fill="#F7E6D3"
+          stroke="#E8D5C4"
+          strokeWidth="2"
+        />
+        
+        {/* Hair */}
+        <path
+          d="M 65 80 Q 150 20 235 80 Q 240 140 220 160 Q 180 50 150 55 Q 120 50 80 160 Q 60 140 65 80 Z"
+          fill="#8B4513"
+        />
+        
+        {/* Forehead highlights */}
+        <ellipse cx="150" cy="85" rx="60" ry="25" fill="#FFF2E6" opacity="0.3"/>
+        
+        {/* Eyes */}
+        <g className={eyeBlink ? "animate-blink" : ""}>
+          {/* Left Eye */}
+          <ellipse cx="120" cy="115" rx="12" ry="8" fill="white"/>
+          <circle cx="120" cy="115" r="6" fill="#4A90E2"/>
+          <circle cx="122" cy="113" r="2" fill="black"/>
+          <circle cx="123" cy="112" r="1" fill="white"/>
+          
+          {/* Right Eye */}
+          <ellipse cx="180" cy="115" rx="12" ry="8" fill="white"/>
+          <circle cx="180" cy="115" r="6" fill="#4A90E2"/>
+          <circle cx="182" cy="113" r="2" fill="black"/>
+          <circle cx="183" cy="112" r="1" fill="white"/>
+          
+          {/* Eyelashes */}
+          <path d="M 108 108 Q 112 105 116 108" stroke="#654321" strokeWidth="1" fill="none"/>
+          <path d="M 120 105 Q 124 102 128 105" stroke="#654321" strokeWidth="1" fill="none"/>
+          <path d="M 168 108 Q 172 105 176 108" stroke="#654321" strokeWidth="1" fill="none"/>
+          <path d="M 180 105 Q 184 102 188 105" stroke="#654321" strokeWidth="1" fill="none"/>
+        </g>
+        
+        {/* Eyebrows */}
+        <path d="M 105 100 Q 120 95 135 100" stroke="#6B4423" strokeWidth="3" fill="none"/>
+        <path d="M 165 100 Q 180 95 195 100" stroke="#6B4423" strokeWidth="3" fill="none"/>
+        
+        {/* Nose */}
+        <path d="M 148 125 Q 150 140 152 135" stroke="#E8D5C4" strokeWidth="1.5" fill="none"/>
+        <ellipse cx="147" cy="138" rx="2" ry="1" fill="#E8D5C4"/>
+        <ellipse cx="153" cy="138" rx="2" ry="1" fill="#E8D5C4"/>
+        
+        {/* Mouth - Animated based on speaking state */}
+        <g className={isSpeaking ? "animate-mouth-speaking" : isListening ? "animate-mouth-listening" : ""}>
+          {isSpeaking ? (
+            // Speaking mouth - open
+            <g>
+              <ellipse cx="150" cy="165" rx="15" ry="8" fill="#8B4513"/>
+              <ellipse cx="150" cy="162" rx="12" ry="3" fill="#CD853F"/>
+              <path d="M 138 165 Q 150 170 162 165" stroke="#A0522D" strokeWidth="1" fill="none"/>
+            </g>
+          ) : isListening ? (
+            // Listening mouth - slightly open
+            <g>
+              <ellipse cx="150" cy="165" rx="8" ry="3" fill="#CD853F"/>
+              <path d="M 142 165 Q 150 167 158 165" stroke="#A0522D" strokeWidth="1" fill="none"/>
+            </g>
+          ) : (
+            // Neutral mouth - closed smile
+            <path d="M 135 165 Q 150 175 165 165" stroke="#A0522D" strokeWidth="2" fill="none"/>
+          )}
+        </g>
+        
+        {/* Cheeks */}
+        <circle cx="105" cy="140" r="8" fill="#F4C2C2" opacity="0.4"/>
+        <circle cx="195" cy="140" r="8" fill="#F4C2C2" opacity="0.4"/>
+        
+        {/* Chin shadow */}
+        <ellipse cx="150" cy="180" rx="30" ry="8" fill="#E8D5C4" opacity="0.3"/>
+        
+        {/* Neck */}
+        <rect x="130" y="220" width="40" height="30" fill="#F7E6D3" rx="5"/>
+        
+        {/* Professional Attire */}
+        <path d="M 100 240 L 200 240 L 195 300 L 105 300 Z" fill="#2C3E50"/>
+        <path d="M 125 240 L 175 240 L 170 280 L 130 280 Z" fill="#FFFFFF"/>
+        <circle cx="150" cy="250" r="3" fill="#2C3E50"/>
+        <circle cx="150" cy="260" r="3" fill="#2C3E50"/>
+        
+        {/* Speaking indicators */}
+        {isSpeaking && (
+          <g>
+            {/* Sound waves */}
+            <circle cx="220" cy="165" r="3" fill="#4A90E2" opacity="0.6">
+              <animate attributeName="r" values="3;8;3" dur="1s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.6;0.2;0.6" dur="1s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="230" cy="165" r="5" fill="#4A90E2" opacity="0.4">
+              <animate attributeName="r" values="5;12;5" dur="1.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.4;0.1;0.4" dur="1.5s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+        )}
+        
+        {/* Listening indicators */}
+        {isListening && (
+          <g>
+            {/* Microphone icon */}
+            <rect x="220" y="155" width="8" height="12" rx="4" fill="#E74C3C" opacity="0.8"/>
+            <rect x="222" y="167" width="4" height="8" fill="#C0392B"/>
+            <path d="M 218 175 L 230 175" stroke="#C0392B" strokeWidth="2"/>
+            <circle cx="224" cy="161" r="2" fill="#FF6B6B" opacity="0.6">
+              <animate attributeName="opacity" values="0.6;1;0.6" dur="0.8s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+        )}
+      </svg>
+      
+      {/* Professional nameplate */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg">
+        <p className="text-gray-800 font-semibold text-sm">AI Interviewer</p>
+        <p className="text-gray-600 text-xs">Sarah Mitchell</p>
+      </div>
+    </div>
+  );
+};
+
+// Voice Activity Detection Hook
+const useVoiceActivityDetection = (onSilenceDetected, silenceThreshold = 5000) => {
+  const [isListening, setIsListening] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const silenceTimerRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const streamRef = useRef(null);
+  
+  const startListening = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      
+      analyser.smoothingTimeConstant = 0.8;
+      analyser.fftSize = 1024;
+      
+      microphone.connect(analyser);
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      setIsListening(true);
+      
+      const detectAudio = () => {
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        
+        analyser.getByteFrequencyData(dataArray);
+        
+        const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
+        setAudioLevel(average);
+        
+        // Voice activity detection threshold
+        const threshold = 25;
+        
+        if (average > threshold) {
+          // Voice detected - clear silence timer
+          if (silenceTimerRef.current) {
+            clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = null;
+          }
+        } else {
+          // Silence detected - start or continue timer
+          if (!silenceTimerRef.current) {
+            silenceTimerRef.current = setTimeout(() => {
+              onSilenceDetected();
+              silenceTimerRef.current = null;
+            }, silenceThreshold);
+          }
+        }
+        
+        if (isListening) {
+          requestAnimationFrame(detectAudio);
+        }
+      };
+      
+      detectAudio();
+      
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+    }
+  };
+  
+  const stopListening = () => {
+    setIsListening(false);
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+  };
+  
+  return { isListening, audioLevel, startListening, stopListening };
+};
+
+// Enhanced AI Avatar Interview Component
+const AIAvatarInterviewSession = ({ interviewData, onAnswerSubmit, onInterviewComplete }) => {
+  const [currentQuestion, setCurrentQuestion] = useState('');
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [candidateAnswer, setCandidateAnswer] = useState('');
+  const [questionNumber, setQuestionNumber] = useState(1);
+  const [totalQuestions] = useState(interviewData.totalQuestions || 8);
+  
+  const { isListening, audioLevel, startListening, stopListening } = useVoiceActivityDetection(
+    () => {
+      // Silence detected - move to next question
+      if (candidateAnswer.trim()) {
+        handleSubmitAnswer();
+      }
+    },
+    5000 // 5 second silence threshold
+  );
+  
+  const handleSubmitAnswer = async () => {
+    if (!candidateAnswer.trim()) return;
+    
+    // Submit current answer
+    await onAnswerSubmit({
+      questionNumber,
+      question: currentQuestion,
+      answer: candidateAnswer
+    });
+    
+    // Move to next question or complete interview
+    if (questionNumber >= totalQuestions) {
+      onInterviewComplete();
+    } else {
+      setQuestionNumber(prev => prev + 1);
+      setCandidateAnswer('');
+      // Load next question (this would come from your existing interview logic)
+      loadNextQuestion();
+    }
+  };
+  
+  const loadNextQuestion = () => {
+    // This would integrate with your existing question loading logic
+    // For now, using placeholder
+    setCurrentQuestion(`This is question ${questionNumber + 1} from your AI interviewer...`);
+  };
+  
+  // Initialize first question
+  useEffect(() => {
+    if (interviewData && interviewData.questions && interviewData.questions.length > 0) {
+      setCurrentQuestion(interviewData.questions[0]?.question || 'Welcome to your interview!');
+    }
+  }, [interviewData]);
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Avatar Section */}
+        <div className="text-center mb-8">
+          <RealisticFemaleAvatar 
+            isSpeaking={isAISpeaking}
+            isListening={isListening && !isAISpeaking}
+            currentQuestion={currentQuestion}
+          />
+        </div>
+        
+        {/* Question Display */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-6">
+          <div className="text-center">
+            <div className="mb-4">
+              <span className="inline-block bg-blue-500/20 text-blue-200 px-4 py-2 rounded-full text-sm border border-blue-500/30">
+                Question {questionNumber} of {totalQuestions}
+              </span>
+            </div>
+            <p className="text-white text-xl leading-relaxed font-medium mb-6">
+              {currentQuestion}
+            </p>
+          </div>
+        </div>
+        
+        {/* Voice Activity Indicator */}
+        {isListening && (
+          <div className="bg-green-500/20 backdrop-blur-lg rounded-xl p-4 border border-green-500/30 mb-6">
+            <div className="flex items-center justify-center space-x-4">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                <span className="text-green-200">Listening...</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                {[...Array(10)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-1 bg-green-400 rounded"
+                    style={{
+                      height: `${Math.max(4, (audioLevel / 10) + (Math.random() * 10))}px`,
+                      opacity: audioLevel > (i * 10) ? 1 : 0.3
+                    }}
+                  ></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Manual Answer Input (Fallback) */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+          <textarea
+            value={candidateAnswer}
+            onChange={(e) => setCandidateAnswer(e.target.value)}
+            placeholder="Your response will be captured automatically when you stop speaking, or you can type here..."
+            className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            rows="4"
+          />
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={isListening ? stopListening : startListening}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
+                isListening 
+                  ? 'bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30' 
+                  : 'bg-blue-500/20 text-blue-200 border border-blue-500/30 hover:bg-blue-500/30'
+              }`}
+            >
+              {isListening ? '🛑 Stop Voice' : '🎤 Start Voice'}
+            </button>
+            <button
+              onClick={handleSubmitAnswer}
+              disabled={!candidateAnswer.trim()}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-2 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Submit Answer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Text-to-Speech Component for AI Interviewer Voice - Enhanced with repeat prevention
 const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = false, uniqueId = null }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
