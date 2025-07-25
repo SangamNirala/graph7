@@ -311,7 +311,7 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = fa
         window.speechSynthesis.cancel();
       }
     };
-  }, [text, voiceMode, onSpeechComplete, voicesLoaded, preventRepeats, uniqueId, spokenTexts]);
+  }, [text, voiceMode, onSpeechComplete, voicesLoaded, preventRepeats, uniqueId]);
 
   if (!voiceMode || !text) {
     return null;
