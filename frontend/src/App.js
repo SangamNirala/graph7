@@ -782,43 +782,23 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
     return null; // This component only handles speech, no visual elements
   };
 
-  // Submit answer and move to next question
+  // Submit answer and get next question
   const handleSubmitAnswer = async () => {
-    if (!candidateAnswer.trim() || !sessionData) return;
+    if (!candidateAnswer.trim() || !sessionData || isProcessingAnswer) {
+      return;
+    }
 
     try {
-      setLoading(true);
+      setIsProcessingAnswer(true);
+      setIsWaitingForAnswer(false);
       
-      // Clear all timeouts when answer is submitted
-      clearAllTimeouts();
-      
-      // Check if this is a response indicating they don't know
-      if (followUpAsked && isUnknownResponse(candidateAnswer.trim())) {
-        console.log('Candidate indicated they don\'t know, acknowledging and moving to next question');
-        // Acknowledge the response before moving to next question
-        speakTransitionAnnouncement("I understand. Let's move to the next question.");
-        
-        // Set timeout to move to next question after acknowledgment
-        const timeoutId = setTimeout(() => {
-          moveToNextQuestion();
-        }, 2000); // 2 seconds after acknowledgment
-        
-        setTimeoutIds([timeoutId]);
-        setLoading(false);
-        return;
-      }
-      
-      // Set phase to collecting answer
-      setQuestionPhase('collecting-answer');
-      setIsWaitingForResponse(false);
-      setIsTransitioning(false);
-      
-      // Stop listening during submission
+      // Stop listening while processing
       if (isListening) {
         stopListening();
       }
 
-      // Submit answer using existing API
+      console.log('Submitting answer:', candidateAnswer.trim());
+
       const response = await fetch(`${API}/candidate/submit-answer`, {
         method: 'POST',
         headers: {
@@ -839,41 +819,43 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
       
       // Check if interview is complete
       if (result.interview_complete) {
-        // Interview finished, show completion screen
-        console.log('Avatar interview completed - backend reported interview_complete');
+        console.log('Interview completed');
         setCompleted(true);
         return;
       }
 
       // Move to next question
-      const nextIndex = currentQuestionIndex + 1;
       if (result.next_question) {
-        // Reset all states for next question
-        setFollowUpAsked(false);
-        setIsWaitingForResponse(false);
-        setIsTransitioning(false);
-        setQuestionPhase('waiting');
-        setHasSpokenQuestion(false);
+        console.log('Moving to next question:', result.next_question.substring(0, 50) + '...');
         
+        const nextIndex = currentQuestionIndex + 1;
         setCurrentQuestionIndex(nextIndex);
         setCurrentQuestion({ question: result.next_question });
         setCandidateAnswer('');
+        setHasSpokenCurrentQuestion(false);
+        setIsWaitingForAnswer(false);
         
-        // Small delay before AI speaks next question
+        // Small delay to ensure clean state transition
         setTimeout(() => {
           setIsInitialized(true);
         }, 1000);
       } else {
-        // No more questions, complete interview
-        console.log('Avatar interview completed - no more questions available');
+        console.log('No more questions, completing interview');
         setCompleted(true);
       }
 
     } catch (error) {
       console.error('Error submitting answer:', error);
-      setError('Failed to submit answer');
+      setError('Failed to submit answer. Please try again.');
     } finally {
-      setLoading(false);
+      setIsProcessingAnswer(false);
+    }
+  };
+
+  // Manual submit button handler
+  const handleManualSubmit = () => {
+    if (candidateAnswer.trim() && !isProcessingAnswer) {
+      handleSubmitAnswer();
     }
   };
 
