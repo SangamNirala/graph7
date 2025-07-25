@@ -114,6 +114,8 @@ ENHANCEMENT PLAN - 2025 AI IMPROVEMENTS:
 7. Enhanced User Experience - Progress indicators, difficulty rating, post-interview reflection
 8. Advanced Analytics Dashboard - Predictive success rates, bias reports, performance trends
 
+CURRENT TASK: Fix the AI speech repeat prevention issue where the AI agent repeatedly speaks questions until the candidate clicks 'Submit Answer'. The AI should read each question only once upon first visit, without repetition.
+
 backend:
   - task: "Multi-Format Resume Parsing (PDF/Word/TXT)"
     implemented: true
