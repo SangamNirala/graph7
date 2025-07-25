@@ -1798,7 +1798,10 @@ const InterviewSession = ({ setCurrentPage }) => {
               )}
               
               <button
-                onClick={() => setShowWelcome(false)}
+                onClick={() => {
+                  setShowWelcome(false);
+                  setWebcamActive(true);
+                }}
                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 rounded-lg font-medium transition-all duration-300 transform hover:scale-105"
               >
                 Start Interview
