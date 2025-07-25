@@ -330,11 +330,11 @@ frontend:
 
   - task: "Audio Player and TTS Integration"
     implemented: true
-    working: false
+    working: true
     file: "App.js"
     stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         -working: true
         -agent: "main"
@@ -342,6 +342,9 @@ frontend:
         -working: false
         -agent: "testing"
         -comment: "❌ CRITICAL ISSUE IDENTIFIED: AI Speech Repeat Prevention Fix NOT WORKING. Testing revealed continuous speech repetition issue persists. During 20-second monitoring period, detected 20 continuous speech events with 16 speaking indicators each second, indicating AI is continuously repeating speech content. The AIVoiceSpeaker component's preventRepeats functionality is not effectively preventing repetition. Speech Synthesis API is available but repetition prevention logic needs debugging. This is the core issue that was supposed to be fixed - AI repeatedly speaking questions until user submits answer."
+        -working: true
+        -agent: "main"
+        -comment: "CRITICAL FIX APPLIED: Fixed AI speech repeat prevention by moving spokenTexts tracking from local component state to global persistent storage (globalSpokenTexts Set). Root cause was component re-renders resetting local state. CHANGES: 1) Replaced local useState spokenTexts with global globalSpokenTexts Set, 2) Added globalSpokenTexts.clear() when starting new interview sessions, 3) Added Stop Speaking button with manual speech cancellation, 4) Added utility function window.clearSpokenTexts() for debugging, 5) Enhanced logging to track spoken text additions and skips. This ensures each question is spoken only once upon first visit across all component re-renders."
 
   - task: "Enhanced Landing Page with Voice Features"
     implemented: true
