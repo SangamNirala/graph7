@@ -852,43 +852,34 @@ EDUCATION:
 Master of Science in Human-Computer Interaction
 Tech Institute, 2017"""
             
-            # Create temporary file for upload
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as temp_file:
-                temp_file.write(resume_content)
-                temp_file_path = temp_file.name
+            files = {
+                'resume_file': ('avatar_resume.txt', io.StringIO(resume_content), 'text/plain')
+            }
+            
+            data = {
+                'job_title': 'Avatar Interface Developer',
+                'job_description': 'We are seeking an experienced developer to enhance our AI-powered interview platform with realistic avatar interfaces. The role involves implementing human-like female interviewer avatars with lip-sync animation, voice-driven interactions, and seamless user experience.',
+                'job_requirements': 'Requirements: 5+ years frontend experience, React expertise, SVG animation skills, Web Speech API knowledge, real-time audio processing, avatar interface design experience.',
+                'include_coding_challenge': 'false',
+                'role_archetype': 'Software Engineer',
+                'interview_focus': 'Technical Deep-Dive'
+            }
+            
+            # Remove Content-Type header for multipart form data
+            original_headers = self.session.headers.copy()
+            if 'Content-Type' in self.session.headers:
+                del self.session.headers['Content-Type']
             
             try:
-                with open(temp_file_path, 'rb') as f:
-                    files = {
-                        'resume_file': ('avatar_resume.txt', f, 'text/plain')
-                    }
-                    
-                    data = {
-                        'job_title': 'Avatar Interface Developer',
-                        'job_description': 'We are seeking an experienced developer to enhance our AI-powered interview platform with realistic avatar interfaces. The role involves implementing human-like female interviewer avatars with lip-sync animation, voice-driven interactions, and seamless user experience.',
-                        'job_requirements': 'Requirements: 5+ years frontend experience, React expertise, SVG animation skills, Web Speech API knowledge, real-time audio processing, avatar interface design experience.',
-                        'include_coding_challenge': 'false',
-                        'role_archetype': 'Software Engineer',
-                        'interview_focus': 'Technical Deep-Dive'
-                    }
-                    
-                    # Remove Content-Type header for multipart form data
-                    headers = {k: v for k, v in self.session.headers.items() if k.lower() != 'content-type'}
-                    
-                    response = self.session.post(
-                        f"{self.base_url}/admin/upload-job-enhanced",
-                        files=files,
-                        data=data,
-                        headers=headers,
-                        timeout=15
-                    )
+                response = self.session.post(
+                    f"{self.base_url}/admin/upload-job-enhanced",
+                    files=files,
+                    data=data,
+                    timeout=15
+                )
             finally:
-                # Clean up temp file
-                import os
-                try:
-                    os.unlink(temp_file_path)
-                except:
-                    pass
+                # Restore original headers
+                self.session.headers = original_headers
             
             success = response.status_code == 200
             if success:
