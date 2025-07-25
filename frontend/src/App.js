@@ -1444,6 +1444,10 @@ const InterviewStart = ({ setCurrentPage, token, validatedJob }) => {
     e.preventDefault();
     setLoading(true);
 
+    // Clear global spoken texts for new interview session
+    globalSpokenTexts.clear();
+    console.log('Cleared global spoken texts for new interview session');
+
     try {
       const response = await fetch(`${API}/candidate/start-interview`, {
         method: 'POST',
