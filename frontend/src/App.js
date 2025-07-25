@@ -284,7 +284,8 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = fa
           console.log('AI Interviewer started speaking');
           // Mark this text as spoken
           if (preventRepeats) {
-            setSpokenTexts(prev => new Set([...prev, textKey]));
+            globalSpokenTexts.add(textKey);
+            console.log('Added to spoken texts:', textKey, 'Total spoken:', globalSpokenTexts.size);
           }
         };
         
