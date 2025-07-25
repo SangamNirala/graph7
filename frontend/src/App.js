@@ -908,8 +908,9 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
       
       // Check if interview is complete
       if (result.interview_complete) {
-        // Interview finished, redirect to completion
-        setCurrentPage('interview-session'); // Use existing completion flow
+        // Interview finished, show completion screen
+        console.log('Avatar interview completed - backend reported interview_complete');
+        setCompleted(true);
         return;
       }
 
