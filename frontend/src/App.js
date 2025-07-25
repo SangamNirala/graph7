@@ -476,7 +476,7 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
   const { isListening, audioLevel, startListening, stopListening } = useVoiceActivityDetection(
     () => {
       // 5-second silence detected - automatically submit answer if there's content
-      if (candidateAnswer.trim() && !isAISpeaking && questionPhase === 'collecting-answer') {
+      if (candidateAnswer.trim() && !isAISpeaking && !isTransitioning && questionPhase === 'collecting-answer') {
         console.log('Silence detected, auto-submitting answer:', candidateAnswer.trim());
         handleSubmitAnswer();
       }
