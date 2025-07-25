@@ -674,7 +674,8 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
       setCurrentQuestion({ question: sessionData.questions[nextIndex] });
     } else {
       // No more questions, complete interview
-      setCurrentPage('interview-session');
+      console.log('Avatar interview completed - all questions answered');
+      setCompleted(true);
     }
   };
 
