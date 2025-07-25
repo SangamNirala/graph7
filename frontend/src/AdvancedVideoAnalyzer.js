@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 
-const AdvancedVideoAnalyzer = ({ sessionId, onAnalysisUpdate, isRecording = false }) => {
+const AdvancedVideoAnalyzer = ({ sessionId, onAnalysisUpdate, isRecording = false, isPreview = false }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -20,17 +20,24 @@ const AdvancedVideoAnalyzer = ({ sessionId, onAnalysisUpdate, isRecording = fals
   const startVideoAnalysis = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 640, height: 480 },
+        video: { 
+          width: isPreview ? 320 : 640, 
+          height: isPreview ? 240 : 480,
+          facingMode: 'user' // Front-facing camera
+        },
         audio: false 
       });
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setIsAnalyzing(true);
-        startFrameAnalysis();
+        if (!isPreview) {
+          startFrameAnalysis();
+        }
       }
     } catch (err) {
       setError('Failed to access camera: ' + err.message);
+      console.error('Camera access error:', err);
     }
   };
 
