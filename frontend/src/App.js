@@ -529,10 +529,10 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
         console.log('Session data created:', sessionData);
         setSessionData(sessionData);
         
-        // Set first question
-        if (sessionData.questions && sessionData.questions.length > 0) {
-          setCurrentQuestion(sessionData.questions[0]);
-          setCurrentQuestionIndex(0);
+        // Set first question from stored data
+        if (parsedData.currentQuestion) {
+          setCurrentQuestion(parsedData.currentQuestion);
+          setCurrentQuestionIndex(parsedData.questionNumber - 1 || 0); // questionNumber is 1-based
         }
 
         setIsInitialized(true);
