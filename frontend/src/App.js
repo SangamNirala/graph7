@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useReactMediaRecorder } from 'react-media-recorder';
+import AdvancedVideoAnalyzer from './AdvancedVideoAnalyzer';
 import './App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
