@@ -523,11 +523,22 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
           body: JSON.stringify(requestPayload),
         });
 
+        console.log('Response status:', response.status);
+        
         if (!response.ok) {
-          throw new Error('Failed to start interview session');
+          const errorText = await response.text();
+          console.error('API Error Response:', errorText);
+          
+          if (response.status === 401) {
+            setError('Authentication failed. Token may be invalid or expired. Please try generating a new token.');
+          } else {
+            setError(`Failed to start interview session. Status: ${response.status}`);
+          }
+          return;
         }
 
         const sessionData = await response.json();
+        console.log('Session data received:', sessionData);
         setSessionData(sessionData);
         
         // Set first question
