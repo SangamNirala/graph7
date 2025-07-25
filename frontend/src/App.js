@@ -1481,7 +1481,7 @@ const InterviewStart = ({ setCurrentPage, token, validatedJob }) => {
           welcomeAudio: data.welcome_audio,
           questionAudio: data.question_audio
         }));
-        setCurrentPage('interview-session');
+        setCurrentPage('capture-image');
       }
     } catch (err) {
       console.error('Failed to start interview:', err);
