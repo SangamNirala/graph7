@@ -975,6 +975,52 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
     );
   }
 
+  // Completion state
+  if (completed) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="max-w-2xl mx-auto p-8">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">Avatar Interview Completed!</h2>
+            <p className="text-gray-300 mb-8">
+              Thank you for completing the AI avatar interview with Sarah Mitchell. 
+              Your responses have been recorded and will be evaluated shortly.
+            </p>
+            
+            {/* Avatar goodbye */}
+            <div className="mb-8">
+              <div className="w-24 h-24 mx-auto mb-4">
+                <RealisticFemaleAvatar 
+                  isSpeaking={false}
+                  isListening={false}
+                  currentQuestion="Thank you for the interview!"
+                />
+              </div>
+              <p className="text-purple-200 italic">
+                "It was a pleasure interviewing you today!" - Sarah Mitchell, AI Interviewer
+              </p>
+            </div>
+            
+            <button
+              onClick={() => {
+                localStorage.removeItem('interviewData');
+                setCurrentPage('landing');
+              }}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3 px-8 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              Return to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="max-w-6xl mx-auto p-4">
