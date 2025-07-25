@@ -25,6 +25,14 @@ class InterviewAgentTester:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
+        # Add SSL verification and timeout settings
+        self.session.verify = False  # Disable SSL verification for testing
+        self.session.timeout = 30
+        # Add headers
+        self.session.headers.update({
+            'Content-Type': 'application/json',
+            'User-Agent': 'Avatar-Interview-Tester/1.0'
+        })
         self.generated_token = None
         self.session_id = None
         self.assessment_id = None
