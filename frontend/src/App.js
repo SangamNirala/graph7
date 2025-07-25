@@ -1009,8 +1009,34 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
           </div>
         )}
         
+        {/* Enhanced Status Indicators */}
+        {isWaitingForResponse && !isAISpeaking && (
+          <div className="bg-yellow-500/20 backdrop-blur-lg rounded-xl p-4 border border-yellow-500/30 mb-6 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center space-x-4">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-yellow-400 rounded-full mr-2 animate-pulse"></div>
+                <span className="text-yellow-200">Waiting for your response...</span>
+              </div>
+              <div className="text-yellow-300 text-sm">
+                {followUpAsked ? "(Follow-up question asked)" : "(20 seconds to respond)"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isTransitioning && (
+          <div className="bg-purple-500/20 backdrop-blur-lg rounded-xl p-4 border border-purple-500/30 mb-6 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center space-x-4">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-purple-400 rounded-full mr-2 animate-pulse"></div>
+                <span className="text-purple-200">Transitioning to next question...</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Voice Activity Indicator */}
-        {isListening && !isAISpeaking && (
+        {isListening && !isAISpeaking && !isTransitioning && (
           <div className="bg-green-500/20 backdrop-blur-lg rounded-xl p-4 border border-green-500/30 mb-6 max-w-2xl mx-auto">
             <div className="flex items-center justify-center space-x-4">
               <div className="flex items-center">
@@ -1039,7 +1065,12 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
             <div className="flex items-center justify-center space-x-4">
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-blue-400 rounded-full mr-2 animate-pulse"></div>
-                <span className="text-blue-200">AI Interviewer is speaking...</span>
+                <span className="text-blue-200">
+                  {questionPhase === 'speaking' ? 'AI Interviewer is asking the question...' : 
+                   questionPhase === 'follow-up' ? 'AI Interviewer is asking follow-up...' :
+                   questionPhase === 'transitioning' ? 'AI Interviewer is announcing transition...' :
+                   'AI Interviewer is speaking...'}
+                </span>
               </div>
               <div className="flex space-x-1">
                 {[...Array(3)].map((_, i) => (
