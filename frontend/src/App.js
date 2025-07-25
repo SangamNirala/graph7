@@ -208,11 +208,13 @@ const AudioPlayer = ({ audioBase64, autoPlay = false }) => {
   );
 };
 
+// Global spoken texts tracking to persist across component re-renders
+const globalSpokenTexts = new Set();
+
 // Text-to-Speech Component for AI Interviewer Voice - Enhanced with repeat prevention
 const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = false, uniqueId = null }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voicesLoaded, setVoicesLoaded] = useState(false);
-  const [spokenTexts, setSpokenTexts] = useState(new Set());
 
   // Ensure voices are loaded
   useEffect(() => {
