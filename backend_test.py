@@ -859,11 +859,12 @@ Tech Institute, 2017"""
                 'job_title': 'Avatar Interface Developer',
                 'job_description': 'We are seeking an experienced developer to enhance our AI-powered interview platform with realistic avatar interfaces. The role involves implementing human-like female interviewer avatars with lip-sync animation, voice-driven interactions, and seamless user experience.',
                 'job_requirements': 'Requirements: 5+ years frontend experience, React expertise, SVG animation skills, Web Speech API knowledge, real-time audio processing, avatar interface design experience.',
-                'include_coding_challenge': False,
+                'include_coding_challenge': 'false',
                 'role_archetype': 'Software Engineer',
                 'interview_focus': 'Technical Deep-Dive'
             }
             
+            # Use multipart form data instead of JSON
             response = self.session.post(
                 f"{self.base_url}/admin/upload-job-enhanced",
                 files=files,
