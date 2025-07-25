@@ -28,6 +28,8 @@ class InterviewAgentTester:
         self.generated_token = None
         self.session_id = None
         self.assessment_id = None
+        self.avatar_token = None
+        self.avatar_session_id = None
         
     def log_test(self, test_name: str, success: bool, details: str = ""):
         status = "✅ PASS" if success else "❌ FAIL"
