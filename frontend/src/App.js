@@ -475,13 +475,132 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
   const { isListening, audioLevel, startListening, stopListening } = useVoiceActivityDetection(
     () => {
       // 5-second silence detected - automatically submit answer if there's content
-      if (candidateAnswer.trim() && !isAISpeaking) {
+      if (candidateAnswer.trim() && !isAISpeaking && questionPhase === 'collecting-answer') {
         console.log('Silence detected, auto-submitting answer:', candidateAnswer.trim());
         handleSubmitAnswer();
       }
     },
     5000 // 5 second silence threshold
   );
+
+  // Cleanup function for timeouts
+  const clearAllTimeouts = () => {
+    timeoutIds.forEach(id => clearTimeout(id));
+    setTimeoutIds([]);
+  };
+
+  // Function to detect if candidate response indicates they don't know
+  const isUnknownResponse = (text) => {
+    const unknownPhrases = [
+      "i don't know", "not sure", "no idea", "skip", "pass", "next question",
+      "i'm not sure", "don't know", "unsure", "can't answer", "no clue"
+    ];
+    const lowerText = text.toLowerCase().trim();
+    return unknownPhrases.some(phrase => lowerText.includes(phrase));
+  };
+
+  // Function to start the response waiting period after question is spoken
+  const startResponseWaitingPeriod = () => {
+    console.log('Starting 20-second response waiting period...');
+    setQuestionPhase('waiting');
+    setIsWaitingForResponse(true);
+    
+    // Clear any existing timeouts
+    clearAllTimeouts();
+    
+    // Set 20-second timeout for follow-up prompt
+    const timeoutId = setTimeout(() => {
+      if (!candidateAnswer.trim() && !followUpAsked) {
+        askFollowUpQuestion();
+      }
+    }, 20000); // 20 seconds
+    
+    setTimeoutIds([timeoutId]);
+  };
+
+  // Function to ask follow-up question when no response
+  const askFollowUpQuestion = () => {
+    console.log('No response detected, asking follow-up question...');
+    setFollowUpAsked(true);
+    setQuestionPhase('follow-up');
+    
+    // Speak the follow-up question
+    const followUpText = "Do you know the answer, or should I move to the next question?";
+    speakFollowUpQuestion(followUpText);
+    
+    // Set 10-second timeout for auto-skip
+    const timeoutId = setTimeout(() => {
+      if (!candidateAnswer.trim()) {
+        console.log('No response to follow-up, moving to next question...');
+        moveToNextQuestion();
+      }
+    }, 10000); // 10 seconds
+    
+    setTimeoutIds([timeoutId]);
+  };
+
+  // Function to speak follow-up question
+  const speakFollowUpQuestion = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsAISpeaking(true);
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      utterance.volume = 0.8;
+      
+      // Try to get a female voice
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes('female') || 
+        voice.name.toLowerCase().includes('woman') ||
+        voice.name.toLowerCase().includes('samantha') ||
+        voice.name.toLowerCase().includes('karen') ||
+        voice.name.toLowerCase().includes('zira') ||
+        voice.lang.includes('en')
+      );
+      
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
+      
+      utterance.onend = () => {
+        setIsAISpeaking(false);
+        console.log('Follow-up question finished speaking');
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('Follow-up speech error:', event);
+        setIsAISpeaking(false);
+      };
+      
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // Function to move to next question
+  const moveToNextQuestion = async () => {
+    console.log('Moving to next question...');
+    clearAllTimeouts();
+    
+    // Reset states for next question
+    setFollowUpAsked(false);
+    setIsWaitingForResponse(false);
+    setQuestionPhase('waiting');
+    setCandidateAnswer('');
+    setHasSpokenQuestion(false);
+    
+    // Move to next question (this will integrate with existing submit logic)
+    const nextIndex = currentQuestionIndex + 1;
+    if (sessionData.questions && nextIndex < sessionData.questions.length) {
+      setCurrentQuestionIndex(nextIndex);
+      setCurrentQuestion({ question: sessionData.questions[nextIndex] });
+    } else {
+      // No more questions, complete interview
+      setCurrentPage('interview-session');
+    }
+  };
 
   // Initialize interview session
   useEffect(() => {
