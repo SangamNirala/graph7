@@ -273,10 +273,12 @@ analyzer = SentimentIntensityAnalyzer()
 
 # Initialize emotion classification pipeline 
 try:
-    emotion_classifier = pipeline("text-classification", 
-                                model="j-hartmann/emotion-english-distilroberta-base",
-                                return_all_scores=True)
-    print("✅ Emotion classifier loaded successfully")
+    # emotion_classifier = pipeline("text-classification", 
+    #                             model="j-hartmann/emotion-english-distilroberta-base",
+    #                             return_all_scores=True)
+    # print("✅ Emotion classifier loaded successfully")
+    emotion_classifier = None
+    print("⚠️  Warning: Emotion classifier disabled - transformers pipeline commented out")
 except Exception as e:
     print(f"⚠️  Warning: Could not load emotion classifier - {e}")
     emotion_classifier = None
