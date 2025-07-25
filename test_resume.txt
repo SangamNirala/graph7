@@ -1,0 +1,5 @@
+John Test
+Frontend Developer
+5 years React experience
+Webcam integration specialist
+Strong in JavaScript, HTML, CSS
