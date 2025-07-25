@@ -1100,31 +1100,29 @@ const AIAvatarInterviewSession = ({ interviewData, onAnswerSubmit, onInterviewCo
   );
 };
 
-// Text-to-Speech Component for AI Interviewer Voice - Enhanced with repeat prevention
+// Text-to-Speech Component for AI Interviewer Voice - Simplified and consistent
 const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = false, uniqueId = null }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voicesLoaded, setVoicesLoaded] = useState(false);
 
   // Ensure voices are loaded
   useEffect(() => {
-    if ('speechSynthesis' in window) {
-      const loadVoices = () => {
-        const voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) {
-          setVoicesLoaded(true);
-        }
-      };
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        setVoicesLoaded(true);
+      }
+    };
 
-      // Try to load voices immediately
-      loadVoices();
-
-      // Also listen for the voiceschanged event
-      window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
-
-      return () => {
-        window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
-      };
-    }
+    // Load voices immediately if available
+    loadVoices();
+    
+    // Also load when voices change (for some browsers)
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -1137,37 +1135,28 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = fa
       }
       
       // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+
+      setIsSpeaking(true);
       
-      // Small delay to ensure the speech synthesis is ready
+      // Small delay to ensure speech synthesis is ready
       setTimeout(() => {
         const utterance = new SpeechSynthesisUtterance(text);
         
-        // Configure voice settings for professional female AI interviewer
-        utterance.rate = 0.9; // Slightly slower for clarity
-        utterance.pitch = 1.1; // Slightly higher pitch for female voice
-        utterance.volume = 0.8;
-        
-        // Try to get a female voice
-        const voices = window.speechSynthesis.getVoices();
-        const femaleVoice = voices.find(voice => 
-          voice.name.toLowerCase().includes('female') || 
-          voice.name.toLowerCase().includes('woman') ||
-          voice.name.toLowerCase().includes('samantha') ||
-          voice.name.toLowerCase().includes('karen') ||
-          voice.name.toLowerCase().includes('moira') ||
-          voice.name.toLowerCase().includes('zira') ||
-          voice.name.toLowerCase().includes('aria') ||
-          (voice.lang.startsWith('en') && voice.name.toLowerCase().includes('fiona'))
-        );
-        
+        // Apply consistent voice configuration
+        utterance.rate = AVATAR_VOICE_CONFIG.rate;
+        utterance.pitch = AVATAR_VOICE_CONFIG.pitch;
+        utterance.volume = AVATAR_VOICE_CONFIG.volume;
+        utterance.lang = AVATAR_VOICE_CONFIG.lang;
+
+        // Get consistent female voice
+        const femaleVoice = getConsistentFemaleVoice();
         if (femaleVoice) {
           utterance.voice = femaleVoice;
-          console.log('Using female voice:', femaleVoice.name);
-        } else {
-          console.log('No female voice found, using default');
         }
-        
+
         utterance.onstart = () => {
           setIsSpeaking(true);
           console.log('AI Interviewer started speaking');
@@ -1187,54 +1176,31 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = fa
         };
         
         utterance.onerror = (event) => {
-          console.error('Speech synthesis error:', event.error);
+          console.error('Speech synthesis error:', event);
           setIsSpeaking(false);
         };
         
         window.speechSynthesis.speak(utterance);
-      }, 200);
+      }, 100);
     }
+  }, [voiceMode, text, voicesLoaded, uniqueId, preventRepeats, onSpeechComplete]);
 
-    return () => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, [text, voiceMode, onSpeechComplete, voicesLoaded, preventRepeats, uniqueId]);
-
-  const stopSpeaking = () => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-      console.log('Speech manually stopped');
-    }
-  };
-
-  if (!voiceMode || !text) {
-    return null;
-  }
-
-  return (
-    <div className="ai-voice-indicator flex items-center gap-2 mb-3">
-      {isSpeaking && (
-        <>
-          <div className="animate-pulse flex items-center gap-1">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-          </div>
-          <span className="text-blue-300 text-sm font-medium">🎤 AI Interviewer is speaking...</span>
-          <button
-            onClick={stopSpeaking}
-            className="ml-2 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors"
-            title="Stop Speaking"
-          >
-            Stop
-          </button>
-        </>
-      )}
+  // Provide visual feedback with consistent styling
+  return isSpeaking ? (
+    <div className="flex items-center space-x-2 text-blue-300 mb-4">
+      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+      <span className="text-sm">Sarah is speaking...</span>
+      <button
+        onClick={() => {
+          window.speechSynthesis.cancel();
+          setIsSpeaking(false);
+        }}
+        className="ml-4 text-xs text-red-300 hover:text-red-200 underline"
+      >
+        Stop Speaking
+      </button>
     </div>
-  );
+  ) : null;
 };
 
 // Enhanced Landing Page Component
