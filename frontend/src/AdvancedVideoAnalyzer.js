@@ -123,7 +123,7 @@ const AdvancedVideoAnalyzer = ({ sessionId, onAnalysisUpdate, isRecording = fals
           autoPlay
           muted
           playsInline
-          className="w-full max-w-md rounded-lg shadow-lg"
+          className={`rounded-lg shadow-lg ${isPreview ? 'w-48 h-36' : 'w-full max-w-md'}`}
           style={{ display: isAnalyzing ? 'block' : 'none' }}
         />
         <canvas
@@ -131,8 +131,8 @@ const AdvancedVideoAnalyzer = ({ sessionId, onAnalysisUpdate, isRecording = fals
           className="hidden"
         />
         
-        {/* Analysis Overlay */}
-        {currentAnalysis && (
+        {/* Analysis Overlay - Only show if not in preview mode */}
+        {!isPreview && currentAnalysis && (
           <div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-3 rounded-lg text-sm">
             <div className="space-y-1">
               <div>Engagement: {Math.round(currentAnalysis.engagement_score * 100)}%</div>
@@ -146,8 +146,8 @@ const AdvancedVideoAnalyzer = ({ sessionId, onAnalysisUpdate, isRecording = fals
         )}
       </div>
 
-      {/* Real-time Metrics Dashboard */}
-      {currentAnalysis && (
+      {/* Real-time Metrics Dashboard - Only show if not in preview mode */}
+      {!isPreview && currentAnalysis && (
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg">
             <h4 className="font-semibold text-blue-800 mb-2">Engagement Metrics</h4>
