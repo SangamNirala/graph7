@@ -531,7 +531,10 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
         
         // Set first question from stored data
         if (parsedData.currentQuestion) {
-          setCurrentQuestion(parsedData.currentQuestion);
+          // Wrap the question string in an object structure expected by the UI
+          setCurrentQuestion({ 
+            question: parsedData.currentQuestion 
+          });
           setCurrentQuestionIndex(parsedData.questionNumber - 1 || 0); // questionNumber is 1-based
         }
 
