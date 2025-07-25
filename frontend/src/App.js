@@ -897,9 +897,10 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
       // Move to next question
       const nextIndex = currentQuestionIndex + 1;
       if (result.next_question) {
-        // Reset states for next question
+        // Reset all states for next question
         setFollowUpAsked(false);
         setIsWaitingForResponse(false);
+        setIsTransitioning(false);
         setQuestionPhase('waiting');
         setHasSpokenQuestion(false);
         
