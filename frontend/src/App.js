@@ -543,198 +543,85 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
     5000 // 5 second silence threshold
   );
 
-  // Cleanup function for timeouts
-  const clearAllTimeouts = () => {
-    timeoutIds.forEach(id => clearTimeout(id));
-    setTimeoutIds([]);
-  };
+  // Single AI Voice Speaker - Consistent and simplified
+  const SpeakQuestion = ({ questionText }) => {
+    useEffect(() => {
+      const speakText = async () => {
+        if (!questionText || !questionText.trim() || hasSpokenCurrentQuestion || isAISpeaking) {
+          return;
+        }
 
-  // Function to detect if candidate response indicates they don't know
-  const isUnknownResponse = (text) => {
-    const unknownPhrases = [
-      "i don't know", "not sure", "no idea", "skip", "pass", "next question",
-      "i'm not sure", "don't know", "unsure", "can't answer", "no clue",
-      "i have no idea", "no answer", "can't think", "blank", "nothing"
-    ];
-    const lowerText = text.toLowerCase().trim();
-    return unknownPhrases.some(phrase => lowerText.includes(phrase));
-  };
+        // Create unique key for this question
+        const questionKey = `avatar-q-${currentQuestionIndex}-${questionText.substring(0, 20)}`;
+        
+        // Check if already spoken
+        if (globalSpokenTexts.has(questionKey)) {
+          console.log('Question already spoken, skipping:', questionKey);
+          setIsWaitingForAnswer(true);
+          // Start listening since question was already spoken
+          setTimeout(() => {
+            if (!isListening) {
+              startListening();
+            }
+          }, 500);
+          return;
+        }
 
-  // Function to detect if candidate has started responding during waiting period
-  const detectCandidateResponse = (answer) => {
-    if (answer.trim() && (questionPhase === 'waiting' || questionPhase === 'follow-up')) {
-      console.log('Candidate started responding during waiting period, switching to collecting mode');
-      setQuestionPhase('collecting-answer');
-      setIsWaitingForResponse(false);
-      // Clear the follow-up timeout since candidate is responding
-      clearAllTimeouts();
-    }
-  };
+        console.log('Speaking question:', questionText.substring(0, 50) + '...');
+        setIsAISpeaking(true);
+        setHasSpokenCurrentQuestion(true);
 
-  // Function to start the response waiting period after question is spoken
-  const startResponseWaitingPeriod = () => {
-    console.log('Starting 20-second response waiting period...');
-    setQuestionPhase('waiting');
-    setIsWaitingForResponse(true);
-    
-    // Clear any existing timeouts
-    clearAllTimeouts();
-    
-    // Set 20-second timeout for follow-up prompt
-    const timeoutId = setTimeout(() => {
-      if (!candidateAnswer.trim() && !followUpAsked && !isTransitioning) {
-        askFollowUpQuestion();
-      }
-    }, 20000); // 20 seconds
-    
-    setTimeoutIds([timeoutId]);
-  };
+        // Cancel any existing speech
+        if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel();
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
 
-  // Function to ask follow-up question when no response
-  const askFollowUpQuestion = () => {
-    console.log('No response detected, asking follow-up question...');
-    setFollowUpAsked(true);
-    setQuestionPhase('follow-up');
-    
-    // Speak the follow-up question
-    const followUpText = "Do you know the answer, or should I move to the next question?";
-    speakFollowUpQuestion(followUpText);
-    
-    // Set 10-second timeout for enhanced auto-skip with announcement
-    const timeoutId = setTimeout(() => {
-      if (!candidateAnswer.trim() && !isTransitioning) {
-        console.log('No response to follow-up, announcing transition...');
-        announceTransitionAndMoveToNext();
-      }
-    }, 10000); // 10 seconds
-    
-    setTimeoutIds([timeoutId]);
-  };
+        const utterance = new SpeechSynthesisUtterance(questionText);
+        
+        // Apply consistent voice configuration
+        utterance.rate = AVATAR_VOICE_CONFIG.rate;
+        utterance.pitch = AVATAR_VOICE_CONFIG.pitch;
+        utterance.volume = AVATAR_VOICE_CONFIG.volume;
+        utterance.lang = AVATAR_VOICE_CONFIG.lang;
 
-  // Enhanced function to announce transition before moving to next question
-  const announceTransitionAndMoveToNext = () => {
-    console.log('Announcing transition to next question...');
-    setIsTransitioning(true);
-    setQuestionPhase('transitioning');
-    
-    // Clear any existing timeouts
-    clearAllTimeouts();
-    
-    // Announce the transition
-    const transitionText = "Since you're not responding, let's move to the next question.";
-    speakTransitionAnnouncement(transitionText);
-    
-    // Set short timeout to actually move to next question after announcement
-    const timeoutId = setTimeout(() => {
-      moveToNextQuestion();
-    }, 3000); // 3 seconds after announcement
-    
-    setTimeoutIds([timeoutId]);
-  };
+        // Get consistent female voice
+        const femaleVoice = getConsistentFemaleVoice();
+        if (femaleVoice) {
+          utterance.voice = femaleVoice;
+        }
 
-  // Function to speak transition announcement
-  const speakTransitionAnnouncement = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      setIsAISpeaking(true);
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1.1;
-      utterance.volume = 0.8;
-      
-      // Try to get a female voice
-      const voices = window.speechSynthesis.getVoices();
-      const femaleVoice = voices.find(voice => 
-        voice.name.toLowerCase().includes('female') || 
-        voice.name.toLowerCase().includes('woman') ||
-        voice.name.toLowerCase().includes('samantha') ||
-        voice.name.toLowerCase().includes('karen') ||
-        voice.name.toLowerCase().includes('zira') ||
-        voice.lang.includes('en')
-      );
-      
-      if (femaleVoice) {
-        utterance.voice = femaleVoice;
-      }
-      
-      utterance.onend = () => {
-        setIsAISpeaking(false);
-        console.log('Transition announcement finished speaking');
+        utterance.onstart = () => {
+          console.log('AI started speaking question');
+          globalSpokenTexts.add(questionKey);
+        };
+
+        utterance.onend = () => {
+          console.log('AI finished speaking question, starting voice capture');
+          setIsAISpeaking(false);
+          setIsWaitingForAnswer(true);
+          
+          // Start listening after AI finishes speaking
+          setTimeout(() => {
+            if (!isListening) {
+              startListening();
+            }
+          }, 500);
+        };
+
+        utterance.onerror = (event) => {
+          console.error('Speech synthesis error:', event);
+          setIsAISpeaking(false);
+          setIsWaitingForAnswer(true);
+        };
+
+        window.speechSynthesis.speak(utterance);
       };
-      
-      utterance.onerror = (event) => {
-        console.error('Transition announcement speech error:', event);
-        setIsAISpeaking(false);
-      };
-      
-      window.speechSynthesis.speak(utterance);
-    }
-  };
 
-  // Function to speak follow-up question
-  const speakFollowUpQuestion = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      setIsAISpeaking(true);
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1.1;
-      utterance.volume = 0.8;
-      
-      // Try to get a female voice
-      const voices = window.speechSynthesis.getVoices();
-      const femaleVoice = voices.find(voice => 
-        voice.name.toLowerCase().includes('female') || 
-        voice.name.toLowerCase().includes('woman') ||
-        voice.name.toLowerCase().includes('samantha') ||
-        voice.name.toLowerCase().includes('karen') ||
-        voice.name.toLowerCase().includes('zira') ||
-        voice.lang.includes('en')
-      );
-      
-      if (femaleVoice) {
-        utterance.voice = femaleVoice;
-      }
-      
-      utterance.onend = () => {
-        setIsAISpeaking(false);
-        console.log('Follow-up question finished speaking');
-      };
-      
-      utterance.onerror = (event) => {
-        console.error('Follow-up speech error:', event);
-        setIsAISpeaking(false);
-      };
-      
-      window.speechSynthesis.speak(utterance);
-    }
-  };
+      speakText();
+    }, [questionText, hasSpokenCurrentQuestion, isAISpeaking]);
 
-  // Function to move to next question
-  const moveToNextQuestion = async () => {
-    console.log('Moving to next question...');
-    clearAllTimeouts();
-    
-    // Reset all states for next question
-    setFollowUpAsked(false);
-    setIsWaitingForResponse(false);
-    setIsTransitioning(false);
-    setQuestionPhase('waiting');
-    setCandidateAnswer('');
-    setHasSpokenQuestion(false);
-    
-    // Move to next question (this will integrate with existing submit logic)
-    const nextIndex = currentQuestionIndex + 1;
-    if (sessionData.questions && nextIndex < sessionData.questions.length) {
-      setCurrentQuestionIndex(nextIndex);
-      setCurrentQuestion({ question: sessionData.questions[nextIndex] });
-    } else {
-      // No more questions, complete interview
-      console.log('Avatar interview completed - all questions answered');
-      setCompleted(true);
-    }
+    return null;
   };
 
   // Initialize interview session
