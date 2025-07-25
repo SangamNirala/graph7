@@ -221,15 +221,17 @@ const AdvancedVideoAnalyzer = ({ sessionId, onAnalysisUpdate, isRecording = fals
         </div>
       )}
 
-      {/* Status Indicator */}
-      <div className="mt-4 flex items-center justify-center space-x-2">
-        {isAnalyzing && (
-          <>
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-600">Real-time analysis active</span>
-          </>
-        )}
-      </div>
+      {/* Status Indicator - Only show if not in preview mode */}
+      {!isPreview && (
+        <div className="mt-4 flex items-center justify-center space-x-2">
+          {isAnalyzing && (
+            <>
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm text-gray-600">Real-time analysis active</span>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };
