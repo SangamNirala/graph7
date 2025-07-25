@@ -482,8 +482,22 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
       try {
         setLoading(true);
         
+        // Debug logging
+        console.log('Avatar Interview - Debug Info:');
+        console.log('Token received:', token);
+        console.log('ValidatedJob:', validatedJob);
+        
+        // Check if token is available
+        if (!token) {
+          console.error('No token available for avatar interview');
+          setError('Authentication token missing. Please start interview again.');
+          return;
+        }
+        
         // Get stored interview data
         const storedData = localStorage.getItem('interviewData');
+        console.log('Stored interview data:', storedData);
+        
         if (!storedData) {
           setError('No interview data found');
           return;
@@ -491,6 +505,14 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
 
         const parsedData = JSON.parse(storedData);
         setInterviewData(parsedData);
+        
+        const requestPayload = {
+          token: token,
+          candidate_name: parsedData.candidateName || 'Candidate',
+          voice_mode: true // Force voice mode for avatar interview
+        };
+        
+        console.log('Making request to start-interview with payload:', requestPayload);
 
         // Start interview session using existing API
         const response = await fetch(`${API}/candidate/start-interview`, {
@@ -498,11 +520,7 @@ const AvatarInterviewContainer = ({ setCurrentPage, token, validatedJob }) => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            token: token,
-            candidate_name: parsedData.candidateName || 'Candidate',
-            voice_mode: true // Force voice mode for avatar interview
-          }),
+          body: JSON.stringify(requestPayload),
         });
 
         if (!response.ok) {
