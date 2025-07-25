@@ -392,88 +392,125 @@ const RealisticFemaleAvatar = ({ isSpeaking, isListening, currentQuestion }) => 
   );
 };
 
-// Voice Activity Detection Hook
+// Voice Activity Detection Hook - Enhanced for better voice capture
 const useVoiceActivityDetection = (onSilenceDetected, silenceThreshold = 5000) => {
   const [isListening, setIsListening] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [hasVoiceActivity, setHasVoiceActivity] = useState(false);
   const silenceTimerRef = useRef(null);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const streamRef = useRef(null);
+  const dataArrayRef = useRef(null);
+  const animationFrameRef = useRef(null);
   
   const startListening = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('Starting voice activity detection...');
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+      
       streamRef.current = stream;
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
       
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const analyser = audioContext.createAnalyser();
-      const microphone = audioContext.createMediaStreamSource(stream);
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      source.connect(analyserRef.current);
       
-      analyser.smoothingTimeConstant = 0.8;
-      analyser.fftSize = 1024;
+      analyserRef.current.fftSize = 256;
+      const bufferLength = analyserRef.current.frequencyBinCount;
+      dataArrayRef.current = new Uint8Array(bufferLength);
       
-      microphone.connect(analyser);
-      
-      audioContextRef.current = audioContext;
-      analyserRef.current = analyser;
       setIsListening(true);
-      
-      const detectAudio = () => {
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        
-        analyser.getByteFrequencyData(dataArray);
-        
-        const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
-        setAudioLevel(average);
-        
-        // Voice activity detection threshold
-        const threshold = 25;
-        
-        if (average > threshold) {
-          // Voice detected - clear silence timer
-          if (silenceTimerRef.current) {
-            clearTimeout(silenceTimerRef.current);
-            silenceTimerRef.current = null;
-          }
-        } else {
-          // Silence detected - start or continue timer
-          if (!silenceTimerRef.current) {
-            silenceTimerRef.current = setTimeout(() => {
-              onSilenceDetected();
-              silenceTimerRef.current = null;
-            }, silenceThreshold);
-          }
-        }
-        
-        if (isListening) {
-          requestAnimationFrame(detectAudio);
-        }
-      };
-      
-      detectAudio();
+      analyzeAudio();
       
     } catch (error) {
       console.error('Error accessing microphone:', error);
     }
   };
   
+  const analyzeAudio = () => {
+    if (!analyserRef.current || !dataArrayRef.current) return;
+    
+    analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+    
+    // Calculate average audio level
+    const average = dataArrayRef.current.reduce((a, b) => a + b) / dataArrayRef.current.length;
+    const normalizedLevel = Math.min(100, Math.max(0, (average / 128) * 100));
+    
+    setAudioLevel(normalizedLevel);
+    
+    // Voice activity threshold - adjusted for better sensitivity
+    const voiceThreshold = 15;
+    const hasVoice = normalizedLevel > voiceThreshold;
+    
+    if (hasVoice !== hasVoiceActivity) {
+      setHasVoiceActivity(hasVoice);
+      
+      if (hasVoice) {
+        // Voice detected - clear silence timer
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+        console.log('Voice activity detected, level:', normalizedLevel);
+      } else {
+        // No voice - start silence timer
+        if (!silenceTimerRef.current && isListening) {
+          console.log('Starting silence timer...');
+          silenceTimerRef.current = setTimeout(() => {
+            console.log('Silence detected after', silenceThreshold, 'ms');
+            onSilenceDetected();
+          }, silenceThreshold);
+        }
+      }
+    }
+    
+    if (isListening) {
+      animationFrameRef.current = requestAnimationFrame(analyzeAudio);
+    }
+  };
+  
   const stopListening = () => {
+    console.log('Stopping voice activity detection...');
     setIsListening(false);
+    setAudioLevel(0);
+    setHasVoiceActivity(false);
+    
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
     }
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
+    
     if (audioContextRef.current) {
       audioContextRef.current.close();
+      audioContextRef.current = null;
     }
   };
   
-  return { isListening, audioLevel, startListening, stopListening };
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopListening();
+    };
+  }, []);
+  
+  return { isListening, audioLevel, hasVoiceActivity, startListening, stopListening };
 };
 
 // Avatar Interview Container - Integrates with existing interview system
