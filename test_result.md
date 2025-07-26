@@ -160,20 +160,17 @@ backend:
         -agent: "testing"
         -comment: "❌ UPDATED ISSUE: Google Cloud TTS error has changed from '401 authentication' to '500 string indices must be integers' error. This suggests partial progress in authentication but indicates a data structure issue in the TTS processing code. The endpoint is accessible and backend dependencies are resolved, but TTS audio generation still fails. Text cleaning function is working correctly. REQUIRES: Debug the data structure issue in TTS processing to restore audio generation capability."
 
-  - task: "Google Cloud Speech-to-Text Integration"
+  - task: "Web Speech API Backend Integration"
     implemented: true
     working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         -working: true
         -agent: "main"
-        -comment: "Implemented real-time voice transcription with WEBM_OPUS encoding, 48kHz sample rate, and audio file storage in GridFS with metadata."
-        -working: true
-        -agent: "testing"
-        -comment: "✅ TESTED: Google Cloud STT integration working correctly. API endpoint accessible and properly configured for WEBM_OPUS audio format with 48kHz sample rate. Audio file storage in GridFS functioning with proper metadata. Transcription service responding appropriately to audio input."
+        -comment: "Updated backend to use Web Speech API for STT instead of Google Cloud. Removed stt_client and speech import, updated VoiceProcessor.speech_to_text to indicate STT is handled on frontend. Backend now focuses on audio storage, emotional analysis, and voice processing pipeline while STT is handled by browser's Web Speech API."
 
   - task: "Voice Interview Session Management"
     implemented: true
