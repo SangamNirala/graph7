@@ -684,6 +684,24 @@ const AdminDashboard = ({ setCurrentPage }) => {
     }
   };
 
+  const fetchDetailedReport = async (sessionId) => {
+    setDetailedReportModal({ show: true, data: null, loading: true });
+    try {
+      const response = await fetch(`${API}/admin/detailed-report/${sessionId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDetailedReportModal({ show: true, data, loading: false });
+      } else {
+        setDetailedReportModal({ show: false, data: null, loading: false });
+        alert('Failed to fetch detailed report');
+      }
+    } catch (err) {
+      console.error('Failed to fetch detailed report:', err);
+      setDetailedReportModal({ show: false, data: null, loading: false });
+      alert('Error fetching detailed report');
+    }
+  };
+
   const handleCandidateSelection = (token) => {
     if (selectedCandidates.includes(token)) {
       setSelectedCandidates(selectedCandidates.filter(t => t !== token));
