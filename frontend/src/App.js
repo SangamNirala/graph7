@@ -783,6 +783,21 @@ const AdminDashboard = ({ setCurrentPage }) => {
   // Interview question limits
   const [minQuestions, setMinQuestions] = useState(8);
   const [maxQuestions, setMaxQuestions] = useState(12);
+  
+  // Question Selection Controls
+  const [resumeBasedCount, setResumeBasedCount] = useState(2);
+  const [technicalCount, setTechnicalCount] = useState(4);
+  const [behavioralCount, setBehavioralCount] = useState(4);
+  
+  // Question Type Selection (auto-generate vs manual)
+  const [resumeQuestionType, setResumeQuestionType] = useState('auto'); // 'auto' or 'manual'
+  const [technicalQuestionType, setTechnicalQuestionType] = useState('auto');
+  const [behavioralQuestionType, setBehavioralQuestionType] = useState('auto');
+  
+  // Manual Questions Storage
+  const [manualResumeQuestions, setManualResumeQuestions] = useState([]);
+  const [manualTechnicalQuestions, setManualTechnicalQuestions] = useState([]);
+  const [manualBehavioralQuestions, setManualBehavioralQuestions] = useState([]);
 
   const roleArchetypes = [
     'General',
