@@ -605,6 +605,133 @@ class InterviewAI:
         chat.with_max_tokens(2048)
         return chat
     
+    async def generate_interview_questions_with_custom(self, resume: str, job_description: str, role_archetype: str = "General", interview_focus: str = "Balanced", min_questions: int = 8, max_questions: int = 12, custom_config: Dict[str, Any] = None) -> List[str]:
+        """Generate interview questions with support for custom/manual questions"""
+        if custom_config is None:
+            # Fallback to original method if no custom config
+            return await self.generate_interview_questions(resume, job_description, role_archetype, interview_focus, min_questions, max_questions)
+        
+        # Extract configuration
+        resume_config = custom_config.get('resume_based', {})
+        technical_config = custom_config.get('technical', {})
+        behavioral_config = custom_config.get('behavioral', {})
+        
+        # Get counts
+        resume_count = resume_config.get('count', 0)
+        technical_count = technical_config.get('count', 0)
+        behavioral_count = behavioral_config.get('count', 0)
+        
+        # Initialize question lists
+        all_questions = []
+        
+        # Process resume-based questions
+        if resume_count > 0:
+            if resume_config.get('type') == 'manual':
+                manual_questions = resume_config.get('manual_questions', [])
+                # Add manual questions
+                for q in manual_questions:
+                    if q.get('question', '').strip():
+                        all_questions.append(q['question'].strip())
+                # Fill remaining with AI if needed
+                remaining = resume_count - len([q for q in manual_questions if q.get('question', '').strip()])
+                if remaining > 0:
+                    ai_questions = await self._generate_specific_questions('resume', remaining, resume, job_description, role_archetype)
+                    all_questions.extend(ai_questions)
+            else:
+                # Generate all via AI
+                ai_questions = await self._generate_specific_questions('resume', resume_count, resume, job_description, role_archetype)
+                all_questions.extend(ai_questions)
+        
+        # Process technical questions
+        if technical_count > 0:
+            if technical_config.get('type') == 'manual':
+                manual_questions = technical_config.get('manual_questions', [])
+                # Add manual questions
+                for q in manual_questions:
+                    if q.get('question', '').strip():
+                        all_questions.append(q['question'].strip())
+                # Fill remaining with AI if needed
+                remaining = technical_count - len([q for q in manual_questions if q.get('question', '').strip()])
+                if remaining > 0:
+                    ai_questions = await self._generate_specific_questions('technical', remaining, resume, job_description, role_archetype)
+                    all_questions.extend(ai_questions)
+            else:
+                # Generate all via AI
+                ai_questions = await self._generate_specific_questions('technical', technical_count, resume, job_description, role_archetype)
+                all_questions.extend(ai_questions)
+        
+        # Process behavioral questions
+        if behavioral_count > 0:
+            if behavioral_config.get('type') == 'manual':
+                manual_questions = behavioral_config.get('manual_questions', [])
+                # Add manual questions
+                for q in manual_questions:
+                    if q.get('question', '').strip():
+                        all_questions.append(q['question'].strip())
+                # Fill remaining with AI if needed
+                remaining = behavioral_count - len([q for q in manual_questions if q.get('question', '').strip()])
+                if remaining > 0:
+                    ai_questions = await self._generate_specific_questions('behavioral', remaining, resume, job_description, role_archetype)
+                    all_questions.extend(ai_questions)
+            else:
+                # Generate all via AI
+                ai_questions = await self._generate_specific_questions('behavioral', behavioral_count, resume, job_description, role_archetype)
+                all_questions.extend(ai_questions)
+        
+        return all_questions[:max_questions]  # Ensure we don't exceed max_questions
+    
+    async def _generate_specific_questions(self, question_type: str, count: int, resume: str, job_description: str, role_archetype: str) -> List[str]:
+        """Generate specific type of questions using AI"""
+        if count <= 0:
+            return []
+        
+        type_prompts = {
+            'resume': f"Generate {count} questions specifically based on the candidate's resume experience and background",
+            'technical': f"Generate {count} technical questions relevant to the job requirements and role",
+            'behavioral': f"Generate {count} behavioral questions to assess soft skills and cultural fit"
+        }
+        
+        bias_mitigation = """
+        BIAS MITIGATION INSTRUCTIONS:
+        - Evaluate candidates based ONLY on job-related competencies and qualifications
+        - Ignore accent, gender, age, race, religion, or other protected characteristics
+        - Focus on skills, experience, problem-solving ability, and cultural alignment
+        - Ensure questions are fair and relevant to the role requirements
+        """
+        
+        role_context = self._get_role_context(role_archetype)
+        
+        system_message = f"""You are an expert AI interviewer conducting a fair and unbiased interview. {bias_mitigation}
+        
+        Role Archetype: {role_archetype}
+        {role_context}
+
+        IMPORTANT: Generate questions in plain text without any formatting like backticks, bold, or italics since these will be converted to speech.
+        
+        {type_prompts.get(question_type, '')}
+
+        Resume: {resume}
+        Job Description: {job_description}
+
+        Generate exactly {count} {question_type} questions. Format each question on a new line starting with "Q: " followed by the question."""
+        
+        session_id = self.generate_session_id()
+        chat = await self.create_chat_instance(session_id, system_message)
+        
+        user_message = UserMessage(text=f"Generate {count} {question_type} questions based on the provided resume and job description.")
+        response = await chat.send_message(user_message)
+        
+        # Parse questions from response
+        questions = []
+        lines = response.split('\n')
+        for line in lines:
+            if line.strip().startswith('Q:'):
+                question = line.replace('Q:', '', 1).strip()
+                if question:
+                    questions.append(question)
+        
+        return questions[:count]  # Ensure we return exactly the requested count
+    
     async def generate_interview_questions(self, resume: str, job_description: str, role_archetype: str = "General", interview_focus: str = "Balanced", min_questions: int = 8, max_questions: int = 12) -> List[str]:
         # Enhanced system message with bias mitigation and role archetype
         bias_mitigation = """
