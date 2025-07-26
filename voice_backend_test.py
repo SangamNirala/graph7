@@ -513,8 +513,7 @@ SKILLS:
                     
                     data = {
                         'session_id': self.voice_session_id,
-                        'question_number': 10 + list(self.test_audio_files.keys()).index(format_name),
-                        'transcript': f'Testing {format_name} audio format support for voice processing.'
+                        'question_number': 10 + list(self.test_audio_files.keys()).index(format_name)
                     }
                     
                     response = self.session.post(
