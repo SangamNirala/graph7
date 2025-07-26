@@ -42,6 +42,18 @@ class VoiceProcessingTester:
             print(f"   Details: {details}")
         print()
     
+    def test_health_check(self) -> bool:
+        """Test basic API health check"""
+        try:
+            response = self.session.get(f"{self.base_url}/health", timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}, Response: {response.text[:100]}"
+            self.log_test("Health Check", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Health Check", False, f"Exception: {str(e)}")
+            return False
+    
     def create_test_audio_files(self):
         """Create various test audio files for testing different formats"""
         try:
