@@ -2150,34 +2150,17 @@ const InterviewSession = ({ setCurrentPage }) => {
   const [webcamActive, setWebcamActive] = useState(false);
   const [webcamMinimized, setWebcamMinimized] = useState(false);
 
-  // Voice recording
-  const handleVoiceRecording = async (audioBlob) => {
+  // Voice recording - now handles transcribed text instead of audio
+  const handleVoiceRecording = async (transcribedText) => {
+    if (!transcribedText || transcribedText.trim() === '') {
+      alert('No speech detected. Please try recording again.');
+      return;
+    }
+    
     setIsAnswering(true);
     try {
-      const formData = new FormData();
-      formData.append('session_id', interviewData.sessionId);
-      formData.append('question_number', interviewData.questionNumber);
-      formData.append('audio_file', audioBlob, 'answer.webm');
-
-      const response = await fetch(`${API}/voice/process-answer`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.emotional_intelligence) {
-          setCurrentEI(data.emotional_intelligence);
-          setEIHistory(prev => [...prev, {
-            ...data.emotional_intelligence,
-            timestamp: new Date(),
-            questionNumber: interviewData.questionNumber
-          }]);
-        }
-        
-        await handleAnswerSubmission(data.transcript);
-      }
+      // Send transcribed text directly to the interview engine
+      await handleAnswerSubmission(transcribedText);
     } catch (error) {
       console.error('Voice processing error:', error);
     } finally {
