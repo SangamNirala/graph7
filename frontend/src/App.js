@@ -1705,7 +1705,7 @@ const AdminDashboard = ({ setCurrentPage }) => {
 
               <button
                 type="submit"
-                disabled={loading || !resumeFile}
+                disabled={loading || !resumeFile || !isValidQuestionCount()}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
               >
                 {loading ? 'Creating Enhanced Interview...' : '🚀 Create Enhanced Interview'}
