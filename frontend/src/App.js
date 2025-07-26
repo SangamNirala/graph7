@@ -340,6 +340,16 @@ const useVoiceRecorder = (onRecordingComplete) => {
     }
   };
 
+  // Cleanup function
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current && isRecording) {
+        recognitionRef.current.stop();
+      }
+      stopVoiceLevelMonitoring();
+    };
+  }, []);
+
   return { 
     status: isRecording ? 'recording' : 'idle',
     startRecording, 
