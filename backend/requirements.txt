@@ -46,3 +46,7 @@ torch>=2.7.0
 transformers>=4.53.0
 vaderSentiment>=3.3.2
 scikit-learn>=1.7.0
+# Additional dependencies for voice recording functionality
+lazy_loader
+safetensors>=0.4.3
+absl-py>=1.0.0
