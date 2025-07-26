@@ -230,7 +230,12 @@ POST /api/sjt/submit
 3. **Generate Candidate Token** (16-character secure token)
 4. **Monitor Candidate Pipeline** with real-time status tracking
 5. **Review Reports** with comprehensive assessments and bias metrics
-6. **Compare Candidates** using side-by-side analysis tools
+6. **View Detailed Transcripts** - New enhanced feature with:
+   - Complete Q&A transcript in formatted layout (Q1, A1, Q2, A2, etc.)
+   - Candidate score breakdown (Technical, Behavioral, Overall)
+   - AI-generated hiring justification with merits and demerits
+   - Specific recommendation (Strong Hire/Hire/No Hire/Strong No Hire)
+7. **Compare Candidates** using side-by-side analysis tools
 
 ### **Candidate Workflow**
 
