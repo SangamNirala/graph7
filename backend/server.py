@@ -922,50 +922,19 @@ class VoiceProcessor:
             return text
     
     async def speech_to_text(self, audio_data: bytes) -> str:
-        """Convert audio to text using Google Cloud Speech-to-Text API"""
+        """STT is now handled by Web Speech API on the frontend"""
         try:
-            logging.info("Starting Google Cloud Speech-to-Text conversion")
+            logging.info("STT request received - redirecting to Web Speech API")
             
-            # Configure audio settings for speech recognition
-            config = speech.RecognitionConfig(
-                encoding=speech.RecognitionConfig.AudioEncoding.WEBM_OPUS,
-                sample_rate_hertz=48000,
-                language_code="en-US",
-                audio_channel_count=1,
-                enable_automatic_punctuation=True,
-                model="default"
-            )
-            
-            # Create recognition audio object
-            audio = speech.RecognitionAudio(content=audio_data)
-            
-            # Call the speech-to-text API
-            response = stt_client.recognize(config=config, audio=audio)
-            
-            # Process the recognition results
-            transcripts = []
-            for result in response.results:
-                if result.alternatives:
-                    transcript = result.alternatives[0].transcript
-                    confidence = result.alternatives[0].confidence
-                    logging.info(f"STT transcript: {transcript} (confidence: {confidence:.2f})")
-                    transcripts.append(transcript)
-            
-            # Combine all transcripts
-            full_transcript = " ".join(transcripts)
-            
-            if not full_transcript:
-                logging.warning("No speech detected in audio")
-                return "No speech detected in audio"
-            
-            logging.info(f"Final transcript: {full_transcript}")
-            return full_transcript
+            # Since STT is now handled by Web Speech API on the frontend,
+            # this method should not be called. Return a message indicating this.
+            return "Speech-to-text is now handled by Web Speech API on the frontend"
             
         except Exception as e:
             logging.error(f"Speech-to-text error: {str(e)}")
             
-            # Fallback to placeholder if STT fails
-            return f"Speech recognition error: {str(e)}"
+            # Fallback message
+            return "Speech-to-text is handled by Web Speech API on the frontend"
 
 # Initialize engines
 interview_ai = InterviewAI()
