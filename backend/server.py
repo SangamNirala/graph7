@@ -1847,14 +1847,28 @@ async def start_interview(request: InterviewStartRequest):
     
     # Generate interview questions with enhanced parameters if available
     if is_enhanced:
-        questions = await interview_ai.generate_interview_questions(
-            token_data['resume_content'],
-            token_data['job_description'],
-            token_data.get('role_archetype', 'General'),
-            token_data.get('interview_focus', 'Balanced'),
-            token_data.get('min_questions', 8),
-            token_data.get('max_questions', 12)
-        )
+        custom_config = token_data.get('custom_questions_config', {})
+        if custom_config:
+            # Use custom question generation method
+            questions = await interview_ai.generate_interview_questions_with_custom(
+                token_data['resume_content'],
+                token_data['job_description'],
+                token_data.get('role_archetype', 'General'),
+                token_data.get('interview_focus', 'Balanced'),
+                token_data.get('min_questions', 8),
+                token_data.get('max_questions', 12),
+                custom_config
+            )
+        else:
+            # Use original method
+            questions = await interview_ai.generate_interview_questions(
+                token_data['resume_content'],
+                token_data['job_description'],
+                token_data.get('role_archetype', 'General'),
+                token_data.get('interview_focus', 'Balanced'),
+                token_data.get('min_questions', 8),
+                token_data.get('max_questions', 12)
+            )
     else:
         questions = await interview_ai.generate_interview_questions(
             token_data['resume_content'],
