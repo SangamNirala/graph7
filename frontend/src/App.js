@@ -2230,12 +2230,15 @@ const InterviewSession = ({ setCurrentPage }) => {
       return;
     }
     
+    console.log('Voice recording completed with transcript:', transcribedText);
     setIsAnswering(true);
+    
     try {
       // Send transcribed text directly to the interview engine
       await handleAnswerSubmission(transcribedText);
     } catch (error) {
       console.error('Voice processing error:', error);
+      alert('Failed to submit voice answer. Please try again.');
     } finally {
       setIsAnswering(false);
     }
