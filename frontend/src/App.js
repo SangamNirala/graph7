@@ -2259,7 +2259,7 @@ const InterviewSession = ({ setCurrentPage }) => {
   }, [completed]);
 
   // Voice recording hook
-  const { status: recordingStatus, startRecording, stopRecording } = useVoiceRecorder(handleVoiceRecording);
+  const { status: recordingStatus, startRecording, stopRecording, transcript, voiceLevel, isRecording } = useVoiceRecorder(handleVoiceRecording);
 
   if (!interviewData) {
     return (
