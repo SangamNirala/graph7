@@ -55,5 +55,6 @@ attrs
 google-auth
 yarl
 aiohappyeyeballs
--e aiosignal
+aiosignal
 frozenlist
+distro
