@@ -2584,7 +2584,7 @@ const InterviewSession = ({ setCurrentPage }) => {
 
                   <p className="text-center text-gray-300 text-sm">
                     {recordingStatus === 'recording' 
-                      ? '🔴 Recording... Click to stop' 
+                      ? '🔴 Recording... Click the red button to stop' 
                       : '🎤 Click to record your answer'
                     }
                   </p>
