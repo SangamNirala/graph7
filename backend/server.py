@@ -963,6 +963,7 @@ async def upload_job_enhanced(
     interview_focus: str = Form("Balanced"),
     min_questions: int = Form(8),
     max_questions: int = Form(12),
+    custom_questions_config: str = Form("{}"),
     resume_file: UploadFile = File(...)
 ):
     # Validate admin authentication (same as before)
