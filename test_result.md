@@ -409,9 +409,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Capture Image Screen Implementation"
+    - "Web Speech API Backend Integration"
   stuck_tasks:
     - "Google Cloud Text-to-Speech Integration"
+    - "Web Speech API Backend Integration"
   test_all: false
   test_priority: "high_first"
 
