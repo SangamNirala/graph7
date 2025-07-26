@@ -54,3 +54,4 @@ multidict
 attrs
 google-auth
 yarl
+aiohappyeyeballs
