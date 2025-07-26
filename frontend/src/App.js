@@ -2597,12 +2597,14 @@ const InterviewSession = ({ setCurrentPage }) => {
                   <div className="relative">
                     <button
                       onClick={recordingStatus === 'recording' ? stopRecording : startRecording}
-                      disabled={isAnswering || isProcessingVoice}
-                      className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300 transform relative ${
+                      disabled={isAnswering || isProcessingVoice || isStoppingRecording}
+                      className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-200 transform relative ${
                         recordingStatus === 'recording'
-                          ? 'bg-red-600 hover:bg-red-700 animate-pulse scale-110'
+                          ? isStoppingRecording 
+                            ? 'bg-gray-600 scale-95' 
+                            : 'bg-red-600 hover:bg-red-700 animate-pulse scale-110'
                           : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
-                      } ${(isAnswering || isProcessingVoice) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      } ${(isAnswering || isProcessingVoice || isStoppingRecording) ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {recordingStatus === 'recording' ? (
                         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
