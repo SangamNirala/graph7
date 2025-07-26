@@ -2337,6 +2337,22 @@ const InterviewSession = ({ setCurrentPage }) => {
   // Voice recording hook
   const { status: recordingStatus, startRecording, stopRecording, transcript, voiceLevel, isRecording } = useVoiceRecorder(handleVoiceRecording);
 
+  // Add a processing state for when recording stops and is being processed
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+
+  // Enhance the voice recording handler to show processing state
+  const enhancedHandleVoiceRecording = async (transcribedText) => {
+    setIsProcessingVoice(true);
+    try {
+      await handleVoiceRecording(transcribedText);
+    } finally {
+      setIsProcessingVoice(false);
+    }
+  };
+
+  // Update the recorder hook to use the enhanced handler
+  const voiceRecorder = useVoiceRecorder(enhancedHandleVoiceRecording);
+
   if (!interviewData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center">
