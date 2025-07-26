@@ -989,6 +989,12 @@ async def upload_job_enhanced(
     # Generate secure token
     token = generate_secure_token()
     
+    # Parse custom questions configuration
+    try:
+        custom_config = json.loads(custom_questions_config)
+    except (json.JSONDecodeError, TypeError):
+        custom_config = {}
+    
     # Create enhanced token record
     token_data = EnhancedCandidateToken(
         token=token,
@@ -999,7 +1005,8 @@ async def upload_job_enhanced(
         role_archetype=role_archetype,
         interview_focus=interview_focus,
         min_questions=min_questions,
-        max_questions=max_questions
+        max_questions=max_questions,
+        custom_questions_config=custom_config
     )
     await db.enhanced_tokens.insert_one(token_data.dict())
     
