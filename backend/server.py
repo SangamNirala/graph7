@@ -135,6 +135,8 @@ class EnhancedCandidateToken(BaseModel):
     # Question limits
     min_questions: int = 8  # Minimum questions to be asked
     max_questions: int = 12  # Maximum questions that can be asked
+    # Custom questions configuration
+    custom_questions_config: Dict[str, Any] = {}
 
 # Practice Round model
 class PracticeRound(BaseModel):
