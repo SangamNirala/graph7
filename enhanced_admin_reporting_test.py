@@ -172,7 +172,7 @@ Advanced Tech University, 2017"""
             return False
     
     def create_test_interview_session(self) -> bool:
-        """Create a test interview session to generate data for detailed report testing"""
+        """Create a complete test interview session to generate data for detailed report testing"""
         if not self.generated_token:
             return False
         
@@ -190,21 +190,37 @@ Advanced Tech University, 2017"""
             )
             
             if response.status_code != 200:
+                print(f"Failed to start interview: {response.status_code}, {response.text}")
                 return False
             
             data = response.json()
             self.session_id = data.get("session_id")
             
             if not self.session_id:
+                print("No session ID received")
                 return False
             
-            # Answer a few questions to create meaningful data
+            print(f"Created interview session: {self.session_id[:8]}...")
+            
+            # Complete a full interview with 8 questions to generate assessment
             sample_answers = [
-                "I have 6+ years of Python experience, specializing in FastAPI for building scalable REST APIs. I've architected microservices systems, implemented authentication and authorization, and worked extensively with async programming patterns.",
+                # Technical answers (4)
+                "I have 6+ years of Python experience, specializing in FastAPI for building scalable REST APIs. I've architected microservices systems, implemented authentication and authorization, and worked extensively with async programming patterns. I'm proficient with Pydantic for data validation and SQLAlchemy for database operations.",
                 
-                "For system design, I focus on scalability, reliability, and maintainability. I use microservices architecture with proper service boundaries, implement caching strategies, and ensure proper monitoring and logging. I've designed systems handling millions of requests per day.",
+                "For system design, I focus on scalability, reliability, and maintainability. I use microservices architecture with proper service boundaries, implement caching strategies with Redis, and ensure proper monitoring and logging. I've designed systems handling millions of requests per day using load balancers and auto-scaling.",
                 
-                "I led a team of 5 developers in rebuilding our legacy monolith into microservices. I established coding standards, implemented code review processes, and mentored junior developers. The project improved system performance by 300% and reduced deployment time from hours to minutes."
+                "I follow RESTful principles with proper HTTP methods and status codes. I implement comprehensive error handling, input validation, and API versioning. I use OpenAPI/Swagger for documentation and ensure consistent response formats. I also implement rate limiting and authentication middleware for security.",
+                
+                "I use Git with feature branches and pull requests for code review. For deployment, I work with Docker containers and CI/CD pipelines using GitHub Actions. I'm experienced with cloud platforms like AWS and implement monitoring with tools like Prometheus and Grafana for production systems.",
+                
+                # Behavioral answers (4)
+                "I led a team of 5 developers in rebuilding our legacy monolith into microservices. I established coding standards, implemented code review processes, and mentored junior developers. The project improved system performance by 300% and reduced deployment time from hours to minutes. I facilitated daily standups and sprint planning.",
+                
+                "When I disagreed with a senior architect about using a NoSQL database for a project, I prepared a detailed analysis comparing SQL vs NoSQL for our specific use case. I presented data on performance, consistency requirements, and team expertise. We had a constructive discussion and decided on a hybrid approach that satisfied both concerns.",
+                
+                "I encountered a critical production bug causing intermittent failures during peak traffic. I systematically analyzed logs, reproduced the issue in staging, and identified a race condition in our caching layer. I implemented proper locking mechanisms and added comprehensive monitoring to prevent similar issues.",
+                
+                "I stay current by following industry blogs, attending conferences, and taking online courses. I recently completed a course on distributed systems and have been experimenting with new Python frameworks. I contribute to open-source projects and participate in tech meetups to learn from the community."
             ]
             
             for i, answer in enumerate(sample_answers):
@@ -216,21 +232,29 @@ Advanced Tech University, 2017"""
                 response = self.session.post(
                     f"{self.base_url}/candidate/send-message",
                     json=payload,
-                    timeout=20
+                    timeout=25
                 )
                 
                 if response.status_code != 200:
+                    print(f"Failed at question {i+1}: {response.status_code}, {response.text}")
                     return False
                 
                 data = response.json()
+                print(f"Answered question {i+1}/8")
+                
                 if data.get("completed", False):
+                    print(f"Interview completed after {i+1} questions")
+                    if "assessment_id" in data:
+                        self.assessment_id = data["assessment_id"]
+                        print(f"Assessment created: {self.assessment_id[:8]}...")
                     break
                 
-                time.sleep(1)
+                time.sleep(2)  # Longer delay for AI processing
             
             return True
             
         except Exception as e:
+            print(f"Exception in create_test_interview_session: {str(e)}")
             return False
     
     def test_detailed_report_valid_session(self) -> bool:
