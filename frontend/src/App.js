@@ -296,25 +296,47 @@ const useVoiceRecorder = (onRecordingComplete) => {
   };
 
   const startRecording = async () => {
-    if (recognitionRef.current) {
-      setIsRecording(true);
-      setTranscript('');
-      recognitionRef.current.start();
-      await startVoiceLevelMonitoring();
+    try {
+      if (recognitionRef.current && !isRecording) {
+        setTranscript('');
+        isStoppingRef.current = false;
+        recognitionRef.current.start();
+        await startVoiceLevelMonitoring();
+      }
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      alert('Failed to start voice recording. Please check microphone permissions.');
     }
   };
 
   const stopRecording = () => {
-    if (recognitionRef.current && isRecording) {
+    try {
+      if (recognitionRef.current && isRecording) {
+        isStoppingRef.current = true;
+        recognitionRef.current.stop();
+        
+        // Force stop if recognition doesn't respond within 2 seconds
+        setTimeout(() => {
+          if (isRecording) {
+            console.log('Force stopping recognition');
+            setIsRecording(false);
+            stopVoiceLevelMonitoring();
+            if (transcript.trim()) {
+              onRecordingComplete(transcript.trim());
+              setTranscript('');
+            }
+          }
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+      // Force stop on error
       setIsRecording(false);
-      recognitionRef.current.stop();
       stopVoiceLevelMonitoring();
-      
-      // Send transcript to callback
-      setTimeout(() => {
+      if (transcript.trim()) {
         onRecordingComplete(transcript.trim());
         setTranscript('');
-      }, 500);
+      }
     }
   };
 
