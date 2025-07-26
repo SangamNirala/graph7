@@ -24,7 +24,7 @@ import struct
 from typing import Dict, Any, Optional
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://416c907b-2db9-4227-8d10-c7c0d8cc9614.preview.emergentagent.com/api"
+BASE_URL = "https://6413c132-716c-4dac-bb54-5124d09f4fea.preview.emergentagent.com/api"
 
 class VoiceProcessingTester:
     def __init__(self):
