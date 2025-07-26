@@ -53,3 +53,4 @@ absl-py>=1.0.0
 multidict
 attrs
 google-auth
+yarl
