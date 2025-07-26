@@ -23,7 +23,7 @@ import PyPDF2
 from docx import Document
 
 # Google Cloud imports
-from google.cloud import texttospeech, speech
+from google.cloud import texttospeech
 from google.oauth2 import service_account
 import pymongo
 import gridfs
@@ -55,11 +55,10 @@ sync_client = pymongo.MongoClient(mongo_url)
 sync_db = sync_client[os.environ['DB_NAME']]
 fs = gridfs.GridFS(sync_db)
 
-# Google Cloud Setup
+# Google Cloud Setup (TTS only - STT handled by Web Speech API)
 credentials_json = json.loads(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', '{}'))
 credentials = service_account.Credentials.from_service_account_info(credentials_json)
 tts_client = texttospeech.TextToSpeechClient(credentials=credentials)
-stt_client = speech.SpeechClient(credentials=credentials)
 
 # Create the main app without a prefix
 app = FastAPI()
