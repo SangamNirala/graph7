@@ -922,50 +922,13 @@ class VoiceProcessor:
             return text
     
     async def speech_to_text(self, audio_data: bytes) -> str:
-        """Convert audio to text using Google Cloud Speech-to-Text API"""
+        """Placeholder for speech-to-text - Web Speech API handles this on frontend"""
         try:
-            logging.info("Starting Google Cloud Speech-to-Text conversion")
-            
-            # Configure audio settings for speech recognition
-            config = speech.RecognitionConfig(
-                encoding=speech.RecognitionConfig.AudioEncoding.WEBM_OPUS,
-                sample_rate_hertz=48000,
-                language_code="en-US",
-                audio_channel_count=1,
-                enable_automatic_punctuation=True,
-                model="default"
-            )
-            
-            # Create recognition audio object
-            audio = speech.RecognitionAudio(content=audio_data)
-            
-            # Call the speech-to-text API
-            response = stt_client.recognize(config=config, audio=audio)
-            
-            # Process the recognition results
-            transcripts = []
-            for result in response.results:
-                if result.alternatives:
-                    transcript = result.alternatives[0].transcript
-                    confidence = result.alternatives[0].confidence
-                    logging.info(f"STT transcript: {transcript} (confidence: {confidence:.2f})")
-                    transcripts.append(transcript)
-            
-            # Combine all transcripts
-            full_transcript = " ".join(transcripts)
-            
-            if not full_transcript:
-                logging.warning("No speech detected in audio")
-                return "No speech detected in audio"
-            
-            logging.info(f"Final transcript: {full_transcript}")
-            return full_transcript
-            
+            logging.info("Speech-to-text with Web Speech API - handled on frontend")
+            return "Speech recognition handled by Web Speech API"
         except Exception as e:
-            logging.error(f"Speech-to-text error: {str(e)}")
-            
-            # Fallback to placeholder if STT fails
-            return f"Speech recognition error: {str(e)}"
+            logging.error(f"STT placeholder error: {str(e)}")
+            return "Error in speech recognition"
 
 # Initialize engines
 interview_ai = InterviewAI()
