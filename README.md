@@ -169,6 +169,18 @@ GET /api/admin/candidate-pipeline
 Authorization: Bearer <token>
 ```
 
+#### **Detailed Interview Report**
+```http
+GET /api/admin/detailed-report/{session_id}
+Authorization: Bearer <token>
+
+Response includes:
+- Formatted interview transcript (Q1, A1, Q2, A2 format)
+- Complete score breakdown
+- AI-generated hiring justification with merits/demerits
+- Specific hiring recommendation
+```
+
 ### **Candidate Endpoints**
 
 #### **Token Validation**
