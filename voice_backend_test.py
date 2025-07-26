@@ -444,7 +444,7 @@ SKILLS:
             
             # Test 2: Missing audio file
             try:
-                data = {'session_id': self.voice_session_id or 'test', 'question_number': 1, 'transcript': 'test'}
+                data = {'session_id': self.voice_session_id or 'test', 'question_number': 1}
                 response = self.session.post(f"{self.base_url}/voice/process-answer", data=data, timeout=10)
                 error_scenarios.append(("Missing Audio File", response.status_code in [400, 422]))
             except:
@@ -453,23 +453,24 @@ SKILLS:
             # Test 3: Invalid audio format
             try:
                 files = {'audio_file': ('test.txt', io.BytesIO(b'not_audio_data'), 'text/plain')}
-                data = {'session_id': self.voice_session_id or 'test', 'question_number': 1, 'transcript': 'test'}
+                data = {'session_id': self.voice_session_id or 'test', 'question_number': 1}
                 
                 response = self.session.post(f"{self.base_url}/voice/process-answer", files=files, data=data, timeout=10)
                 error_scenarios.append(("Invalid Audio Format", response.status_code in [400, 415, 500]))
             except:
                 error_scenarios.append(("Invalid Audio Format", False))
             
-            # Test 4: Missing transcript (should handle gracefully)
+            # Test 4: Large audio file (should handle gracefully)
             if self.voice_session_id:
                 try:
-                    files = {'audio_file': ('test.wav', io.BytesIO(self.test_audio_files.get('wav', b'dummy')), 'audio/wav')}
-                    data = {'session_id': self.voice_session_id, 'question_number': 1}  # No transcript
+                    large_audio = b'LARGE_AUDIO_DATA' * 10000  # Simulate large file
+                    files = {'audio_file': ('large.wav', io.BytesIO(large_audio), 'audio/wav')}
+                    data = {'session_id': self.voice_session_id, 'question_number': 1}
                     
                     response = self.session.post(f"{self.base_url}/voice/process-answer", files=files, data=data, timeout=10)
-                    error_scenarios.append(("Missing Transcript", response.status_code in [200, 400]))  # Should handle gracefully or return error
+                    error_scenarios.append(("Large Audio File", response.status_code in [200, 413, 500]))  # Should handle gracefully or return appropriate error
                 except:
-                    error_scenarios.append(("Missing Transcript", False))
+                    error_scenarios.append(("Large Audio File", False))
             
             successful_error_handling = sum(1 for _, handled in error_scenarios if handled)
             total_scenarios = len(error_scenarios)
