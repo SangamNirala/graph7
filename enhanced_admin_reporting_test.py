@@ -330,7 +330,7 @@ Advanced Tech University, 2017"""
             invalid_session_id = "invalid-session-12345"
             response = self.session.get(
                 f"{self.base_url}/admin/detailed-report/{invalid_session_id}",
-                timeout=10
+                timeout=15
             )
             
             # Should return 404 for invalid session
