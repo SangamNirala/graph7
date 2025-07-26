@@ -207,18 +207,26 @@ const useVoiceRecorder = (onRecordingComplete) => {
 
       recognitionRef.current.onend = () => {
         console.log('Speech recognition ended');
-        setIsRecording(false);
-        stopVoiceLevelMonitoring();
         
-        // Only process transcript if this was a manual stop, not an error
-        if (isStoppingRef.current && currentTranscriptRef.current.trim()) {
-          setTimeout(() => {
-            onRecordingComplete(currentTranscriptRef.current.trim());
-            setTranscript('');
-            currentTranscriptRef.current = '';
-          }, 100);
+        // Only process if we're not already handling the stop manually
+        if (!isStoppingRef.current) {
+          setIsRecording(false);
+          stopVoiceLevelMonitoring();
+          
+          // Process transcript only if this was an automatic end (not manual stop)
+          if (currentTranscriptRef.current.trim()) {
+            setTimeout(() => {
+              onRecordingComplete(currentTranscriptRef.current.trim());
+              setTranscript('');
+              currentTranscriptRef.current = '';
+            }, 100);
+          }
         }
-        isStoppingRef.current = false;
+        
+        // Always reset the stopping flag
+        setTimeout(() => {
+          isStoppingRef.current = false;
+        }, 200);
       };
 
       recognitionRef.current.onresult = (event) => {
