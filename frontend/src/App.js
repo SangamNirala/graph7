@@ -221,7 +221,8 @@ const useVoiceRecorder = (onRecordingComplete) => {
         let finalTranscript = '';
         let interimTranscript = '';
         
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        // Get all results to build complete transcript
+        for (let i = 0; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript;
           } else {
@@ -229,11 +230,10 @@ const useVoiceRecorder = (onRecordingComplete) => {
           }
         }
         
-        if (finalTranscript) {
-          setTranscript(prev => prev + ' ' + finalTranscript);
-        } else if (interimTranscript) {
-          // Update with interim results for live preview
-          setTranscript(prev => prev + ' ' + interimTranscript);
+        // Set the complete transcript (final + interim for live preview)
+        const completeTranscript = finalTranscript + interimTranscript;
+        if (completeTranscript) {
+          setTranscript(completeTranscript.trim());
         }
       };
 
