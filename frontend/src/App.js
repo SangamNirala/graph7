@@ -324,53 +324,52 @@ const useVoiceRecorder = (onRecordingComplete) => {
   };
 
   const stopRecording = () => {
-    try {
-      if (recognitionRef.current && isRecording) {
-        isStoppingRef.current = true;
-        
-        // Immediate UI feedback - stop the recording state instantly
-        setIsRecording(false);
-        stopVoiceLevelMonitoring();
-        
-        // Try to stop the recognition gracefully
-        recognitionRef.current.stop();
-        
-        // Process current transcript immediately
-        const currentTranscript = transcript.trim() || currentTranscriptRef.current.trim();
-        if (currentTranscript) {
-          setTimeout(() => {
-            onRecordingComplete(currentTranscript);
-            setTranscript('');
-            currentTranscriptRef.current = '';
-          }, 100); // Very short delay for processing
-        }
-        
-        // Aggressive cleanup after short timeout to ensure everything stops
-        setTimeout(() => {
-          if (recognitionRef.current) {
-            try {
-              recognitionRef.current.abort(); // Force abort if stop didn't work
-            } catch (e) {
-              console.log('Recognition already stopped');
-            }
-          }
-          isStoppingRef.current = false;
-        }, 500); // Reduced from 2000ms to 500ms
-      }
-    } catch (error) {
-      console.error('Failed to stop recording:', error);
-      // Immediate force stop on error
-      setIsRecording(false);
-      stopVoiceLevelMonitoring();
-      isStoppingRef.current = false;
-      
-      const currentTranscript = transcript.trim() || currentTranscriptRef.current.trim();
-      if (currentTranscript) {
-        onRecordingComplete(currentTranscript);
-        setTranscript('');
-        currentTranscriptRef.current = '';
-      }
+    console.log('Stop recording called - implementing instant stop');
+    
+    // INSTANT UI RESPONSE - No dependencies on Web Speech API
+    setIsRecording(false);
+    isStoppingRef.current = true;
+    
+    // Immediately stop voice level monitoring
+    stopVoiceLevelMonitoring();
+    
+    // Capture current transcript immediately
+    const currentTranscript = transcript.trim() || currentTranscriptRef.current.trim();
+    console.log('Captured transcript for instant processing:', currentTranscript);
+    
+    // Process transcript immediately without any delays
+    if (currentTranscript) {
+      onRecordingComplete(currentTranscript);
+      setTranscript('');
+      currentTranscriptRef.current = '';
     }
+    
+    // Background cleanup of Web Speech API (non-blocking)
+    setTimeout(() => {
+      try {
+        if (recognitionRef.current) {
+          console.log('Background cleanup: stopping recognition');
+          recognitionRef.current.stop();
+          
+          // Force abort after minimal delay
+          setTimeout(() => {
+            if (recognitionRef.current) {
+              try {
+                recognitionRef.current.abort();
+                console.log('Background cleanup: recognition aborted');
+              } catch (e) {
+                console.log('Recognition already cleaned up');
+              }
+            }
+          }, 100);
+        }
+      } catch (error) {
+        console.log('Background cleanup error:', error);
+      }
+      
+      // Reset flags
+      isStoppingRef.current = false;
+    }, 0); // Execute immediately but non-blocking
   };
 
   // Cleanup function
