@@ -18,7 +18,7 @@ import base64
 from typing import Dict, Any, Optional, List
 
 # Backend URL from frontend .env
-BASE_URL = "https://8159a708-689e-4d7a-8bff-2521d0b9958a.preview.emergentagent.com/api"
+BASE_URL = "https://4ffc7bae-a3b6-421b-8477-72de6aab2c87.preview.emergentagent.com/api"
 
 class EliteInterviewPlatformTester:
     def __init__(self):
