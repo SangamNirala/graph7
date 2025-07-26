@@ -55,3 +55,5 @@ attrs
 google-auth
 yarl
 aiohappyeyeballs
+-e aiosignal
+frozenlist
