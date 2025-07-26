@@ -185,6 +185,7 @@ const useVoiceRecorder = (onRecordingComplete) => {
   const analyserRef = useRef(null);
   const microphoneRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const isStoppingRef = useRef(false);
 
   // Initialize Web Speech API
   useEffect(() => {
@@ -195,23 +196,63 @@ const useVoiceRecorder = (onRecordingComplete) => {
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
 
+      recognitionRef.current.onstart = () => {
+        console.log('Speech recognition started');
+        setIsRecording(true);
+        isStoppingRef.current = false;
+      };
+
+      recognitionRef.current.onend = () => {
+        console.log('Speech recognition ended');
+        setIsRecording(false);
+        stopVoiceLevelMonitoring();
+        
+        // Only process transcript if this was a manual stop, not an error
+        if (isStoppingRef.current && transcript.trim()) {
+          setTimeout(() => {
+            onRecordingComplete(transcript.trim());
+            setTranscript('');
+          }, 100);
+        }
+        isStoppingRef.current = false;
+      };
+
       recognitionRef.current.onresult = (event) => {
         let finalTranscript = '';
+        let interimTranscript = '';
+        
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
           }
         }
+        
         if (finalTranscript) {
           setTranscript(prev => prev + ' ' + finalTranscript);
+        } else if (interimTranscript) {
+          // Update with interim results for live preview
+          setTranscript(prev => prev + ' ' + interimTranscript);
         }
       };
 
       recognitionRef.current.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
+        setIsRecording(false);
+        stopVoiceLevelMonitoring();
+        
+        // Show user-friendly error message
+        if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+          alert('Microphone access denied. Please allow microphone access to use voice recording.');
+        } else if (event.error === 'no-speech') {
+          console.log('No speech detected - this is normal');
+        } else {
+          alert('Voice recognition error. Please try again.');
+        }
       };
     }
-  }, []);
+  }, [transcript, onRecordingComplete]);
 
   // Voice level monitoring
   const startVoiceLevelMonitoring = async () => {
