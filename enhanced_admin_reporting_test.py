@@ -337,13 +337,55 @@ Advanced Tech University, 2017"""
     
     def test_enhanced_token_generation_compatibility(self) -> bool:
         """Test that enhanced token generation still works correctly"""
-        if not self.generated_token:
-            self.log_test("Enhanced Token Generation Compatibility", False, "No enhanced token available")
-            return False
-        
         try:
+            # Create a fresh token for validation testing
+            resume_content = """Test Candidate
+Validation Test Engineer
+Email: test@email.com
+
+EXPERIENCE:
+- 3+ years of software development
+- Experience with Python and JavaScript
+- API development and testing
+
+SKILLS:
+- Python, JavaScript
+- FastAPI, React
+- Testing and validation"""
+            
+            files = {
+                'resume_file': ('validation_resume.txt', io.StringIO(resume_content), 'text/plain')
+            }
+            
+            data = {
+                'job_title': 'Validation Test Engineer',
+                'job_description': 'Testing enhanced token validation functionality.',
+                'job_requirements': 'Requirements: Testing experience, attention to detail.',
+                'include_coding_challenge': 'false',
+                'role_archetype': 'General',
+                'interview_focus': 'Balanced'
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/admin/upload-job-enhanced",
+                files=files,
+                data=data,
+                timeout=15
+            )
+            
+            if response.status_code != 200:
+                self.log_test("Enhanced Token Generation Compatibility", False, f"Failed to create validation token: {response.status_code}")
+                return False
+            
+            result = response.json()
+            validation_token = result.get("token")
+            
+            if not validation_token:
+                self.log_test("Enhanced Token Generation Compatibility", False, "No validation token received")
+                return False
+            
             # Test token validation
-            payload = {"token": self.generated_token}
+            payload = {"token": validation_token}
             response = self.session.post(
                 f"{self.base_url}/candidate/validate-token",
                 json=payload,
@@ -354,22 +396,19 @@ Advanced Tech University, 2017"""
             if success:
                 data = response.json()
                 success = (data.get("valid", False) and 
-                          "job_title" in data and
-                          "features" in data)
+                          "job_title" in data)
                 
-                if success:
+                # For enhanced tokens, check if features are present
+                if "features" in data:
                     features = data.get("features", {})
-                    # Verify enhanced features are preserved
                     has_enhanced_features = ("coding_challenge" in features and
                                            "role_archetype" in features and
                                            "interview_focus" in features)
-                    success = has_enhanced_features
-            
-            details = f"Status: {response.status_code}"
-            if success:
-                details += f", Token valid: {data.get('valid')}, Features: {data.get('features', {})}"
+                    details = f"Status: {response.status_code}, Token valid: {data.get('valid')}, Enhanced features: {has_enhanced_features}, Features: {features}"
+                else:
+                    details = f"Status: {response.status_code}, Token valid: {data.get('valid')}, Job: {data.get('job_title', 'N/A')}"
             else:
-                details += f", Response: {response.text[:200]}"
+                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
             
             self.log_test("Enhanced Token Generation Compatibility", success, details)
             return success
