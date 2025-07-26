@@ -2377,7 +2377,17 @@ const InterviewSession = ({ setCurrentPage }) => {
   };
 
   // Voice recording hook with enhanced handler
-  const { status: recordingStatus, startRecording, stopRecording, transcript, voiceLevel, isRecording } = useVoiceRecorder(enhancedHandleVoiceRecording);
+  const { status: recordingStatus, startRecording, stopRecording: originalStopRecording, transcript, voiceLevel, isRecording } = useVoiceRecorder(enhancedHandleVoiceRecording);
+  
+  // Wrap stopRecording to provide immediate feedback
+  const stopRecording = () => {
+    setIsStoppingRecording(true);
+    originalStopRecording();
+    // Reset stopping state after a brief moment
+    setTimeout(() => {
+      setIsStoppingRecording(false);
+    }, 1000);
+  };
 
   if (!interviewData) {
     return (
