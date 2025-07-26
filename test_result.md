@@ -114,14 +114,14 @@ ENHANCEMENT PLAN - 2025 AI IMPROVEMENTS:
 7. Enhanced User Experience - Progress indicators, difficulty rating, post-interview reflection
 8. Advanced Analytics Dashboard - Predictive success rates, bias reports, performance trends
 
-CURRENT TASK: Complete backend testing of speech-to-text conversion functionality. Implemented proper Google Cloud Speech-to-Text processing in the backend VoiceProcessor class to replace the placeholder implementation. The system now uses Google Cloud STT API with WEBM_OPUS audio encoding, 48kHz sample rate, and automatic punctuation for converting candidate voice to text transcripts during interviews.
+CURRENT TASK: Complete backend testing of speech-to-text conversion functionality using Web Speech API. The system has been updated to use Web Speech API for speech-to-text processing on the frontend, while maintaining backend support for voice processing workflows. Testing focus is on verifying that the backend can properly receive audio files from candidates and handle the voice processing pipeline, with actual speech-to-text conversion handled by the browser's Web Speech API.
 
 IMPLEMENTATION DETAILS:
-1. Google Cloud STT Integration - Using speech.RecognitionConfig with WEBM_OPUS encoding for audio processing
-2. Real-time Speech Recognition - Processes audio files uploaded via /voice/process-answer endpoint
-3. Enhanced Transcription - Includes confidence scoring and automatic punctuation
-4. Comprehensive Error Handling - Fallback mechanisms for STT processing failures
-5. Audio Format Support - Optimized for 48kHz sample rate, single channel audio
+1. Web Speech API Integration - Frontend handles real-time speech-to-text conversion
+2. Backend Voice Processing - Receives audio files via /voice/process-answer endpoint
+3. Emotional Intelligence Analysis - Processes voice features and audio metadata
+4. Audio Storage - Saves audio files in GridFS with session metadata
+5. Hybrid Architecture - TTS uses Google Cloud, STT uses Web Speech API
 
 backend:
   - task: "Multi-Format Resume Parsing (PDF/Word/TXT)"
