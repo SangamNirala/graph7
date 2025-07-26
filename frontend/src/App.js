@@ -2223,7 +2223,7 @@ const InterviewSession = ({ setCurrentPage }) => {
   const [webcamActive, setWebcamActive] = useState(false);
   const [webcamMinimized, setWebcamMinimized] = useState(false);
 
-  // Voice recording - now handles transcribed text instead of audio
+  // Voice recording - now handles transcribed text by populating the answer field
   const handleVoiceRecording = async (transcribedText) => {
     if (!transcribedText || transcribedText.trim() === '') {
       alert('No speech detected. Please try recording again.');
@@ -2231,17 +2231,12 @@ const InterviewSession = ({ setCurrentPage }) => {
     }
     
     console.log('Voice recording completed with transcript:', transcribedText);
-    setIsAnswering(true);
     
-    try {
-      // Send transcribed text directly to the interview engine
-      await handleAnswerSubmission(transcribedText);
-    } catch (error) {
-      console.error('Voice processing error:', error);
-      alert('Failed to submit voice answer. Please try again.');
-    } finally {
-      setIsAnswering(false);
-    }
+    // Populate the answer field with the transcribed text
+    setUserAnswer(transcribedText.trim());
+    
+    // Show success message
+    console.log('Transcript populated into answer field');
   };
 
   const handleAnswerSubmission = async (answerText) => {
