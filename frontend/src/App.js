@@ -904,6 +904,13 @@ const AdminDashboard = ({ setCurrentPage }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate total question count
+    if (!isValidQuestionCount()) {
+      alert(`Total questions must be between ${minQuestions} and ${maxQuestions}. Current total: ${getTotalQuestionCount()}`);
+      return;
+    }
+    
     setLoading(true);
 
     const formData = new FormData();
@@ -916,6 +923,25 @@ const AdminDashboard = ({ setCurrentPage }) => {
     formData.append('resume_file', resumeFile);
     formData.append('min_questions', minQuestions);
     formData.append('max_questions', maxQuestions);
+    
+    // Add custom question configuration
+    formData.append('custom_questions_config', JSON.stringify({
+      resume_based: {
+        count: resumeBasedCount,
+        type: resumeQuestionType,
+        manual_questions: resumeQuestionType === 'manual' ? manualResumeQuestions.filter(q => q.question.trim() !== '') : []
+      },
+      technical: {
+        count: technicalCount,
+        type: technicalQuestionType,
+        manual_questions: technicalQuestionType === 'manual' ? manualTechnicalQuestions.filter(q => q.question.trim() !== '') : []
+      },
+      behavioral: {
+        count: behavioralCount,
+        type: behavioralQuestionType,
+        manual_questions: behavioralQuestionType === 'manual' ? manualBehavioralQuestions.filter(q => q.question.trim() !== '') : []
+      }
+    }));
 
     try {
       // Use enhanced endpoint
@@ -938,6 +964,18 @@ const AdminDashboard = ({ setCurrentPage }) => {
         setInterviewFocus('Balanced');
         setMinQuestions(8);
         setMaxQuestions(12);
+        
+        // Reset custom question controls
+        setResumeBasedCount(2);
+        setTechnicalCount(4);
+        setBehavioralCount(4);
+        setResumeQuestionType('auto');
+        setTechnicalQuestionType('auto');
+        setBehavioralQuestionType('auto');
+        setManualResumeQuestions([]);
+        setManualTechnicalQuestions([]);
+        setManualBehavioralQuestions([]);
+        
         setResumeFile(null);
         document.querySelector('input[type="file"]').value = '';
         
