@@ -50,3 +50,4 @@ scikit-learn>=1.7.0
 lazy_loader
 safetensors>=0.4.3
 absl-py>=1.0.0
+multidict
