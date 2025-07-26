@@ -23,7 +23,7 @@ import PyPDF2
 from docx import Document
 
 # Google Cloud imports
-from google.cloud import texttospeech, speech
+from google.cloud import texttospeech
 from google.oauth2 import service_account
 import pymongo
 import gridfs
