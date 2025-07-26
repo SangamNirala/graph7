@@ -175,14 +175,116 @@ const PredictiveAnalyticsDashboard = ({ predictiveData }) => {
   );
 };
 
-// Voice Recording Hook
+// Enhanced Voice Recording Hook with Web Speech API
 const useVoiceRecorder = (onRecordingComplete) => {
-  const { status, startRecording, stopRecording, mediaBlobUrl } = useReactMediaRecorder({
-    audio: true,
-    onStop: (blobUrl, blob) => onRecordingComplete(blob)
-  });
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [voiceLevel, setVoiceLevel] = useState(0);
+  const recognitionRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const microphoneRef = useRef(null);
+  const animationFrameRef = useRef(null);
 
-  return { status, startRecording, stopRecording, mediaBlobUrl };
+  // Initialize Web Speech API
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          }
+        }
+        if (finalTranscript) {
+          setTranscript(prev => prev + ' ' + finalTranscript);
+        }
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+      };
+    }
+  }, []);
+
+  // Voice level monitoring
+  const startVoiceLevelMonitoring = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      microphoneRef.current = audioContextRef.current.createMediaStreamSource(stream);
+      
+      microphoneRef.current.connect(analyserRef.current);
+      analyserRef.current.fftSize = 256;
+      
+      const bufferLength = analyserRef.current.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      const updateVoiceLevel = () => {
+        if (!isRecording) return;
+        
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+        const normalizedLevel = (average / 255) * 100;
+        setVoiceLevel(normalizedLevel);
+        
+        animationFrameRef.current = requestAnimationFrame(updateVoiceLevel);
+      };
+      
+      updateVoiceLevel();
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+    }
+  };
+
+  const stopVoiceLevelMonitoring = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    setVoiceLevel(0);
+  };
+
+  const startRecording = async () => {
+    if (recognitionRef.current) {
+      setIsRecording(true);
+      setTranscript('');
+      recognitionRef.current.start();
+      await startVoiceLevelMonitoring();
+    }
+  };
+
+  const stopRecording = () => {
+    if (recognitionRef.current && isRecording) {
+      setIsRecording(false);
+      recognitionRef.current.stop();
+      stopVoiceLevelMonitoring();
+      
+      // Send transcript to callback
+      setTimeout(() => {
+        onRecordingComplete(transcript.trim());
+        setTranscript('');
+      }, 500);
+    }
+  };
+
+  return { 
+    status: isRecording ? 'recording' : 'idle',
+    startRecording, 
+    stopRecording, 
+    transcript,
+    voiceLevel,
+    isRecording
+  };
 };
 
 // Audio Player Component
