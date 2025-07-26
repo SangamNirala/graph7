@@ -2465,31 +2465,64 @@ const InterviewSession = ({ setCurrentPage }) => {
             {interviewData.voiceMode && (
               <div className="mb-6">
                 <div className="flex flex-col items-center space-y-4">
-                  <button
-                    onClick={recordingStatus === 'recording' ? stopRecording : startRecording}
-                    disabled={isAnswering}
-                    className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300 transform ${
-                      recordingStatus === 'recording'
-                        ? 'bg-red-600 hover:bg-red-700 animate-pulse scale-110'
-                        : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
-                    } ${isAnswering ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {recordingStatus === 'recording' ? (
-                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                        <rect x="6" y="6" width="12" height="12" rx="2"/>
-                      </svg>
-                    ) : (
-                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                      </svg>
+                  {/* Recording Button with Voice Level Indicator */}
+                  <div className="relative">
+                    <button
+                      onClick={recordingStatus === 'recording' ? stopRecording : startRecording}
+                      disabled={isAnswering}
+                      className={`w-20 h-20 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300 transform relative ${
+                        recordingStatus === 'recording'
+                          ? 'bg-red-600 hover:bg-red-700 animate-pulse scale-110'
+                          : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
+                      } ${isAnswering ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {recordingStatus === 'recording' ? (
+                        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                          <rect x="6" y="6" width="12" height="12" rx="2"/>
+                        </svg>
+                      ) : (
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                      )}
+                    </button>
+                    
+                    {/* Voice Level Ring Animation */}
+                    {recordingStatus === 'recording' && (
+                      <div 
+                        className="absolute inset-0 rounded-full border-4 border-white/50 animate-ping"
+                        style={{
+                          transform: `scale(${1 + (voiceLevel / 100)})`,
+                          opacity: Math.max(0.3, voiceLevel / 100)
+                        }}
+                      ></div>
                     )}
-                  </button>
+                  </div>
+
+                  {/* Voice Level Meter */}
+                  {recordingStatus === 'recording' && (
+                    <div className="w-full max-w-xs bg-gray-700/50 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 transition-all duration-150"
+                        style={{ width: `${Math.min(voiceLevel, 100)}%` }}
+                      ></div>
+                    </div>
+                  )}
+
                   <p className="text-center text-gray-300 text-sm">
                     {recordingStatus === 'recording' 
                       ? '🔴 Recording... Click to stop' 
                       : '🎤 Click to record your answer'
                     }
                   </p>
+
+                  {/* Live Transcript Preview */}
+                  {recordingStatus === 'recording' && transcript && (
+                    <div className="w-full bg-black/30 rounded-lg p-3 border border-white/20">
+                      <p className="text-xs text-gray-400 mb-1">Live Transcript:</p>
+                      <p className="text-sm text-white">{transcript}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
