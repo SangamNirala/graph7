@@ -162,15 +162,18 @@ backend:
 
   - task: "Web Speech API Backend Integration"
     implemented: true
-    working: true
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: true
         -agent: "main"
         -comment: "Updated backend to use Web Speech API for STT instead of Google Cloud. Removed stt_client and speech import, updated VoiceProcessor.speech_to_text to indicate STT is handled on frontend. Backend now focuses on audio storage, emotional analysis, and voice processing pipeline while STT is handled by browser's Web Speech API."
+        -working: false
+        -agent: "testing"
+        -comment: "❌ PARTIAL FUNCTIONALITY: Web Speech API backend integration has mixed results. WORKING: Admin authentication (Game@1234), enhanced token creation with voice features, token validation, camera test endpoint with voice_mode=true. NOT WORKING: Voice interview start fails with 500 error due to Gemini API authentication failure - 'API key not valid. Please pass a valid API key.' This prevents interview session creation and subsequent voice processing. The backend infrastructure for Web Speech API is properly implemented, but the Gemini API key (AIzaSyCFYX2-5r3oZH_Z53rl-5-xNaotmBtBhbc) is invalid and needs to be regenerated from Google AI Studio dashboard. Text cleaning functionality and voice message processing cannot be tested without a working interview session."
 
   - task: "Voice Interview Session Management"
     implemented: true
