@@ -1305,6 +1305,345 @@ const AdminDashboard = ({ setCurrentPage }) => {
                 </div>
               </div>
 
+              {/* Question Selection Controls */}
+              <div className="bg-white/5 p-6 rounded-lg border border-white/10">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  Question Selection Controls
+                </h3>
+                <p className="text-gray-300 text-sm mb-4">
+                  Customize your interview questions by specifying counts and choosing between AI-generated or manually entered questions.
+                </p>
+                
+                {/* Total Questions Validation */}
+                <div className="mb-4 p-3 rounded-lg bg-white/5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-300">Total Questions:</span>
+                    <span className={`font-medium ${isValidQuestionCount() ? 'text-green-300' : 'text-red-300'}`}>
+                      {getTotalQuestionCount()} / {minQuestions}-{maxQuestions}
+                    </span>
+                  </div>
+                  {!isValidQuestionCount() && (
+                    <p className="text-red-300 text-xs mt-1">
+                      ⚠️ Total questions must be between {minQuestions} and {maxQuestions}
+                    </p>
+                  )}
+                </div>
+
+                {/* Resume-Based Questions */}
+                <div className="mb-6 p-4 bg-white/5 rounded-lg border border-white/10">
+                  <h4 className="text-md font-medium text-white mb-3 flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Resume-Based Questions
+                  </h4>
+                  
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-white font-medium mb-2">Number of Questions</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="8"
+                        value={resumeBasedCount}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          setResumeBasedCount(value);
+                          adjustManualQuestions('resume', value);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2">Question Type</label>
+                      <div className="flex space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="resumeQuestionType"
+                            value="auto"
+                            checked={resumeQuestionType === 'auto'}
+                            onChange={(e) => setResumeQuestionType(e.target.value)}
+                            className="mr-2"
+                          />
+                          <span className="text-white text-sm">Auto-generate via AI</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="resumeQuestionType"
+                            value="manual"
+                            checked={resumeQuestionType === 'manual'}
+                            onChange={(e) => {
+                              setResumeQuestionType(e.target.value);
+                              if (e.target.value === 'manual') {
+                                adjustManualQuestions('resume', resumeBasedCount);
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                          <span className="text-white text-sm">Manually enter questions</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manual Resume Questions */}
+                  {resumeQuestionType === 'manual' && resumeBasedCount > 0 && (
+                    <div className="mt-4">
+                      <h5 className="text-sm font-medium text-white mb-2">Manual Resume-Based Questions</h5>
+                      {Array.from({ length: resumeBasedCount }, (_, index) => (
+                        <div key={index} className="mb-4 p-3 bg-white/5 rounded-lg">
+                          <label className="block text-white text-sm font-medium mb-2">
+                            Question {index + 1}
+                          </label>
+                          <textarea
+                            value={manualResumeQuestions[index]?.question || ''}
+                            onChange={(e) => updateManualQuestion('resume', index, 'question', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter your resume-based question..."
+                            rows={2}
+                          />
+                          <label className="block text-white text-sm font-medium mb-2 mt-2">
+                            Expected Answer (Optional)
+                          </label>
+                          <textarea
+                            value={manualResumeQuestions[index]?.expectedAnswer || ''}
+                            onChange={(e) => updateManualQuestion('resume', index, 'expectedAnswer', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter expected answer (optional)..."
+                            rows={2}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Technical Questions */}
+                <div className="mb-6 p-4 bg-white/5 rounded-lg border border-white/10">
+                  <h4 className="text-md font-medium text-white mb-3 flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    Technical Questions
+                  </h4>
+                  
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-white font-medium mb-2">Number of Questions</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        value={technicalCount}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          setTechnicalCount(value);
+                          adjustManualQuestions('technical', value);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2">Question Type</label>
+                      <div className="flex space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="technicalQuestionType"
+                            value="auto"
+                            checked={technicalQuestionType === 'auto'}
+                            onChange={(e) => setTechnicalQuestionType(e.target.value)}
+                            className="mr-2"
+                          />
+                          <span className="text-white text-sm">Auto-generate via AI</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="technicalQuestionType"
+                            value="manual"
+                            checked={technicalQuestionType === 'manual'}
+                            onChange={(e) => {
+                              setTechnicalQuestionType(e.target.value);
+                              if (e.target.value === 'manual') {
+                                adjustManualQuestions('technical', technicalCount);
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                          <span className="text-white text-sm">Manually enter questions</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manual Technical Questions */}
+                  {technicalQuestionType === 'manual' && technicalCount > 0 && (
+                    <div className="mt-4">
+                      <h5 className="text-sm font-medium text-white mb-2">Manual Technical Questions</h5>
+                      {Array.from({ length: technicalCount }, (_, index) => (
+                        <div key={index} className="mb-4 p-3 bg-white/5 rounded-lg">
+                          <label className="block text-white text-sm font-medium mb-2">
+                            Question {index + 1}
+                          </label>
+                          <textarea
+                            value={manualTechnicalQuestions[index]?.question || ''}
+                            onChange={(e) => updateManualQuestion('technical', index, 'question', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter your technical question..."
+                            rows={2}
+                          />
+                          <label className="block text-white text-sm font-medium mb-2 mt-2">
+                            Expected Answer (Optional)
+                          </label>
+                          <textarea
+                            value={manualTechnicalQuestions[index]?.expectedAnswer || ''}
+                            onChange={(e) => updateManualQuestion('technical', index, 'expectedAnswer', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter expected answer (optional)..."
+                            rows={2}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Behavioral Questions */}
+                <div className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10">
+                  <h4 className="text-md font-medium text-white mb-3 flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Behavioral Questions
+                  </h4>
+                  
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-white font-medium mb-2">Number of Questions</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        value={behavioralCount}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          setBehavioralCount(value);
+                          adjustManualQuestions('behavioral', value);
+                        }}
+                        className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2">Question Type</label>
+                      <div className="flex space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="behavioralQuestionType"
+                            value="auto"
+                            checked={behavioralQuestionType === 'auto'}
+                            onChange={(e) => setBehavioralQuestionType(e.target.value)}
+                            className="mr-2"
+                          />
+                          <span className="text-white text-sm">Auto-generate via AI</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="behavioralQuestionType"
+                            value="manual"
+                            checked={behavioralQuestionType === 'manual'}
+                            onChange={(e) => {
+                              setBehavioralQuestionType(e.target.value);
+                              if (e.target.value === 'manual') {
+                                adjustManualQuestions('behavioral', behavioralCount);
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                          <span className="text-white text-sm">Manually enter questions</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manual Behavioral Questions */}
+                  {behavioralQuestionType === 'manual' && behavioralCount > 0 && (
+                    <div className="mt-4">
+                      <h5 className="text-sm font-medium text-white mb-2">Manual Behavioral Questions</h5>
+                      {Array.from({ length: behavioralCount }, (_, index) => (
+                        <div key={index} className="mb-4 p-3 bg-white/5 rounded-lg">
+                          <label className="block text-white text-sm font-medium mb-2">
+                            Question {index + 1}
+                          </label>
+                          <textarea
+                            value={manualBehavioralQuestions[index]?.question || ''}
+                            onChange={(e) => updateManualQuestion('behavioral', index, 'question', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter your behavioral question..."
+                            rows={2}
+                          />
+                          <label className="block text-white text-sm font-medium mb-2 mt-2">
+                            Expected Answer (Optional)
+                          </label>
+                          <textarea
+                            value={manualBehavioralQuestions[index]?.expectedAnswer || ''}
+                            onChange={(e) => updateManualQuestion('behavioral', index, 'expectedAnswer', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter expected answer (optional)..."
+                            rows={2}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Updated Question Distribution Preview */}
+                <div className="mt-4 p-4 bg-white/5 rounded-lg">
+                  <h4 className="text-sm font-medium text-white mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Question Distribution Summary
+                  </h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="flex justify-between text-gray-300">
+                      <span>Resume-Based:</span>
+                      <span className="text-purple-300">{resumeBasedCount} ({resumeQuestionType})</span>
+                    </div>
+                    <div className="flex justify-between text-gray-300">
+                      <span>Technical:</span>
+                      <span className="text-blue-300">{technicalCount} ({technicalQuestionType})</span>
+                    </div>
+                    <div className="flex justify-between text-gray-300">
+                      <span>Behavioral:</span>
+                      <span className="text-green-300">{behavioralCount} ({behavioralQuestionType})</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-400">
+                    💡 If manual questions are incomplete, AI will auto-generate the remaining questions
+                  </div>
+                </div>
+
+                {/* Interview Duration Estimation */}
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="text-gray-300">Estimated Interview Duration:</span>
+                  <span className="text-yellow-300 font-medium">
+                    {Math.ceil(getTotalQuestionCount() * 2.5)} - {Math.ceil(getTotalQuestionCount() * 3)} minutes
+                  </span>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-white font-medium mb-2">
                   Resume File 
