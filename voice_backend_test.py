@@ -576,8 +576,7 @@ SKILLS:
             files = {'audio_file': ('workflow_test_1.webm', io.BytesIO(audio_data), 'audio/webm')}
             data = {
                 'session_id': self.voice_session_id,
-                'question_number': 1,
-                'transcript': 'I have been working in software development for over 6 years, specializing in backend systems and API development.'
+                'question_number': 1
             }
             
             response = self.session.post(f"{self.base_url}/voice/process-answer", files=files, data=data, timeout=30)
@@ -587,8 +586,7 @@ SKILLS:
             files = {'audio_file': ('workflow_test_2.webm', io.BytesIO(audio_data), 'audio/webm')}
             data = {
                 'session_id': self.voice_session_id,
-                'question_number': 2,
-                'transcript': 'My approach to debugging involves systematic analysis, logging, and reproducing issues in controlled environments.'
+                'question_number': 2
             }
             
             response = self.session.post(f"{self.base_url}/voice/process-answer", files=files, data=data, timeout=30)
