@@ -1070,6 +1070,7 @@ async def get_candidate_pipeline():
             "created_at": token_data["created_at"],
             "overall_score": assessment.get("overall_score") if assessment else None,
             "interview_type": "Enhanced",
+            "session_id": session.get("session_id") if session else None,
             "features": {
                 "coding_challenge": token_data.get("include_coding_challenge", False),
                 "role_archetype": token_data.get("role_archetype", "General"),
