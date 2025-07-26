@@ -338,15 +338,15 @@ SKILLS:
                 
                 if response.status_code == 200:
                     result = response.json()
-                    if "emotional_analysis" in result:
-                        emotional_analysis = result["emotional_analysis"]
+                    if "emotional_intelligence" in result:
+                        emotional_analysis = result["emotional_intelligence"]
                         
                         # Check if emotional analysis contains expected components
-                        has_sentiment = "sentiment" in emotional_analysis
-                        has_emotions = "emotions" in emotional_analysis
-                        has_ei_metrics = "emotional_intelligence" in emotional_analysis
+                        has_confidence = "confidence" in emotional_analysis
+                        has_stress = "stress_level" in emotional_analysis
+                        has_enthusiasm = "enthusiasm" in emotional_analysis
                         
-                        if has_sentiment and has_emotions and has_ei_metrics:
+                        if has_confidence and has_stress and has_enthusiasm:
                             successful_analyses += 1
                 
                 time.sleep(1)  # Small delay between requests
