@@ -570,6 +570,7 @@ const AdminDashboard = ({ setCurrentPage }) => {
   const [candidatePipeline, setCandidatePipeline] = useState([]);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
   const [comparisonResults, setComparisonResults] = useState([]);
+  const [detailedReportModal, setDetailedReportModal] = useState({ show: false, data: null, loading: false });
   
   // Interview question limits
   const [minQuestions, setMinQuestions] = useState(8);
