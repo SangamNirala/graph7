@@ -169,8 +169,7 @@ SKILLS:
             
             data = {
                 'session_id': self.voice_session_id,
-                'question_number': 1,
-                'transcript': 'I have extensive experience in voice processing and speech recognition technologies. I have worked on building real-time voice applications and implementing emotional intelligence analysis from voice patterns.'
+                'question_number': 1
             }
             
             response = self.session.post(
@@ -185,10 +184,11 @@ SKILLS:
                 result = response.json()
                 success = (result.get("success", False) and 
                           "file_id" in result and
-                          "emotional_analysis" in result)
+                          "transcript" in result and
+                          "emotional_intelligence" in result)
                 
                 if success:
-                    details = f"Status: {response.status_code}, File ID: {result['file_id'][:8]}..., Emotional Analysis: {len(str(result['emotional_analysis']))} chars"
+                    details = f"Status: {response.status_code}, File ID: {result['file_id'][:8]}..., Transcript: {result.get('transcript', '')[:30]}..., EI Analysis: Present"
                 else:
                     details = f"Status: {response.status_code}, Missing required fields in response"
             else:
