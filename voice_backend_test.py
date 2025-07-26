@@ -635,6 +635,12 @@ SKILLS:
         
         # Setup
         print("🔧 Setting up test environment...")
+        
+        # Test basic connectivity first
+        if not self.test_health_check():
+            print("❌ Backend health check failed")
+            return {}
+        
         if not self.create_test_audio_files():
             print("❌ Failed to create test audio files")
             return {}
