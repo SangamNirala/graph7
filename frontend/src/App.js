@@ -1147,17 +1147,9 @@ const AdminDashboard = ({ setCurrentPage }) => {
                       <div className="text-sm text-gray-300 mb-2">
                         {new Date(candidate.created_at).toLocaleDateString()}
                       </div>
-                      {candidate.status === 'Report Ready' && (
+                      {candidate.status === 'Report Ready' && candidate.session_id && (
                         <button
-                          onClick={() => {
-                            // Find session ID from the assessment data
-                            const report = reports.find(r => r.token === candidate.token);
-                            if (report && report.session_id) {
-                              fetchDetailedReport(report.session_id);
-                            } else {
-                              alert('Session ID not found. Please refresh reports.');
-                            }
-                          }}
+                          onClick={() => fetchDetailedReport(candidate.session_id)}
                           className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold py-1 px-3 rounded transition-colors duration-300"
                         >
                           📊 View Transcript
