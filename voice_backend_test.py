@@ -218,8 +218,7 @@ SKILLS:
                 
                 data = {
                     'session_id': self.voice_session_id,
-                    'question_number': len(formats_tested) + 1,
-                    'transcript': f'This is a test answer for {format_name} format audio file storage.'
+                    'question_number': len(formats_tested) + 1
                 }
                 
                 response = self.session.post(
