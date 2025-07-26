@@ -39,6 +39,8 @@
 ### 🎛️ **Advanced Admin Dashboard**
 - **Candidate Pipeline Management** - Real-time status tracking
 - **Interview Focus Customization** - Technical Deep-Dive, Cultural Fit, Balanced
+- **Enhanced Transcript Reports** - Detailed Q&A format with AI analysis
+- **Hiring Decision Support** - AI-generated merits/demerits with recommendations
 - **Candidate Comparison Tools** - Side-by-side analysis dashboard
 - **Enhanced Reporting** - Comprehensive assessment reports with bias metrics
 
