@@ -319,29 +319,48 @@ const useVoiceRecorder = (onRecordingComplete) => {
     try {
       if (recognitionRef.current && isRecording) {
         isStoppingRef.current = true;
+        
+        // Immediate UI feedback - stop the recording state instantly
+        setIsRecording(false);
+        stopVoiceLevelMonitoring();
+        
+        // Try to stop the recognition gracefully
         recognitionRef.current.stop();
         
-        // Force stop if recognition doesn't respond within 2 seconds
+        // Process current transcript immediately
+        const currentTranscript = transcript.trim() || currentTranscriptRef.current.trim();
+        if (currentTranscript) {
+          setTimeout(() => {
+            onRecordingComplete(currentTranscript);
+            setTranscript('');
+            currentTranscriptRef.current = '';
+          }, 100); // Very short delay for processing
+        }
+        
+        // Aggressive cleanup after short timeout to ensure everything stops
         setTimeout(() => {
-          if (isRecording) {
-            console.log('Force stopping recognition');
-            setIsRecording(false);
-            stopVoiceLevelMonitoring();
-            if (transcript.trim()) {
-              onRecordingComplete(transcript.trim());
-              setTranscript('');
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.abort(); // Force abort if stop didn't work
+            } catch (e) {
+              console.log('Recognition already stopped');
             }
           }
-        }, 2000);
+          isStoppingRef.current = false;
+        }, 500); // Reduced from 2000ms to 500ms
       }
     } catch (error) {
       console.error('Failed to stop recording:', error);
-      // Force stop on error
+      // Immediate force stop on error
       setIsRecording(false);
       stopVoiceLevelMonitoring();
-      if (transcript.trim()) {
-        onRecordingComplete(transcript.trim());
+      isStoppingRef.current = false;
+      
+      const currentTranscript = transcript.trim() || currentTranscriptRef.current.trim();
+      if (currentTranscript) {
+        onRecordingComplete(currentTranscript);
         setTranscript('');
+        currentTranscriptRef.current = '';
       }
     }
   };
