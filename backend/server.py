@@ -1428,6 +1428,144 @@ async def get_report_by_session(session_id: str):
         report['_id'] = str(report['_id'])
     return {"report": report}
 
+@api_router.get("/admin/detailed-report/{session_id}")
+async def get_detailed_report_by_session(session_id: str):
+    """Get detailed interview transcript and enhanced assessment for admin review"""
+    # Get the assessment
+    assessment = await db.assessments.find_one({"session_id": session_id})
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    
+    # Get the session data for messages
+    session = await db.sessions.find_one({"session_id": session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Get session metadata for questions
+    session_metadata = await db.session_metadata.find_one({"session_id": session_id})
+    if not session_metadata:
+        raise HTTPException(status_code=404, detail="Session metadata not found")
+    
+    # Build the transcript with proper formatting
+    questions = session_metadata.get('questions', [])
+    messages = session.get('messages', [])
+    
+    # Filter candidate answers
+    candidate_messages = [msg for msg in messages if msg.get('type') == 'candidate']
+    
+    transcript_parts = []
+    
+    # Format Q&A pairs
+    for i in range(min(len(questions), len(candidate_messages))):
+        question_num = i + 1
+        question_text = questions[i]
+        answer_text = candidate_messages[i].get('content', 'No answer provided')
+        
+        # Add question
+        transcript_parts.append(f"Q{question_num}: {question_text}")
+        
+        # Add answer
+        transcript_parts.append(f"A{question_num}: {answer_text}")
+        
+        # Add two line gap except after the last question
+        if i < min(len(questions), len(candidate_messages)) - 1:
+            transcript_parts.append("")
+            transcript_parts.append("")
+    
+    # Create the formatted transcript
+    formatted_transcript = "\n".join(transcript_parts)
+    
+    # Generate enhanced assessment with merits and demerits
+    candidate_name = assessment.get('candidate_name', 'Candidate')
+    job_title = assessment.get('job_title', 'Position')
+    technical_score = assessment.get('technical_score', 0)
+    behavioral_score = assessment.get('behavioral_score', 0)
+    overall_score = assessment.get('overall_score', 0)
+    
+    # Generate detailed justification with merits and demerits
+    session_id_for_ai = interview_ai.generate_session_id()
+    chat = await interview_ai.create_chat_instance(session_id_for_ai, 
+        """You are an expert HR analyst. Based on the interview assessment provided, generate a comprehensive hiring justification.
+
+        IMPORTANT: Provide feedback in plain text without any formatting like backticks, bold, or italics.
+        
+        Structure your response as follows:
+        1. CANDIDATE SCORE: [overall score]/100
+        2. MERITS (Why should we hire this candidate):
+        - List 3-5 key strengths based on interview performance
+        3. DEMERITS (Areas of concern):
+        - List 3-5 areas where the candidate showed weaknesses or gaps
+        4. RECOMMENDATION:
+        - Clear hiring recommendation (Strong Hire / Hire / No Hire / Strong No Hire) with justification
+        
+        Be specific and reference actual interview responses when possible.""")
+    
+    assessment_summary = f"""
+    Candidate: {candidate_name}
+    Position: {job_title}
+    Technical Score: {technical_score}/100
+    Behavioral Score: {behavioral_score}/100
+    Overall Score: {overall_score}/100
+    
+    Technical Evaluations: {session_metadata.get('technical_evaluations', [])}
+    Behavioral Evaluations: {session_metadata.get('behavioral_evaluations', [])}
+    """
+    
+    try:
+        user_message = UserMessage(text=f"Generate detailed hiring justification based on: {assessment_summary}")
+        justification = await chat.send_message(user_message)
+        if not justification or not isinstance(justification, str):
+            justification = f"""
+CANDIDATE SCORE: {overall_score}/100
+
+MERITS (Why should we hire this candidate):
+- Demonstrated solid technical understanding with score of {technical_score}/100
+- Showed good behavioral responses with score of {behavioral_score}/100
+- Completed the full interview process successfully
+
+DEMERITS (Areas of concern):
+- Some areas may need improvement based on evaluation scores
+- Would benefit from additional experience in certain technical areas
+
+RECOMMENDATION: 
+{'Strong Hire' if overall_score >= 80 else 'Hire' if overall_score >= 60 else 'No Hire'} - Overall performance was {'excellent' if overall_score >= 80 else 'good' if overall_score >= 60 else 'below expectations'}.
+            """
+    except Exception as e:
+        justification = f"""
+CANDIDATE SCORE: {overall_score}/100
+
+MERITS (Why should we hire this candidate):
+- Demonstrated solid technical understanding with score of {technical_score}/100
+- Showed good behavioral responses with score of {behavioral_score}/100
+- Completed the full interview process successfully
+
+DEMERITS (Areas of concern):
+- Some areas may need improvement based on evaluation scores
+- Would benefit from additional experience in certain technical areas
+
+RECOMMENDATION: 
+{'Strong Hire' if overall_score >= 80 else 'Hire' if overall_score >= 60 else 'No Hire'} - Overall performance was {'excellent' if overall_score >= 80 else 'good' if overall_score >= 60 else 'below expectations'}.
+        """
+    
+    # Convert MongoDB ObjectId to string for JSON serialization
+    if '_id' in assessment:
+        assessment['_id'] = str(assessment['_id'])
+    
+    return {
+        "session_id": session_id,
+        "candidate_name": candidate_name,
+        "job_title": job_title,
+        "interview_date": session.get('created_at', 'Not available'),
+        "transcript": formatted_transcript,
+        "assessment_summary": {
+            "technical_score": technical_score,
+            "behavioral_score": behavioral_score,
+            "overall_score": overall_score
+        },
+        "detailed_justification": justification,
+        "full_assessment": assessment
+    }
+
 # Voice Routes
 @api_router.post("/voice/generate-question")
 async def generate_voice_question(request: VoiceQuestionRequest):
