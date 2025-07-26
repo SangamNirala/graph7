@@ -1044,7 +1044,8 @@ async def get_candidate_pipeline():
             "status": status,
             "created_at": token_data["created_at"],
             "overall_score": assessment.get("overall_score") if assessment else None,
-            "interview_type": "Standard"
+            "interview_type": "Standard",
+            "session_id": session.get("session_id") if session else None
         })
     
     # Process enhanced tokens
