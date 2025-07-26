@@ -186,6 +186,7 @@ const useVoiceRecorder = (onRecordingComplete) => {
   const microphoneRef = useRef(null);
   const animationFrameRef = useRef(null);
   const isStoppingRef = useRef(false);
+  const currentTranscriptRef = useRef(''); // Store current transcript for onend handler
 
   // Initialize Web Speech API
   useEffect(() => {
@@ -200,6 +201,8 @@ const useVoiceRecorder = (onRecordingComplete) => {
         console.log('Speech recognition started');
         setIsRecording(true);
         isStoppingRef.current = false;
+        setTranscript(''); // Clear transcript when starting
+        currentTranscriptRef.current = '';
       };
 
       recognitionRef.current.onend = () => {
@@ -208,10 +211,11 @@ const useVoiceRecorder = (onRecordingComplete) => {
         stopVoiceLevelMonitoring();
         
         // Only process transcript if this was a manual stop, not an error
-        if (isStoppingRef.current && transcript.trim()) {
+        if (isStoppingRef.current && currentTranscriptRef.current.trim()) {
           setTimeout(() => {
-            onRecordingComplete(transcript.trim());
+            onRecordingComplete(currentTranscriptRef.current.trim());
             setTranscript('');
+            currentTranscriptRef.current = '';
           }, 100);
         }
         isStoppingRef.current = false;
@@ -233,7 +237,9 @@ const useVoiceRecorder = (onRecordingComplete) => {
         // Set the complete transcript (final + interim for live preview)
         const completeTranscript = finalTranscript + interimTranscript;
         if (completeTranscript) {
-          setTranscript(completeTranscript.trim());
+          const cleanTranscript = completeTranscript.trim();
+          setTranscript(cleanTranscript);
+          currentTranscriptRef.current = cleanTranscript;
         }
       };
 
