@@ -2364,6 +2364,7 @@ const InterviewSession = ({ setCurrentPage }) => {
 
   // Add a processing state for when recording stops and is being processed
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+  const [isStoppingRecording, setIsStoppingRecording] = useState(false);
 
   // Enhance the voice recording handler to show processing state
   const enhancedHandleVoiceRecording = async (transcribedText) => {
