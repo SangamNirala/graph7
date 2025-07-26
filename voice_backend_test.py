@@ -326,8 +326,7 @@ SKILLS:
                 
                 data = {
                     'session_id': self.voice_session_id,
-                    'question_number': i + 3,
-                    'transcript': context["transcript"]
+                    'question_number': i + 3
                 }
                 
                 response = self.session.post(
