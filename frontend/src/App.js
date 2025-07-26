@@ -1379,6 +1379,101 @@ const AdminDashboard = ({ setCurrentPage }) => {
             </div>
           </div>
         )}
+        
+        {/* Detailed Report Modal */}
+        {detailedReportModal.show && (
+          <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-br from-purple-900/90 to-blue-900/90 backdrop-blur-lg rounded-2xl border border-white/20 max-w-6xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex justify-between items-center p-6 border-b border-white/20">
+                <h3 className="text-2xl font-bold text-white">📋 Detailed Interview Report</h3>
+                <button
+                  onClick={() => setDetailedReportModal({ show: false, data: null, loading: false })}
+                  className="text-gray-300 hover:text-white text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="overflow-y-auto max-h-[calc(90vh-100px)]">
+                {detailedReportModal.loading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="text-white text-lg">📊 Loading detailed report...</div>
+                  </div>
+                ) : detailedReportModal.data ? (
+                  <div className="p-6 space-y-6">
+                    {/* Header Info */}
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="bg-white/10 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Candidate</div>
+                        <div className="text-lg font-bold text-white">{detailedReportModal.data.candidate_name}</div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Position</div>
+                        <div className="text-lg font-bold text-white">{detailedReportModal.data.job_title}</div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Interview Date</div>
+                        <div className="text-lg font-bold text-white">
+                          {new Date(detailedReportModal.data.interview_date).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Interview Transcript */}
+                    <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                      <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                        💬 Interview Transcript
+                      </h4>
+                      <div className="bg-black/30 rounded-lg p-4 font-mono text-sm max-h-96 overflow-y-auto">
+                        <pre className="text-gray-100 whitespace-pre-wrap leading-relaxed">
+                          {detailedReportModal.data.transcript}
+                        </pre>
+                      </div>
+                    </div>
+
+                    {/* Scores Summary */}
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="bg-white/10 rounded-lg p-4 text-center">
+                        <div className="text-sm text-gray-300">Technical Score</div>
+                        <div className="text-3xl font-bold text-blue-400">
+                          {detailedReportModal.data.assessment_summary.technical_score}/100
+                        </div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-4 text-center">
+                        <div className="text-sm text-gray-300">Behavioral Score</div>
+                        <div className="text-3xl font-bold text-green-400">
+                          {detailedReportModal.data.assessment_summary.behavioral_score}/100
+                        </div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-4 text-center">
+                        <div className="text-sm text-gray-300">Overall Score</div>
+                        <div className="text-3xl font-bold text-purple-400">
+                          {detailedReportModal.data.assessment_summary.overall_score}/100
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Detailed Justification */}
+                    <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                      <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                        ⚖️ Hiring Assessment & Justification
+                      </h4>
+                      <div className="bg-black/30 rounded-lg p-4">
+                        <pre className="text-gray-100 whitespace-pre-wrap leading-relaxed text-sm">
+                          {detailedReportModal.data.detailed_justification}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6 text-center">
+                    <div className="text-red-400">❌ Failed to load detailed report</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
