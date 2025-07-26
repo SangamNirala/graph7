@@ -276,46 +276,44 @@ Advanced Tech University, 2017"""
             if success:
                 data = response.json()
                 
-                print(f"Detailed report response keys: {list(data.keys())}")
+                # Based on actual API response, check for the correct fields
+                core_fields = ["session_id", "candidate_name", "job_title", "transcript"]
+                present_core_fields = [field for field in core_fields if field in data]
                 
-                # Check for required fields in detailed report
-                # Based on the backend code, the actual fields are different
-                expected_fields = ["session_id", "candidate_name", "job_title", "transcript"]
-                present_fields = [field for field in expected_fields if field in data]
-                missing_fields = [field for field in expected_fields if field not in data]
-                
-                # Check for score-related fields (might be nested)
-                score_fields = []
-                if "technical_score" in data:
-                    score_fields.append("technical_score")
-                if "behavioral_score" in data:
-                    score_fields.append("behavioral_score")
-                if "overall_score" in data:
-                    score_fields.append("overall_score")
-                
-                # Check for justification field
-                has_justification = "justification" in data
+                # Check for assessment-related fields
+                assessment_fields = ["assessment_summary", "detailed_justification", "full_assessment"]
+                present_assessment_fields = [field for field in assessment_fields if field in data]
                 
                 # Verify transcript format (Q1, A1, Q2, A2 format)
                 transcript = data.get("transcript", "")
                 has_qa_format = "Q1:" in transcript and "A1:" in transcript
                 
-                # Check if we have the essential components
-                has_core_data = len(present_fields) >= 3  # At least 3 of the 4 expected fields
-                has_scores = len(score_fields) >= 2  # At least technical and behavioral scores
+                # Check for justification content (in detailed_justification field)
+                justification = data.get("detailed_justification", "")
+                has_merits_demerits = ("MERITS" in justification and 
+                                     "DEMERITS" in justification and 
+                                     "RECOMMENDATION" in justification)
                 
-                success = has_core_data and (has_scores or has_justification) and has_qa_format
+                # Check for assessment summary with scores
+                assessment_summary = data.get("assessment_summary", {})
+                has_scores = ("technical_score" in assessment_summary and 
+                            "behavioral_score" in assessment_summary and 
+                            "overall_score" in assessment_summary)
+                
+                # Success criteria: core fields present, Q&A format, and either scores or justification
+                success = (len(present_core_fields) >= 3 and 
+                          has_qa_format and 
+                          (has_scores or has_merits_demerits))
                 
                 details = f"Status: {response.status_code}, Session: {data.get('session_id', '')[:8]}..., "
-                details += f"Present fields: {present_fields}, Score fields: {score_fields}, "
-                details += f"Q&A Format: {has_qa_format}, Has justification: {has_justification}, "
+                details += f"Core fields: {len(present_core_fields)}/4, Assessment fields: {len(present_assessment_fields)}/3, "
+                details += f"Q&A Format: {has_qa_format}, Has scores: {has_scores}, "
+                details += f"Merits/Demerits: {has_merits_demerits}, "
                 details += f"Transcript Length: {len(transcript)} chars"
                 
-                if score_fields:
-                    details += f", Scores: {[(field, data.get(field)) for field in score_fields]}"
-                
-                if missing_fields:
-                    details += f", Missing: {missing_fields}"
+                if has_scores:
+                    scores = assessment_summary
+                    details += f", Scores: T={scores.get('technical_score')}, B={scores.get('behavioral_score')}, O={scores.get('overall_score')}"
                     
             else:
                 details = f"Status: {response.status_code}, Response: {response.text[:300]}"
