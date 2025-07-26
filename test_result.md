@@ -306,6 +306,18 @@ backend:
         -agent: "testing"
         -comment: "Working correctly with ObjectId serialization fixes. Reports include voice interview data and audio references."
 
+  - task: "Voice Recording Stop Functionality Fix"
+    implemented: true
+    working: false
+    file: "App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: false
+        -agent: "main"
+        -comment: "Fixed voice recording stop functionality issues. Enhanced Web Speech API implementation with proper onstart/onend event handlers, improved state management with isStoppingRef, added force stop mechanism with timeout, better error handling, and added processing state indicators. The voice recording should now start and stop properly for each question with transcript recorded as the answer."
+
 frontend:
   - task: "Capture Image Screen Implementation"
     implemented: true
