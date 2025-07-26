@@ -2631,7 +2631,9 @@ const InterviewSession = ({ setCurrentPage }) => {
                       ? '⚙️ Processing your voice answer...'
                       : recordingStatus === 'recording' 
                         ? '🔴 Recording... Click the red button to stop' 
-                        : '🎤 Click to record your answer'
+                        : !isRecording && transcript && transcript.trim()
+                          ? '✅ Recording stopped - processing...'
+                          : '🎤 Click to record your answer'
                     }
                   </p>
 
