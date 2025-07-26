@@ -813,6 +813,80 @@ const AdminDashboard = ({ setCurrentPage }) => {
     'Graduate Screening'
   ];
 
+  // Utility functions for manual questions
+  const addManualQuestion = (type) => {
+    const newQuestion = { question: '', expectedAnswer: '' };
+    if (type === 'resume') {
+      setManualResumeQuestions([...manualResumeQuestions, newQuestion]);
+    } else if (type === 'technical') {
+      setManualTechnicalQuestions([...manualTechnicalQuestions, newQuestion]);
+    } else if (type === 'behavioral') {
+      setManualBehavioralQuestions([...manualBehavioralQuestions, newQuestion]);
+    }
+  };
+
+  const removeManualQuestion = (type, index) => {
+    if (type === 'resume') {
+      setManualResumeQuestions(manualResumeQuestions.filter((_, i) => i !== index));
+    } else if (type === 'technical') {
+      setManualTechnicalQuestions(manualTechnicalQuestions.filter((_, i) => i !== index));
+    } else if (type === 'behavioral') {
+      setManualBehavioralQuestions(manualBehavioralQuestions.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateManualQuestion = (type, index, field, value) => {
+    if (type === 'resume') {
+      const updated = [...manualResumeQuestions];
+      updated[index][field] = value;
+      setManualResumeQuestions(updated);
+    } else if (type === 'technical') {
+      const updated = [...manualTechnicalQuestions];
+      updated[index][field] = value;
+      setManualTechnicalQuestions(updated);
+    } else if (type === 'behavioral') {
+      const updated = [...manualBehavioralQuestions];
+      updated[index][field] = value;
+      setManualBehavioralQuestions(updated);
+    }
+  };
+
+  // Auto-adjust manual questions when count changes
+  const adjustManualQuestions = (type, newCount) => {
+    if (type === 'resume' && resumeQuestionType === 'manual') {
+      const current = manualResumeQuestions.length;
+      if (newCount > current) {
+        const toAdd = Array(newCount - current).fill().map(() => ({ question: '', expectedAnswer: '' }));
+        setManualResumeQuestions([...manualResumeQuestions, ...toAdd]);
+      } else if (newCount < current) {
+        setManualResumeQuestions(manualResumeQuestions.slice(0, newCount));
+      }
+    } else if (type === 'technical' && technicalQuestionType === 'manual') {
+      const current = manualTechnicalQuestions.length;
+      if (newCount > current) {
+        const toAdd = Array(newCount - current).fill().map(() => ({ question: '', expectedAnswer: '' }));
+        setManualTechnicalQuestions([...manualTechnicalQuestions, ...toAdd]);
+      } else if (newCount < current) {
+        setManualTechnicalQuestions(manualTechnicalQuestions.slice(0, newCount));
+      }
+    } else if (type === 'behavioral' && behavioralQuestionType === 'manual') {
+      const current = manualBehavioralQuestions.length;
+      if (newCount > current) {
+        const toAdd = Array(newCount - current).fill().map(() => ({ question: '', expectedAnswer: '' }));
+        setManualBehavioralQuestions([...manualBehavioralQuestions, ...toAdd]);
+      } else if (newCount < current) {
+        setManualBehavioralQuestions(manualBehavioralQuestions.slice(0, newCount));
+      }
+    }
+  };
+
+  // Validate total questions within limits
+  const getTotalQuestionCount = () => resumeBasedCount + technicalCount + behavioralCount;
+  const isValidQuestionCount = () => {
+    const total = getTotalQuestionCount();
+    return total >= minQuestions && total <= maxQuestions;
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setResumeFile(file);
