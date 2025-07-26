@@ -164,7 +164,7 @@ backend:
     implemented: true
     working: false
     file: "server.py"
-    stuck_count: 1
+    stuck_count: 2
     priority: "high"
     needs_retesting: false
     status_history:
@@ -174,6 +174,9 @@ backend:
         -working: false
         -agent: "testing"
         -comment: "❌ PARTIAL FUNCTIONALITY: Web Speech API backend integration has mixed results. WORKING: Admin authentication (Game@1234), enhanced token creation with voice features, token validation, camera test endpoint with voice_mode=true. NOT WORKING: Voice interview start fails with 500 error due to Gemini API authentication failure - 'API key not valid. Please pass a valid API key.' This prevents interview session creation and subsequent voice processing. The backend infrastructure for Web Speech API is properly implemented, but the Gemini API key (AIzaSyCFYX2-5r3oZH_Z53rl-5-xNaotmBtBhbc) is invalid and needs to be regenerated from Google AI Studio dashboard. Text cleaning functionality and voice message processing cannot be tested without a working interview session."
+        -working: false
+        -agent: "testing"
+        -comment: "❌ ROOT CAUSE CONFIRMED: Comprehensive testing of candidate interview start functionality reveals the exact issue causing 'Failed to start interview: TypeError: Failed to fetch' errors. FINDINGS: 1) Backend connectivity: ✅ Working (CORS fixed, admin auth working), 2) Token generation/validation: ✅ Working (both regular and enhanced tokens), 3) Camera test endpoint: ✅ Working, 4) CRITICAL ISSUE: /api/candidate/start-interview endpoint returns 500 Internal Server Error due to INVALID GEMINI API KEY. Backend logs show: 'litellm.AuthenticationError: geminiException - API key not valid. Please pass a valid API key.' Direct API testing confirms key 'AIzaSyCFYX2-5r3oZH_Z53rl-5-xNaotmBtBhbc' is invalid. This prevents interview question generation, causing all interview start attempts (text/voice mode) to fail with 500 errors. SOLUTION REQUIRED: Generate new valid Gemini API key from Google AI Studio and update GEMINI_API_KEY in backend/.env file."
 
   - task: "Voice Interview Session Management"
     implemented: true
