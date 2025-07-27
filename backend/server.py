@@ -191,11 +191,11 @@ class DataPrivacyManager:
             
             # Count audio files
             audio_cutoff = current_time - timedelta(days=self.data_retention_policies['audio_files'])
-            total_audio = fs.find().count()
-            expired_audio = fs.find({
+            total_audio = len(list(fs.find()))
+            expired_audio = len(list(fs.find({
                 "uploadDate": {"$lt": audio_cutoff},
                 "metadata.type": {"$in": ["answer_audio", "question_audio", "tts_audio"]}
-            }).count()
+            })))
             
             # Count video analysis data
             video_cutoff = current_time - timedelta(days=self.data_retention_policies['video_analysis'])
