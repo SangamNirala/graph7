@@ -72,12 +72,10 @@ huggingface-hub>=0.16.0
 datasets>=2.14.0
 
 # Step 7.2: Advanced Speech Analysis
-pyAudioAnalysis>=0.3.14
-webrtcvad>=2.0.10
 pydub>=0.25.1
+webrtcvad>=2.0.10
 
-# Step 7.3: Computer Vision Emotion Detection
+# Step 7.3: Computer Vision Emotion Detection (without dlib dependency)
 fer>=22.4.0
-dlib>=19.24.0
 imutils>=0.5.4
 Pillow>=10.0.0
