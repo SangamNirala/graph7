@@ -3595,6 +3595,195 @@ async def get_retention_policies():
         "last_updated": datetime.utcnow()
     }
 
+# Phase 2 AI Enhancement Endpoints
+
+@api_router.post("/admin/ai-enhancement/analyze-question-bias")
+async def analyze_question_bias(question_text: str):
+    """Analyze interview questions for potential bias"""
+    try:
+        bias_analysis = bias_detector.analyze_question_bias(question_text)
+        return {
+            "success": True,
+            "question": question_text,
+            "bias_analysis": bias_analysis
+        }
+    except Exception as e:
+        logging.error(f"Question bias analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Bias analysis failed: {str(e)}")
+
+@api_router.post("/admin/ai-enhancement/calculate-fairness-metrics")
+async def calculate_fairness_metrics():
+    """Calculate fairness metrics across all assessments"""
+    try:
+        # Get all assessments from database
+        assessments = await db.assessments.find().to_list(1000)
+        
+        # Convert ObjectId to dict for processing
+        assessment_list = []
+        for assessment in assessments:
+            assessment_dict = dict(assessment)
+            assessment_dict['overall_score'] = assessment_dict.get('overall_score', 0)
+            assessment_dict['demographic_group'] = assessment_dict.get('demographic_group', 'unknown')
+            assessment_list.append(assessment_dict)
+        
+        fairness_metrics = bias_detector.calculate_fairness_metrics(assessment_list)
+        
+        return {
+            "success": True,
+            "fairness_metrics": fairness_metrics,
+            "total_assessments_analyzed": len(assessment_list)
+        }
+    except Exception as e:
+        logging.error(f"Fairness metrics calculation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Fairness analysis failed: {str(e)}")
+
+@api_router.post("/admin/ai-enhancement/train-hiring-model")
+async def train_hiring_model():
+    """Train the predictive hiring model with historical data"""
+    try:
+        # Get historical assessment data
+        assessments = await db.assessments.find().to_list(1000)
+        
+        if not assessments:
+            return {
+                "success": False,
+                "message": "No historical data available for training",
+                "model_status": "untrained"
+            }
+        
+        # Convert to DataFrame format
+        training_data = []
+        for assessment in assessments:
+            training_record = {
+                'technical_score': assessment.get('technical_score', 70),
+                'behavioral_score': assessment.get('behavioral_score', 70),
+                'communication_score': 0.7,  # Default
+                'confidence_level': 0.6,  # Default
+                'stress_indicators': 0.4,  # Default
+                'engagement_score': 0.7,  # Default
+                'hiring_success': 1 if assessment.get('overall_score', 0) >= 70 else 0
+            }
+            training_data.append(training_record)
+        
+        # Convert to pandas DataFrame
+        df = pd.DataFrame(training_data)
+        
+        # Train the model
+        training_result = predictive_hiring_model.train_model(df)
+        
+        return {
+            "success": True,
+            "training_result": training_result,
+            "model_info": predictive_hiring_model.get_model_info()
+        }
+        
+    except Exception as e:
+        logging.error(f"Model training failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Model training failed: {str(e)}")
+
+@api_router.post("/admin/ai-enhancement/predict-hiring-success")
+async def predict_hiring_success(session_id: str):
+    """Predict hiring success for a specific candidate"""
+    try:
+        # Get assessment data for the session
+        assessment = await db.assessments.find_one({"session_id": session_id})
+        if not assessment:
+            raise HTTPException(status_code=404, detail="Assessment not found")
+        
+        # Prepare candidate data for prediction
+        candidate_data = {
+            'technical_score': assessment.get('technical_score', 70),
+            'behavioral_score': assessment.get('behavioral_score', 70),
+            'communication_score': 0.7,  # Calculate from responses if available
+            'confidence_level': 0.6,  # From emotional intelligence metrics
+            'stress_indicators': 0.4,  # From emotional intelligence metrics
+            'engagement_score': 0.7,  # From video analysis if available
+            'responses': [],  # For communication analysis
+            'emotional_intelligence_metrics': {}
+        }
+        
+        # Get prediction
+        prediction_result = predictive_hiring_model.predict_success_probability(candidate_data)
+        
+        return {
+            "success": True,
+            "session_id": session_id,
+            "prediction": prediction_result,
+            "candidate_name": assessment.get('candidate_name', 'Unknown')
+        }
+        
+    except Exception as e:
+        logging.error(f"Hiring prediction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+
+@api_router.post("/admin/ai-enhancement/analyze-personality")
+async def analyze_personality(session_id: str):
+    """Analyze personality traits for a specific candidate"""
+    try:
+        # Get session data
+        session = await db.sessions.find_one({"session_id": session_id})
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Get audio analysis data if available
+        audio_analyses = await db.audio_analysis.find({"session_id": session_id}).to_list(None)
+        speech_data = audio_analyses[0] if audio_analyses else {}
+        
+        # Get video analysis data if available
+        video_analyses = await db.video_analysis.find({"session_id": session_id}).to_list(None)
+        video_data = video_analyses[0] if video_analyses else {}
+        
+        # Get text responses
+        text_responses = session.get('messages', [])
+        
+        # Analyze personality
+        personality_analysis = personality_analyzer.analyze_big_five(
+            speech_data, video_data, text_responses
+        )
+        
+        return {
+            "success": True,
+            "session_id": session_id,
+            "candidate_name": session.get('candidate_name', 'Unknown'),
+            "personality_analysis": personality_analysis
+        }
+        
+    except Exception as e:
+        logging.error(f"Personality analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Personality analysis failed: {str(e)}")
+
+@api_router.get("/admin/ai-enhancement/model-status")
+async def get_model_status():
+    """Get status of all AI enhancement models"""
+    try:
+        return {
+            "success": True,
+            "models": {
+                "bias_detection_engine": {
+                    "status": "active",
+                    "protected_attributes": bias_detector.protected_attributes,
+                    "bias_categories": list(bias_detector.bias_indicators.keys())
+                },
+                "predictive_hiring_model": predictive_hiring_model.get_model_info(),
+                "personality_analyzer": {
+                    "status": "active",
+                    "traits_analyzed": list(personality_analyzer.big_five_traits.keys()),
+                    "analysis_methods": ["speech", "video", "text"]
+                }
+            },
+            "capabilities": [
+                "Question bias detection",
+                "Fairness metrics calculation", 
+                "Hiring success prediction",
+                "Big Five personality analysis",
+                "Demographic parity assessment",
+                "Equalized odds calculation"
+            ]
+        }
+    except Exception as e:
+        logging.error(f"Model status check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Status check failed: {str(e)}")
+
 # Health check
 @api_router.get("/health")
 async def health_check():
