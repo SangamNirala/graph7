@@ -60,3 +60,4 @@ frozenlist
 distro
 propcache
 httpcore
+tiktoken
