@@ -2741,10 +2741,10 @@ async def get_proctoring_report(session_id: str):
 
 # Data Privacy and Retention Management Endpoints
 @api_router.post("/admin/data-privacy/request-consent")
-async def request_consent(candidate_id: str, data_types: List[str]):
+async def request_consent(request: ConsentRequest):
     """Request explicit consent for data collection"""
     try:
-        consent_record = data_privacy_manager.request_consent(candidate_id, data_types)
+        consent_record = data_privacy_manager.request_consent(request.candidate_id, request.data_types)
         
         # Store consent record in database
         await db.consent_records.insert_one(consent_record)
