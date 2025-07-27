@@ -62,3 +62,4 @@ propcache
 httpcore
 tiktoken
 tokenizers
+jinja2
