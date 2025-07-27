@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 """
-Voice Recording Functionality Backend Testing
-Tests the backend support for voice recording functionality including:
-1. Voice recording session management
-2. Voice mode interview start/stop
-3. Transcript processing and storage
-4. Voice recording state management
-5. Multi-question voice recording consistency
+Voice Recording Functionality Testing for AudioContext Fixes
+Tests the voice recording functionality after implementing AudioContext fixes for the error "Cannot close a closed AudioContext".
+
+FOCUS AREAS:
+1. Test token validation with fresh token: 1HM1VT4BQU7ZD56U
+2. Test voice interview start functionality 
+3. Test voice recording endpoints to ensure they handle audio properly
+4. Test the entire voice interview flow to verify AudioContext errors are resolved
+5. Test speech-to-text processing and transcript saving
+
+BACKEND ENDPOINTS TO TEST:
+- POST /api/candidate/validate-token (with token: 1HM1VT4BQU7ZD56U)
+- POST /api/candidate/start-interview (with voice_mode=true)
+- POST /api/voice/process-answer (voice answer submission)
+- GET /api/candidate/interview-status (check interview state)
 """
 
 import requests
@@ -24,6 +32,7 @@ class VoiceRecordingTester:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
+        self.test_token = "1HM1VT4BQU7ZD56U"  # Fresh token from review request
         self.generated_token = None
         self.session_id = None
         self.voice_session_id = None
