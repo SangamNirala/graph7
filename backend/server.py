@@ -439,6 +439,76 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Phase 3: I18n API Endpoints
+@app.get("/api/translations/{language}")
+async def get_translations(language: str):
+    """Get translations for a specific language"""
+    try:
+        if language not in i18n_manager.supported_languages:
+            language = 'en'
+        
+        return {
+            "language": language,
+            "translations": i18n_manager.translations.get(language, i18n_manager.translations['en'])
+        }
+    except Exception as e:
+        logging.error(f"Error getting translations: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get translations")
+
+@app.get("/api/translations/{language}/{module}")
+async def get_module_translations(language: str, module: str):
+    """Get translations for a specific module and language"""
+    try:
+        if language not in i18n_manager.supported_languages:
+            language = 'en'
+        
+        translations = i18n_manager.translations.get(language, i18n_manager.translations['en'])
+        module_translations = translations.get(module, {})
+        
+        return {
+            "language": language,
+            "module": module,
+            "translations": module_translations
+        }
+    except Exception as e:
+        logging.error(f"Error getting module translations: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get module translations")
+
+@app.get("/api/languages")
+async def get_supported_languages():
+    """Get list of supported languages"""
+    try:
+        return {
+            "languages": i18n_manager.get_supported_languages()
+        }
+    except Exception as e:
+        logging.error(f"Error getting supported languages: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get supported languages")
+
+@app.post("/api/translate")
+async def translate_text(data: dict):
+    """Translate text to target language"""
+    try:
+        text = data.get('text', '')
+        target_language = data.get('target_language', 'en')
+        
+        if not text:
+            raise HTTPException(status_code=400, detail="Text is required")
+        
+        # For now, return original text
+        # In production, this would use a translation service
+        translated_text = i18n_manager.translate_ai_content(text, target_language)
+        
+        return {
+            "original_text": text,
+            "translated_text": translated_text,
+            "source_language": "en",
+            "target_language": target_language
+        }
+    except Exception as e:
+        logging.error(f"Error translating text: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to translate text")
+
 # Pydantic Models
 class JobDescription(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
