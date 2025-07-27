@@ -1246,9 +1246,10 @@ class VoiceProcessor:
             # Fallback message
             return "Speech-to-text is handled by Web Speech API on the frontend"
 
-# Initialize engines
+# Initialize all managers and analyzers
 interview_ai = InterviewAI()
 voice_processor = VoiceProcessor()
+data_privacy_manager = DataPrivacyManager()
 
 # Helper Functions
 def generate_secure_token() -> str:
