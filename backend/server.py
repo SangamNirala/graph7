@@ -403,6 +403,11 @@ class SJTAnswerRequest(BaseModel):
     sjt_id: str
     selected_answer: str
 
+# Data privacy request models
+class ConsentRequest(BaseModel):
+    candidate_id: str
+    data_types: List[str]
+
 # Document parsing utilities
 def extract_text_from_pdf(file_content: bytes) -> str:
     try:
