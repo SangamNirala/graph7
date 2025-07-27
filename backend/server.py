@@ -715,19 +715,229 @@ class PredictiveAnalytics:
 predictive_analytics = PredictiveAnalytics()
 
 # Enhanced bias detection and mitigation
-class BiasDetectionSystem:
-    """Advanced bias detection and mitigation system"""
+class BiasDetectionEngine:
+    """Advanced bias detection and fairness-aware AI assessment system"""
     
     def __init__(self):
+        self.protected_attributes = ['gender', 'race', 'age', 'accent']
+        self.fairness_metrics = {}
         self.bias_indicators = {
-            "gender_bias": ["he said", "she said", "man", "woman", "guy", "girl"],
-            "age_bias": ["young", "old", "experienced", "fresh", "senior", "junior"],
-            "cultural_bias": ["accent", "background", "culture", "foreign", "native"],
-            "appearance_bias": ["looks", "appearance", "professional looking", "well-dressed"]
+            "gender_bias": ["he said", "she said", "man", "woman", "guy", "girl", "male", "female", "masculine", "feminine"],
+            "age_bias": ["young", "old", "experienced", "fresh", "senior", "junior", "mature", "youthful", "elderly"],
+            "cultural_bias": ["accent", "background", "culture", "foreign", "native", "ethnicity", "nationality", "immigrant"],
+            "appearance_bias": ["looks", "appearance", "professional looking", "well-dressed", "attractive", "presentable"],
+            "language_bias": ["articulate", "well-spoken", "clear speech", "pronunciation", "fluent", "broken english"]
         }
     
+    def analyze_question_bias(self, question_text: str) -> dict:
+        """Detect potential bias in interview questions"""
+        bias_indicators = {
+            'gender_bias': self.detect_gender_bias(question_text),
+            'cultural_bias': self.detect_cultural_bias(question_text),
+            'age_bias': self.detect_age_bias(question_text),
+            'language_bias': self.detect_language_bias(question_text)
+        }
+        
+        # Calculate overall bias score
+        total_bias_score = sum(indicator.get('bias_score', 0) for indicator in bias_indicators.values())
+        
+        return {
+            "bias_indicators": bias_indicators,
+            "overall_bias_score": min(1.0, total_bias_score),
+            "is_biased": total_bias_score > 0.3,
+            "recommendation": self._get_bias_recommendation(total_bias_score)
+        }
+    
+    def detect_gender_bias(self, text: str) -> dict:
+        """Detect gender bias in text"""
+        text_lower = text.lower()
+        gender_terms = ["he", "she", "his", "her", "him", "man", "woman", "guy", "girl", "male", "female", "masculine", "feminine", "wife", "husband", "boyfriend", "girlfriend"]
+        
+        detected_terms = [term for term in gender_terms if term in text_lower]
+        bias_score = min(1.0, len(detected_terms) * 0.15)
+        
+        return {
+            "detected_terms": detected_terms,
+            "bias_score": bias_score,
+            "severity": "high" if bias_score > 0.5 else "medium" if bias_score > 0.2 else "low"
+        }
+    
+    def detect_cultural_bias(self, text: str) -> dict:
+        """Detect cultural bias in text"""
+        text_lower = text.lower()
+        cultural_terms = ["accent", "background", "culture", "foreign", "native", "ethnicity", "nationality", "immigrant", "american", "traditional", "customs"]
+        
+        detected_terms = [term for term in cultural_terms if term in text_lower]
+        bias_score = min(1.0, len(detected_terms) * 0.2)
+        
+        return {
+            "detected_terms": detected_terms,
+            "bias_score": bias_score,
+            "severity": "high" if bias_score > 0.5 else "medium" if bias_score > 0.2 else "low"
+        }
+    
+    def detect_age_bias(self, text: str) -> dict:
+        """Detect age bias in text"""
+        text_lower = text.lower()
+        age_terms = ["young", "old", "experienced", "fresh", "senior", "junior", "mature", "youthful", "elderly", "generation", "millennial", "boomer"]
+        
+        detected_terms = [term for term in age_terms if term in text_lower]
+        bias_score = min(1.0, len(detected_terms) * 0.1)
+        
+        return {
+            "detected_terms": detected_terms,
+            "bias_score": bias_score,
+            "severity": "high" if bias_score > 0.5 else "medium" if bias_score > 0.2 else "low"
+        }
+    
+    def detect_language_bias(self, text: str) -> dict:
+        """Detect language bias in text"""
+        text_lower = text.lower()
+        language_terms = ["articulate", "well-spoken", "clear speech", "pronunciation", "fluent", "broken english", "communication skills", "verbal ability"]
+        
+        detected_terms = [term for term in language_terms if term in text_lower]
+        bias_score = min(1.0, len(detected_terms) * 0.1)
+        
+        return {
+            "detected_terms": detected_terms,
+            "bias_score": bias_score,
+            "severity": "high" if bias_score > 0.5 else "medium" if bias_score > 0.2 else "low"
+        }
+    
+    def calculate_fairness_metrics(self, assessments: list) -> dict:
+        """Calculate demographic parity and equalized odds"""
+        if not assessments:
+            return {"error": "No assessments provided"}
+        
+        metrics = {
+            'demographic_parity': self.calculate_demographic_parity(assessments),
+            'equalized_odds': self.calculate_equalized_odds(assessments),
+            'calibration': self.calculate_calibration(assessments),
+            'total_assessments': len(assessments)
+        }
+        return metrics
+    
+    def calculate_demographic_parity(self, assessments: list) -> dict:
+        """Calculate demographic parity across different groups"""
+        try:
+            # Group assessments by demographics if available
+            groups = {}
+            for assessment in assessments:
+                # Use a default group if no demographic info available
+                group = assessment.get('demographic_group', 'unknown')
+                if group not in groups:
+                    groups[group] = {'total': 0, 'positive': 0}
+                
+                groups[group]['total'] += 1
+                if assessment.get('overall_score', 0) >= 70:  # Threshold for positive outcome
+                    groups[group]['positive'] += 1
+            
+            # Calculate positive rate for each group
+            parity_scores = {}
+            for group, stats in groups.items():
+                parity_scores[group] = stats['positive'] / max(stats['total'], 1)
+            
+            # Calculate demographic parity (difference between highest and lowest rates)
+            if len(parity_scores) > 1:
+                max_rate = max(parity_scores.values())
+                min_rate = min(parity_scores.values())
+                parity_difference = max_rate - min_rate
+            else:
+                parity_difference = 0.0
+            
+            return {
+                "group_rates": parity_scores,
+                "parity_difference": parity_difference,
+                "is_fair": parity_difference < 0.1,  # 10% threshold
+                "fairness_level": "fair" if parity_difference < 0.1 else "moderate" if parity_difference < 0.2 else "unfair"
+            }
+        except Exception as e:
+            return {"error": f"Demographic parity calculation failed: {str(e)}"}
+    
+    def calculate_equalized_odds(self, assessments: list) -> dict:
+        """Calculate equalized odds (true positive and false positive rates)"""
+        try:
+            # This is a simplified version - in practice, you'd need ground truth hiring outcomes
+            groups = {}
+            for assessment in assessments:
+                group = assessment.get('demographic_group', 'unknown')
+                predicted_positive = assessment.get('overall_score', 0) >= 70
+                actual_positive = assessment.get('hiring_success', predicted_positive)  # Fallback to prediction
+                
+                if group not in groups:
+                    groups[group] = {'tp': 0, 'fp': 0, 'tn': 0, 'fn': 0}
+                
+                if predicted_positive and actual_positive:
+                    groups[group]['tp'] += 1
+                elif predicted_positive and not actual_positive:
+                    groups[group]['fp'] += 1
+                elif not predicted_positive and not actual_positive:
+                    groups[group]['tn'] += 1
+                else:
+                    groups[group]['fn'] += 1
+            
+            # Calculate TPR and FPR for each group
+            odds_scores = {}
+            for group, stats in groups.items():
+                tpr = stats['tp'] / max(stats['tp'] + stats['fn'], 1)  # True Positive Rate
+                fpr = stats['fp'] / max(stats['fp'] + stats['tn'], 1)  # False Positive Rate
+                odds_scores[group] = {"tpr": tpr, "fpr": fpr}
+            
+            return {
+                "group_odds": odds_scores,
+                "equalized": len(set(str(scores) for scores in odds_scores.values())) <= 1,
+                "note": "Simplified calculation - requires ground truth hiring outcomes for accuracy"
+            }
+        except Exception as e:
+            return {"error": f"Equalized odds calculation failed: {str(e)}"}
+    
+    def calculate_calibration(self, assessments: list) -> dict:
+        """Calculate calibration across different groups"""
+        try:
+            # Group by score ranges and calculate actual success rates
+            score_ranges = [(0, 30), (30, 50), (50, 70), (70, 85), (85, 100)]
+            calibration_data = {}
+            
+            for low, high in score_ranges:
+                range_key = f"{low}-{high}"
+                range_assessments = [a for a in assessments if low <= a.get('overall_score', 0) < high]
+                
+                if range_assessments:
+                    predicted_success = (low + high) / 200.0  # Convert to probability
+                    actual_success = sum(a.get('hiring_success', predicted_success > 0.7) for a in range_assessments) / len(range_assessments)
+                    
+                    calibration_data[range_key] = {
+                        "predicted": predicted_success,
+                        "actual": actual_success,
+                        "difference": abs(predicted_success - actual_success),
+                        "count": len(range_assessments)
+                    }
+            
+            # Calculate overall calibration error
+            total_error = sum(data["difference"] * data["count"] for data in calibration_data.values())
+            total_count = sum(data["count"] for data in calibration_data.values())
+            avg_calibration_error = total_error / max(total_count, 1)
+            
+            return {
+                "calibration_by_range": calibration_data,
+                "average_calibration_error": avg_calibration_error,
+                "is_well_calibrated": avg_calibration_error < 0.1,
+                "note": "Requires ground truth hiring outcomes for accurate calibration"
+            }
+        except Exception as e:
+            return {"error": f"Calibration calculation failed: {str(e)}"}
+    
+    def _get_bias_recommendation(self, bias_score: float) -> str:
+        """Get recommendation based on bias score"""
+        if bias_score > 0.7:
+            return "High bias detected - Question should be revised or replaced"
+        elif bias_score > 0.3:
+            return "Moderate bias detected - Review and consider revision"
+        else:
+            return "Low bias detected - Question appears fair"
+    
     def detect_bias_in_evaluation(self, evaluation_text: str, question: str = "") -> Dict[str, Any]:
-        """Detect potential bias in evaluation text"""
+        """Detect potential bias in evaluation text (legacy method for compatibility)"""
         bias_detected = {}
         bias_score = 0.0
         
@@ -770,7 +980,7 @@ Evaluate only the substantive content of the response:
         return bias_mitigation_prefix + base_prompt
 
 # Initialize bias detection
-bias_detector = BiasDetectionSystem()
+bias_detector = BiasDetectionEngine()
 
 # AI Interview Engine
 class InterviewAI:
