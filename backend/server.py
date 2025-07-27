@@ -5945,3 +5945,273 @@ async def get_advanced_analytics_summary():
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+# Phase 3: Open-Source AI Integration API Endpoints (Week 7)
+
+@api_router.get("/ai/status")
+async def get_ai_status():
+    """Get comprehensive status of all AI components"""
+    try:
+        status = interview_ai.get_ai_status()
+        return {
+            "success": True,
+            "ai_status": status,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logging.error(f"AI status error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get AI status: {str(e)}")
+
+@api_router.post("/ai/analyze-question")
+async def analyze_question_quality(data: dict):
+    """Analyze interview question quality using open-source AI"""
+    try:
+        question = data.get("question", "")
+        if not question:
+            raise HTTPException(status_code=400, detail="Question is required")
+        
+        if open_source_ai_engine:
+            analysis = await open_source_ai_engine.analyze_question_quality(question)
+        else:
+            analysis = {"error": "Open-source AI engine not available"}
+        
+        return {
+            "success": True,
+            "question_analysis": analysis,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logging.error(f"Question analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze question: {str(e)}")
+
+@api_router.post("/ai/analyze-speech")
+async def analyze_speech_advanced(data: dict):
+    """Advanced speech analysis using open-source models"""
+    try:
+        audio_data = data.get("audio_data", "")
+        transcript = data.get("transcript", "")
+        
+        if not audio_data:
+            raise HTTPException(status_code=400, detail="Audio data is required")
+        
+        # Decode base64 audio data
+        try:
+            audio_bytes = base64.b64decode(audio_data)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail="Invalid audio data format")
+        
+        if speech_analyzer:
+            analysis = await speech_analyzer.analyze_speech_comprehensive(
+                audio_data=audio_bytes,
+                transcript=transcript
+            )
+        else:
+            analysis = {"error": "Speech analyzer not available"}
+        
+        return {
+            "success": True,
+            "speech_analysis": analysis,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logging.error(f"Speech analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze speech: {str(e)}")
+
+@api_router.post("/ai/analyze-video-emotion")
+async def analyze_video_emotion(data: dict):
+    """Computer vision emotion detection from video frame"""
+    try:
+        frame_data = data.get("frame_data", "")
+        if not frame_data:
+            raise HTTPException(status_code=400, detail="Frame data is required")
+        
+        # Decode base64 frame data
+        try:
+            if isinstance(frame_data, str) and frame_data.startswith('data:image'):
+                frame_data = frame_data.split(',')[1]
+            frame_bytes = base64.b64decode(frame_data)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail="Invalid frame data format")
+        
+        if emotion_detector:
+            analysis = await emotion_detector.analyze_frame_emotions(frame_bytes)
+        else:
+            analysis = {"error": "Emotion detector not available"}
+        
+        return {
+            "success": True,
+            "emotion_analysis": analysis,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logging.error(f"Video emotion analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze video emotions: {str(e)}")
+
+@api_router.post("/ai/analyze-session-video")
+async def analyze_session_video(data: dict):
+    """Analyze complete video session for overall emotion and engagement patterns"""
+    try:
+        frame_analyses = data.get("frame_analyses", [])
+        session_duration = data.get("session_duration", 0.0)
+        
+        if not frame_analyses:
+            raise HTTPException(status_code=400, detail="Frame analyses are required")
+        
+        if emotion_detector:
+            analysis = await emotion_detector.analyze_video_session(frame_analyses, session_duration)
+        else:
+            analysis = {"error": "Emotion detector not available"}
+        
+        return {
+            "success": True,
+            "session_analysis": analysis,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logging.error(f"Session video analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze session video: {str(e)}")
+
+@api_router.post("/ai/generate-questions-opensource")
+async def generate_questions_opensource(data: dict):
+    """Generate interview questions using open-source AI models"""
+    try:
+        job_description = data.get("job_description", "")
+        resume_content = data.get("resume_content", "")
+        question_type = data.get("question_type", "technical")
+        count = data.get("count", 5)
+        
+        if not job_description or not resume_content:
+            raise HTTPException(status_code=400, detail="Job description and resume content are required")
+        
+        if open_source_ai_engine:
+            questions = await open_source_ai_engine.generate_interview_questions(
+                job_description=job_description,
+                resume_content=resume_content,
+                question_type=question_type,
+                count=count
+            )
+        else:
+            questions = ["Open-source AI engine not available"]
+        
+        return {
+            "success": True,
+            "questions": questions,
+            "question_type": question_type,
+            "count": len(questions),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logging.error(f"Question generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate questions: {str(e)}")
+
+@api_router.post("/ai/analyze-response-opensource")
+async def analyze_response_opensource(data: dict):
+    """Analyze candidate response using open-source AI models"""
+    try:
+        response = data.get("response", "")
+        question = data.get("question", "")
+        question_type = data.get("question_type", "general")
+        
+        if not response or not question:
+            raise HTTPException(status_code=400, detail="Response and question are required")
+        
+        if open_source_ai_engine:
+            analysis = await open_source_ai_engine.analyze_candidate_response(
+                response=response,
+                question=question,
+                question_type=question_type
+            )
+        else:
+            analysis = {"error": "Open-source AI engine not available"}
+        
+        return {
+            "success": True,
+            "response_analysis": analysis,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logging.error(f"Response analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze response: {str(e)}")
+
+@api_router.post("/ai/generate-feedback-opensource")
+async def generate_feedback_opensource(data: dict):
+    """Generate comprehensive interview feedback using open-source AI"""
+    try:
+        candidate_responses = data.get("candidate_responses", [])
+        overall_performance = data.get("overall_performance", {})
+        
+        if not candidate_responses:
+            raise HTTPException(status_code=400, detail="Candidate responses are required")
+        
+        if open_source_ai_engine:
+            feedback = await open_source_ai_engine.generate_interview_feedback(
+                candidate_responses=candidate_responses,
+                overall_performance=overall_performance
+            )
+        else:
+            feedback = {"error": "Open-source AI engine not available"}
+        
+        return {
+            "success": True,
+            "interview_feedback": feedback,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logging.error(f"Feedback generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate feedback: {str(e)}")
+
+# Enhanced Voice Processing with Open-Source Speech Analysis
+@api_router.post("/voice/analyze-enhanced")
+async def analyze_voice_enhanced(data: dict):
+    """Enhanced voice analysis using open-source speech analyzer"""
+    try:
+        audio_data = data.get("audio_data", "")
+        transcript = data.get("transcript", "")
+        session_id = data.get("session_id", "")
+        
+        if not audio_data:
+            raise HTTPException(status_code=400, detail="Audio data is required")
+        
+        # Decode base64 audio data
+        try:
+            audio_bytes = base64.b64decode(audio_data)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail="Invalid audio data format")
+        
+        # Perform enhanced speech analysis
+        analysis_result = {}
+        
+        if speech_analyzer:
+            # Advanced speech analysis
+            speech_analysis = await speech_analyzer.analyze_speech_comprehensive(
+                audio_data=audio_bytes,
+                transcript=transcript
+            )
+            analysis_result["advanced_speech_analysis"] = speech_analysis
+        
+        # Store analysis results in database if session_id provided
+        if session_id:
+            try:
+                await db.enhanced_voice_analysis.insert_one({
+                    "session_id": session_id,
+                    "analysis": analysis_result,
+                    "transcript": transcript,
+                    "timestamp": datetime.utcnow(),
+                    "analysis_type": "enhanced_open_source"
+                })
+            except Exception as e:
+                logging.error(f"Error storing enhanced voice analysis: {str(e)}")
+        
+        return {
+            "success": True,
+            "enhanced_analysis": analysis_result,
+            "session_id": session_id,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logging.error(f"Enhanced voice analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Enhanced voice analysis failed: {str(e)}")
+
+# Mount all routes to the main app
+app.include_router(api_router)
