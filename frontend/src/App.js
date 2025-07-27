@@ -401,9 +401,13 @@ const useVoiceRecorder = (onRecordingComplete) => {
   useEffect(() => {
     return () => {
       if (recognitionRef.current && isRecording) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.stop();
+        } catch (error) {
+          console.log('Recognition cleanup error on unmount:', error);
+        }
       }
-      stopVoiceLevelMonitoring();
+      cleanupAudioContext();
     };
   }, []);
 
