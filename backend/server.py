@@ -41,6 +41,186 @@ from textstat import flesch_reading_ease
 from emotion_analyzer import emotion_analyzer
 from speech_analyzer import speech_analyzer
 
+# GDPR/CCPA Compliance Implementation
+class DataPrivacyManager:
+    def __init__(self):
+        self.consent_tracking = {}
+        self.data_retention_policies = {
+            'interview_data': 90,  # days
+            'audio_files': 30,
+            'video_analysis': 60
+        }
+    
+    def request_consent(self, candidate_id, data_types):
+        """Explicit consent for data collection"""
+        return {
+            'consent_id': str(uuid.uuid4()),
+            'timestamp': datetime.utcnow(),
+            'data_types': data_types,
+            'candidate_id': candidate_id
+        }
+    
+    async def right_to_erasure(self, candidate_id):
+        """GDPR Article 17 - Right to be forgotten"""
+        try:
+            # Delete all candidate data from various collections
+            collections_to_clean = [
+                'tokens', 'enhanced_tokens', 'sessions', 'assessments',
+                'video_analysis', 'audio_analysis', 'coding_challenges', 'sjt_tests'
+            ]
+            
+            deleted_counts = {}
+            for collection_name in collections_to_clean:
+                collection = getattr(db, collection_name)
+                result = await collection.delete_many({"candidate_name": candidate_id})
+                deleted_counts[collection_name] = result.deleted_count
+            
+            # Delete audio files from GridFS
+            audio_files = fs.find({"metadata.candidate_id": candidate_id})
+            audio_deleted = 0
+            for audio_file in audio_files:
+                fs.delete(audio_file._id)
+                audio_deleted += 1
+            deleted_counts['audio_files'] = audio_deleted
+            
+            logging.info(f"Data erasure completed for candidate {candidate_id}: {deleted_counts}")
+            return {
+                "status": "completed",
+                "candidate_id": candidate_id,
+                "deleted_records": deleted_counts,
+                "timestamp": datetime.utcnow()
+            }
+            
+        except Exception as e:
+            logging.error(f"Data erasure failed for candidate {candidate_id}: {str(e)}")
+            return {
+                "status": "failed",
+                "candidate_id": candidate_id,
+                "error": str(e),
+                "timestamp": datetime.utcnow()
+            }
+    
+    async def cleanup_expired_data(self):
+        """Clean up data based on retention policies"""
+        try:
+            cleanup_results = {}
+            current_time = datetime.utcnow()
+            
+            # Clean up interview data (90 days)
+            interview_cutoff = current_time - timedelta(days=self.data_retention_policies['interview_data'])
+            
+            # Clean sessions
+            sessions_result = await db.sessions.delete_many({"started_at": {"$lt": interview_cutoff}})
+            cleanup_results['sessions'] = sessions_result.deleted_count
+            
+            # Clean assessments
+            assessments_result = await db.assessments.delete_many({"created_at": {"$lt": interview_cutoff}})
+            cleanup_results['assessments'] = assessments_result.deleted_count
+            
+            # Clean tokens
+            tokens_result = await db.tokens.delete_many({"created_at": {"$lt": interview_cutoff}})
+            cleanup_results['tokens'] = tokens_result.deleted_count
+            
+            enhanced_tokens_result = await db.enhanced_tokens.delete_many({"created_at": {"$lt": interview_cutoff}})
+            cleanup_results['enhanced_tokens'] = enhanced_tokens_result.deleted_count
+            
+            # Clean up audio files (30 days)
+            audio_cutoff = current_time - timedelta(days=self.data_retention_policies['audio_files'])
+            
+            # Find and delete expired audio files from GridFS
+            expired_audio_files = fs.find({
+                "uploadDate": {"$lt": audio_cutoff},
+                "metadata.type": {"$in": ["answer_audio", "question_audio", "tts_audio"]}
+            })
+            
+            audio_deleted = 0
+            for audio_file in expired_audio_files:
+                fs.delete(audio_file._id)
+                audio_deleted += 1
+            cleanup_results['audio_files'] = audio_deleted
+            
+            # Clean up video analysis data (60 days)
+            video_cutoff = current_time - timedelta(days=self.data_retention_policies['video_analysis'])
+            
+            # Clean video analysis collections
+            video_result = await db.video_analysis.delete_many({
+                "timestamp": {"$lt": video_cutoff.isoformat()}
+            })
+            cleanup_results['video_analysis'] = video_result.deleted_count
+            
+            # Clean audio analysis data (60 days for analysis, different from raw audio files)
+            audio_analysis_result = await db.audio_analysis.delete_many({
+                "timestamp": {"$lt": video_cutoff.isoformat()}
+            })
+            cleanup_results['audio_analysis'] = audio_analysis_result.deleted_count
+            
+            logging.info(f"Data cleanup completed: {cleanup_results}")
+            return {
+                "status": "completed",
+                "cleanup_results": cleanup_results,
+                "timestamp": current_time,
+                "retention_policies": self.data_retention_policies
+            }
+            
+        except Exception as e:
+            logging.error(f"Data cleanup failed: {str(e)}")
+            return {
+                "status": "failed",
+                "error": str(e),
+                "timestamp": current_time
+            }
+    
+    async def get_data_retention_status(self):
+        """Get current data retention status and counts"""
+        try:
+            current_time = datetime.utcnow()
+            status = {
+                "current_time": current_time,
+                "retention_policies": self.data_retention_policies,
+                "data_counts": {}
+            }
+            
+            # Count interview data
+            interview_cutoff = current_time - timedelta(days=self.data_retention_policies['interview_data'])
+            
+            total_sessions = await db.sessions.count_documents({})
+            expired_sessions = await db.sessions.count_documents({"started_at": {"$lt": interview_cutoff}})
+            
+            total_assessments = await db.assessments.count_documents({})
+            expired_assessments = await db.assessments.count_documents({"created_at": {"$lt": interview_cutoff}})
+            
+            # Count audio files
+            audio_cutoff = current_time - timedelta(days=self.data_retention_policies['audio_files'])
+            total_audio = fs.find().count()
+            expired_audio = fs.find({
+                "uploadDate": {"$lt": audio_cutoff},
+                "metadata.type": {"$in": ["answer_audio", "question_audio", "tts_audio"]}
+            }).count()
+            
+            # Count video analysis data
+            video_cutoff = current_time - timedelta(days=self.data_retention_policies['video_analysis'])
+            total_video_analysis = await db.video_analysis.count_documents({})
+            expired_video_analysis = await db.video_analysis.count_documents({
+                "timestamp": {"$lt": video_cutoff.isoformat()}
+            })
+            
+            status["data_counts"] = {
+                "sessions": {"total": total_sessions, "expired": expired_sessions},
+                "assessments": {"total": total_assessments, "expired": expired_assessments},
+                "audio_files": {"total": total_audio, "expired": expired_audio},
+                "video_analysis": {"total": total_video_analysis, "expired": expired_video_analysis}
+            }
+            
+            return status
+            
+        except Exception as e:
+            logging.error(f"Failed to get data retention status: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "timestamp": current_time
+            }
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
