@@ -4,6 +4,11 @@ import { translations } from './translations';
 // Create I18n Context
 const I18nContext = createContext();
 
+// Supported languages constant (moved outside component to avoid initialization issues)
+const supportedLanguages = [
+  'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh'
+];
+
 // I18n Provider Component
 export const I18nProvider = ({ children }) => {
   const [currentLanguage, setCurrentLanguage] = useState(() => {
@@ -17,10 +22,6 @@ export const I18nProvider = ({ children }) => {
   });
 
   const [direction, setDirection] = useState('ltr');
-
-  const supportedLanguages = [
-    'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh'
-  ];
 
   const languageNames = {
     en: 'English',
