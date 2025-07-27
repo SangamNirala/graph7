@@ -32,14 +32,18 @@ import gridfs
 import librosa
 import numpy as np
 import torch
-# import transformers
-# from transformers import pipeline
+from transformers import pipeline
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from textstat import flesch_reading_ease
 
 # Advanced Analysis Engines
 from emotion_analyzer import emotion_analyzer
 from speech_analyzer import speech_analyzer
+
+# Phase 3: Open-Source AI Integration (Week 7: Advanced AI & Analytics)
+from open_source_ai_engine import get_ai_engine
+from advanced_speech_analyzer import get_speech_analyzer
+from computer_vision_emotion_detector import get_emotion_detector
 
 # Phase 3: Internationalization Manager
 class I18nManager:
