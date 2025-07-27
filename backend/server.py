@@ -41,6 +41,199 @@ from textstat import flesch_reading_ease
 from emotion_analyzer import emotion_analyzer
 from speech_analyzer import speech_analyzer
 
+# Phase 3: Internationalization Manager
+class I18nManager:
+    def __init__(self):
+        self.supported_languages = {
+            'en': 'English',
+            'es': 'Spanish',
+            'fr': 'French',
+            'de': 'German',
+            'it': 'Italian',
+            'pt': 'Portuguese',
+            'ja': 'Japanese',
+            'zh': 'Chinese'
+        }
+        self.translations = {}
+        self.load_all_translations()
+    
+    def load_all_translations(self):
+        """Load all translation files"""
+        for lang_code in self.supported_languages.keys():
+            self.load_translations(lang_code)
+    
+    def load_translations(self, language: str):
+        """Load language-specific translations"""
+        if language not in self.supported_languages:
+            language = 'en'  # Fallback to English
+        
+        # For now, we'll use a basic dictionary structure
+        # In production, this would load from JSON files
+        translations = {
+            'en': {
+                'interview': {
+                    'welcome': 'Welcome to your interview',
+                    'question': 'Question',
+                    'of': 'of',
+                    'submit_answer': 'Submit Answer',
+                    'next_question': 'Next Question',
+                    'interview_complete': 'Interview Complete',
+                    'technical_question': 'Technical Question',
+                    'behavioral_question': 'Behavioral Question',
+                    'resume_question': 'Resume-based Question',
+                    'coding_challenge': 'Coding Challenge',
+                    'thank_you': 'Thank you for completing the interview'
+                },
+                'assessment': {
+                    'overall_score': 'Overall Score',
+                    'technical_score': 'Technical Score',
+                    'behavioral_score': 'Behavioral Score',
+                    'communication_score': 'Communication Score',
+                    'strengths': 'Strengths',
+                    'areas_for_improvement': 'Areas for Improvement',
+                    'recommendations': 'Recommendations'
+                },
+                'errors': {
+                    'invalid_token': 'Invalid interview token',
+                    'session_expired': 'Session has expired',
+                    'server_error': 'Server error occurred',
+                    'network_error': 'Network connection error'
+                }
+            },
+            'es': {
+                'interview': {
+                    'welcome': 'Bienvenido a tu entrevista',
+                    'question': 'Pregunta',
+                    'of': 'de',
+                    'submit_answer': 'Enviar Respuesta',
+                    'next_question': 'Siguiente Pregunta',
+                    'interview_complete': 'Entrevista Completa',
+                    'technical_question': 'Pregunta Técnica',
+                    'behavioral_question': 'Pregunta Conductual',
+                    'resume_question': 'Pregunta basada en CV',
+                    'coding_challenge': 'Desafío de Codificación',
+                    'thank_you': 'Gracias por completar la entrevista'
+                },
+                'assessment': {
+                    'overall_score': 'Puntuación General',
+                    'technical_score': 'Puntuación Técnica',
+                    'behavioral_score': 'Puntuación Conductual',
+                    'communication_score': 'Puntuación de Comunicación',
+                    'strengths': 'Fortalezas',
+                    'areas_for_improvement': 'Áreas de Mejora',
+                    'recommendations': 'Recomendaciones'
+                },
+                'errors': {
+                    'invalid_token': 'Token de entrevista inválido',
+                    'session_expired': 'La sesión ha expirado',
+                    'server_error': 'Error del servidor',
+                    'network_error': 'Error de conexión de red'
+                }
+            },
+            'fr': {
+                'interview': {
+                    'welcome': 'Bienvenue à votre entretien',
+                    'question': 'Question',
+                    'of': 'de',
+                    'submit_answer': 'Soumettre la Réponse',
+                    'next_question': 'Question Suivante',
+                    'interview_complete': 'Entretien Terminé',
+                    'technical_question': 'Question Technique',
+                    'behavioral_question': 'Question Comportementale',
+                    'resume_question': 'Question basée sur CV',
+                    'coding_challenge': 'Défi de Codage',
+                    'thank_you': 'Merci d\'avoir terminé l\'entretien'
+                },
+                'assessment': {
+                    'overall_score': 'Score Global',
+                    'technical_score': 'Score Technique',
+                    'behavioral_score': 'Score Comportemental',
+                    'communication_score': 'Score de Communication',
+                    'strengths': 'Forces',
+                    'areas_for_improvement': 'Domaines d\'Amélioration',
+                    'recommendations': 'Recommandations'
+                },
+                'errors': {
+                    'invalid_token': 'Jeton d\'entretien invalide',
+                    'session_expired': 'La session a expiré',
+                    'server_error': 'Erreur du serveur',
+                    'network_error': 'Erreur de connexion réseau'
+                }
+            },
+            'de': {
+                'interview': {
+                    'welcome': 'Willkommen zu Ihrem Interview',
+                    'question': 'Frage',
+                    'of': 'von',
+                    'submit_answer': 'Antwort Einreichen',
+                    'next_question': 'Nächste Frage',
+                    'interview_complete': 'Interview Abgeschlossen',
+                    'technical_question': 'Technische Frage',
+                    'behavioral_question': 'Verhaltensfrage',
+                    'resume_question': 'Lebenslauf-basierte Frage',
+                    'coding_challenge': 'Coding-Herausforderung',
+                    'thank_you': 'Vielen Dank für das Abschließen des Interviews'
+                },
+                'assessment': {
+                    'overall_score': 'Gesamtpunktzahl',
+                    'technical_score': 'Technische Punktzahl',
+                    'behavioral_score': 'Verhaltenspunktzahl',
+                    'communication_score': 'Kommunikationspunktzahl',
+                    'strengths': 'Stärken',
+                    'areas_for_improvement': 'Verbesserungsbereiche',
+                    'recommendations': 'Empfehlungen'
+                },
+                'errors': {
+                    'invalid_token': 'Ungültiger Interview-Token',
+                    'session_expired': 'Sitzung ist abgelaufen',
+                    'server_error': 'Server-Fehler aufgetreten',
+                    'network_error': 'Netzwerkverbindungsfehler'
+                }
+            }
+        }
+        
+        self.translations[language] = translations.get(language, translations['en'])
+    
+    def translate(self, key: str, language: str = 'en', params: dict = None) -> str:
+        """Get translated text"""
+        if language not in self.supported_languages:
+            language = 'en'
+        
+        try:
+            keys = key.split('.')
+            value = self.translations.get(language, self.translations['en'])
+            
+            for k in keys:
+                value = value[k]
+            
+            # Replace parameters if provided
+            if params and isinstance(value, str):
+                for param, param_value in params.items():
+                    value = value.replace(f'{{{param}}}', str(param_value))
+            
+            return value
+        except (KeyError, TypeError):
+            # Fallback to English if key not found
+            if language != 'en':
+                return self.translate(key, 'en', params)
+            return key
+    
+    def get_supported_languages(self) -> dict:
+        """Get all supported languages"""
+        return self.supported_languages
+    
+    def translate_ai_content(self, content: str, target_language: str) -> str:
+        """Translate AI-generated content using translation service"""
+        if target_language == 'en':
+            return content
+        
+        # For now, return original content
+        # In production, this would use a translation service like Google Translate
+        return content
+
+# Initialize I18n Manager
+i18n_manager = I18nManager()
+
 # GDPR/CCPA Compliance Implementation
 class DataPrivacyManager:
     def __init__(self):
