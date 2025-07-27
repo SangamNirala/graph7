@@ -959,6 +959,7 @@ class PredictiveAnalytics:
 
 # Initialize predictive analytics
 predictive_analytics = PredictiveAnalytics()
+predictive_hiring_model = PredictiveHiringModel()
 
 # Enhanced bias detection and mitigation
 class BiasDetectionEngine:
