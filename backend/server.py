@@ -1229,6 +1229,286 @@ Evaluate only the substantive content of the response:
 # Initialize bias detection
 bias_detector = BiasDetectionEngine()
 
+# Enhanced Emotion & Personality Analysis
+class PersonalityAnalyzer:
+    """Advanced Personality Assessment using Big Five model"""
+    
+    def __init__(self):
+        self.big_five_traits = {
+            'openness': 0.0,
+            'conscientiousness': 0.0,
+            'extraversion': 0.0,
+            'agreeableness': 0.0,
+            'neuroticism': 0.0
+        }
+        
+        # Keywords and patterns for personality detection
+        self.trait_indicators = {
+            'openness': {
+                'positive': ['creative', 'innovative', 'curious', 'imaginative', 'artistic', 'original', 'inventive', 'unconventional'],
+                'negative': ['conventional', 'traditional', 'routine', 'practical', 'conservative', 'familiar']
+            },
+            'conscientiousness': {
+                'positive': ['organized', 'disciplined', 'reliable', 'punctual', 'thorough', 'systematic', 'careful', 'planned'],
+                'negative': ['disorganized', 'careless', 'spontaneous', 'unreliable', 'impulsive']
+            },
+            'extraversion': {
+                'positive': ['outgoing', 'talkative', 'energetic', 'assertive', 'sociable', 'confident', 'enthusiastic'],
+                'negative': ['quiet', 'reserved', 'introverted', 'shy', 'withdrawn', 'solitary']
+            },
+            'agreeableness': {
+                'positive': ['cooperative', 'trusting', 'helpful', 'compassionate', 'friendly', 'empathetic', 'kind'],
+                'negative': ['competitive', 'skeptical', 'critical', 'demanding', 'stubborn']
+            },
+            'neuroticism': {
+                'positive': ['anxious', 'worried', 'stressed', 'emotional', 'sensitive', 'nervous', 'tense'],
+                'negative': ['calm', 'relaxed', 'stable', 'confident', 'resilient', 'composed']
+            }
+        }
+    
+    def analyze_big_five(self, speech_data: dict, video_data: dict, text_responses: list = None) -> dict:
+        """Analyze Big Five personality traits from multimodal data"""
+        traits = {}
+        
+        # Openness: creativity, curiosity
+        traits['openness'] = self.calculate_openness(speech_data, video_data, text_responses)
+        
+        # Conscientiousness: organization, dependability
+        traits['conscientiousness'] = self.calculate_conscientiousness(speech_data, text_responses)
+        
+        # Extraversion: sociability, assertiveness
+        traits['extraversion'] = self.calculate_extraversion(speech_data, video_data)
+        
+        # Agreeableness: cooperation, trust
+        traits['agreeableness'] = self.calculate_agreeableness(speech_data, text_responses)
+        
+        # Neuroticism: emotional stability (reversed)
+        traits['neuroticism'] = self.calculate_neuroticism(video_data, speech_data)
+        
+        # Generate personality summary
+        personality_summary = self._generate_personality_summary(traits)
+        
+        return {
+            'big_five_scores': traits,
+            'personality_summary': personality_summary,
+            'dominant_traits': self._get_dominant_traits(traits),
+            'analysis_confidence': self._calculate_analysis_confidence(speech_data, video_data, text_responses)
+        }
+    
+    def calculate_openness(self, speech_data: dict, video_data: dict, text_responses: list = None) -> float:
+        """Calculate openness to experience"""
+        openness_score = 0.5  # Baseline
+        
+        # Analyze speech patterns for openness
+        if speech_data:
+            # Varied vocabulary and complex sentence structure indicate openness
+            speech_features = speech_data.get('voice_features', {})
+            if speech_features.get('spectral_centroid_mean', 0) > 1000:  # More varied speech
+                openness_score += 0.1
+            
+            # Speaking rate variation (more varied = more open)
+            if speech_features.get('energy_variance', 0) > 0.1:
+                openness_score += 0.1
+        
+        # Analyze video for creative expressions
+        if video_data:
+            engagement_metrics = video_data.get('engagement_metrics', {})
+            # More animated expressions suggest openness
+            if engagement_metrics.get('animation_level', 0.5) > 0.7:
+                openness_score += 0.1
+        
+        # Analyze text responses for creative language
+        if text_responses:
+            for response in text_responses:
+                response_text = response.get('answer', '').lower()
+                openness_score += self._analyze_text_for_trait('openness', response_text)
+        
+        return min(1.0, max(0.0, openness_score))
+    
+    def calculate_conscientiousness(self, speech_data: dict, text_responses: list = None) -> float:
+        """Calculate conscientiousness"""
+        conscientiousness_score = 0.5  # Baseline
+        
+        # Analyze speech for structured communication
+        if speech_data:
+            speech_features = speech_data.get('voice_features', {})
+            # Clear, well-paced speech indicates conscientiousness
+            if speech_features.get('zero_crossing_rate', 0) < 0.1:  # Clear speech
+                conscientiousness_score += 0.1
+            
+            # Consistent energy levels indicate self-control
+            if speech_features.get('energy_variance', 1) < 0.05:
+                conscientiousness_score += 0.1
+        
+        # Analyze text for organized thinking
+        if text_responses:
+            for response in text_responses:
+                response_text = response.get('answer', '').lower()
+                conscientiousness_score += self._analyze_text_for_trait('conscientiousness', response_text)
+                
+                # Check for structured responses (lists, steps, organization)
+                if any(word in response_text for word in ['first', 'second', 'next', 'then', 'finally']):
+                    conscientiousness_score += 0.05
+        
+        return min(1.0, max(0.0, conscientiousness_score))
+    
+    def calculate_extraversion(self, speech_data: dict, video_data: dict) -> float:
+        """Calculate extraversion"""
+        extraversion_score = 0.5  # Baseline
+        
+        # Analyze speech volume and energy
+        if speech_data:
+            speech_features = speech_data.get('voice_features', {})
+            # Higher energy and volume suggest extraversion
+            if speech_features.get('energy_mean', 0) > 0.1:
+                extraversion_score += 0.15
+            
+            # Speaking rate (extraverts tend to speak faster)
+            emotional_indicators = speech_data.get('voice_emotional_indicators', {})
+            if emotional_indicators.get('enthusiasm', 0.5) > 0.6:
+                extraversion_score += 0.1
+        
+        # Analyze video for social engagement
+        if video_data:
+            engagement_metrics = video_data.get('engagement_metrics', {})
+            # Eye contact and facial expressiveness
+            if engagement_metrics.get('eye_contact_score', 0.5) > 0.7:
+                extraversion_score += 0.1
+            if engagement_metrics.get('facial_expression_variety', 0.5) > 0.6:
+                extraversion_score += 0.1
+        
+        return min(1.0, max(0.0, extraversion_score))
+    
+    def calculate_agreeableness(self, speech_data: dict, text_responses: list = None) -> float:
+        """Calculate agreeableness"""
+        agreeableness_score = 0.5  # Baseline
+        
+        # Analyze speech tone for warmth
+        if speech_data:
+            emotional_indicators = speech_data.get('voice_emotional_indicators', {})
+            # Positive emotional tone suggests agreeableness
+            if emotional_indicators.get('confidence', 0.5) > 0.6:
+                agreeableness_score += 0.1
+            if emotional_indicators.get('stress_level', 0.5) < 0.4:  # Low stress = more agreeable
+                agreeableness_score += 0.1
+        
+        # Analyze text for cooperative language
+        if text_responses:
+            for response in text_responses:
+                response_text = response.get('answer', '').lower()
+                agreeableness_score += self._analyze_text_for_trait('agreeableness', response_text)
+                
+                # Check for collaborative language
+                if any(word in response_text for word in ['team', 'together', 'collaborate', 'help', 'support']):
+                    agreeableness_score += 0.05
+        
+        return min(1.0, max(0.0, agreeableness_score))
+    
+    def calculate_neuroticism(self, video_data: dict, speech_data: dict) -> float:
+        """Calculate neuroticism (emotional instability)"""
+        neuroticism_score = 0.5  # Baseline
+        
+        # Analyze video for stress indicators
+        if video_data:
+            engagement_metrics = video_data.get('engagement_metrics', {})
+            # Nervous behaviors, inconsistent gaze
+            if engagement_metrics.get('stress_indicators', 0.5) > 0.6:
+                neuroticism_score += 0.15
+            if engagement_metrics.get('fidgeting_level', 0.5) > 0.7:
+                neuroticism_score += 0.1
+        
+        # Analyze speech for anxiety markers
+        if speech_data:
+            emotional_indicators = speech_data.get('voice_emotional_indicators', {})
+            if emotional_indicators.get('stress_level', 0.5) > 0.6:
+                neuroticism_score += 0.15
+            
+            # Speech hesitations and filler words
+            speech_features = speech_data.get('voice_features', {})
+            if speech_features.get('energy_variance', 0) > 0.2:  # Inconsistent energy
+                neuroticism_score += 0.1
+        
+        return min(1.0, max(0.0, neuroticism_score))
+    
+    def _analyze_text_for_trait(self, trait: str, text: str) -> float:
+        """Analyze text content for personality trait indicators"""
+        if trait not in self.trait_indicators:
+            return 0.0
+        
+        indicators = self.trait_indicators[trait]
+        positive_count = sum(1 for word in indicators['positive'] if word in text)
+        negative_count = sum(1 for word in indicators['negative'] if word in text)
+        
+        # Calculate trait score based on word presence
+        trait_score = (positive_count - negative_count) * 0.02  # Small increment per word
+        
+        # For neuroticism, positive indicators increase the score (more neurotic)
+        # For others, positive indicators are good traits
+        if trait == 'neuroticism':
+            return trait_score
+        else:
+            return trait_score
+    
+    def _generate_personality_summary(self, traits: dict) -> str:
+        """Generate a human-readable personality summary"""
+        summaries = []
+        
+        for trait, score in traits.items():
+            if score > 0.7:
+                level = "high"
+            elif score > 0.3:
+                level = "moderate"
+            else:
+                level = "low"
+            
+            trait_descriptions = {
+                'openness': f"{level} openness to experience - {'creative and curious' if score > 0.6 else 'practical and conventional'}",
+                'conscientiousness': f"{level} conscientiousness - {'organized and disciplined' if score > 0.6 else 'flexible and spontaneous'}",
+                'extraversion': f"{level} extraversion - {'outgoing and energetic' if score > 0.6 else 'reserved and reflective'}",
+                'agreeableness': f"{level} agreeableness - {'cooperative and trusting' if score > 0.6 else 'competitive and skeptical'}",
+                'neuroticism': f"{level} emotional stability - {'anxious and sensitive' if score > 0.6 else 'calm and resilient'}"
+            }
+            
+            summaries.append(trait_descriptions[trait])
+        
+        return "; ".join(summaries)
+    
+    def _get_dominant_traits(self, traits: dict) -> list:
+        """Identify the most prominent personality traits"""
+        # Sort traits by score (descending)
+        sorted_traits = sorted(traits.items(), key=lambda x: x[1], reverse=True)
+        
+        # Return top 2-3 traits that are above average (0.6)
+        dominant = []
+        for trait, score in sorted_traits:
+            if score > 0.6 and len(dominant) < 3:
+                dominant.append({
+                    'trait': trait,
+                    'score': score,
+                    'strength': 'high' if score > 0.8 else 'moderate'
+                })
+        
+        return dominant
+    
+    def _calculate_analysis_confidence(self, speech_data: dict, video_data: dict, text_responses: list) -> float:
+        """Calculate confidence in personality analysis based on available data"""
+        confidence = 0.0
+        
+        # Base confidence from data availability
+        if speech_data and speech_data.get('voice_features'):
+            confidence += 0.3
+        if video_data and video_data.get('engagement_metrics'):
+            confidence += 0.3
+        if text_responses and len(text_responses) > 3:
+            confidence += 0.4
+        
+        # Adjust based on data quality
+        if speech_data:
+            speech_quality = speech_data.get('voice_features', {}).get('clarity', 0.5)
+            confidence *= (0.5 + speech_quality * 0.5)
+        
+        return min(1.0, confidence)
+
 # AI Interview Engine
 class InterviewAI:
     def __init__(self):
