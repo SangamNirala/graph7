@@ -519,9 +519,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Frontend Admin Login Interface Testing"
-    - "Candidate Voice Recording Start/Stop Functionality"
-    - "Admin Dashboard Analysis and Transcript Display"
+    - "Voice Recording AudioContext Error Fixes"
+    - "Backend Voice Recording Endpoint Testing"
+    - "Speech-to-Text Processing and Transcript Saving"
   stuck_tasks:
     - "Google Cloud Text-to-Speech Integration"
   test_all: false
