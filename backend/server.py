@@ -4581,6 +4581,216 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Phase 4: Executive Dashboard API Endpoints
+
+@api_router.get("/admin/executive-dashboard/metrics")
+async def get_executive_dashboard_metrics():
+    """Get comprehensive executive dashboard metrics"""
+    try:
+        # Calculate date ranges
+        current_date = datetime.utcnow()
+        last_30_days = (current_date - timedelta(days=30), current_date)
+        last_90_days = (current_date - timedelta(days=90), current_date)
+        
+        # Get all key metrics
+        time_to_hire = await executive_analytics.calculate_time_to_hire_metrics(last_30_days)
+        candidate_experience = await executive_analytics.calculate_candidate_experience_metrics(last_30_days)
+        hiring_quality = await executive_analytics.calculate_hiring_quality_metrics(last_30_days)
+        diversity_metrics = await executive_analytics.calculate_diversity_metrics(last_30_days)
+        cost_metrics = await executive_analytics.calculate_cost_per_hire(last_30_days)
+        
+        return {
+            "success": True,
+            "dashboard_metrics": {
+                "time_to_hire": time_to_hire,
+                "candidate_experience": candidate_experience,
+                "hiring_quality": hiring_quality,
+                "diversity_metrics": diversity_metrics,
+                "cost_metrics": cost_metrics
+            },
+            "last_updated": current_date.isoformat(),
+            "date_range": {
+                "start": last_30_days[0].isoformat(),
+                "end": last_30_days[1].isoformat()
+            }
+        }
+    except Exception as e:
+        logging.error(f"Executive dashboard metrics error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get dashboard metrics: {str(e)}")
+
+@api_router.get("/admin/executive-dashboard/historical-trends")
+async def get_historical_trends():
+    """Get historical trends for executive dashboard"""
+    try:
+        # Get trends for last 6 months
+        current_date = datetime.utcnow()
+        trends_data = []
+        
+        for i in range(6):
+            start_date = current_date - timedelta(days=30*(i+1))
+            end_date = current_date - timedelta(days=30*i)
+            date_range = (start_date, end_date)
+            
+            time_to_hire = await executive_analytics.calculate_time_to_hire_metrics(date_range)
+            candidate_experience = await executive_analytics.calculate_candidate_experience_metrics(date_range)
+            hiring_quality = await executive_analytics.calculate_hiring_quality_metrics(date_range)
+            diversity_metrics = await executive_analytics.calculate_diversity_metrics(date_range)
+            cost_metrics = await executive_analytics.calculate_cost_per_hire(date_range)
+            
+            trends_data.append({
+                "month": start_date.strftime("%Y-%m"),
+                "time_to_hire": time_to_hire["average_time_to_hire"],
+                "candidate_experience": candidate_experience["average_experience_score"],
+                "hiring_quality": hiring_quality["average_quality_score"],
+                "diversity_score": 1 - diversity_metrics["bias_score"],  # Convert bias to diversity score
+                "cost_per_hire": cost_metrics["cost_per_hire"],
+                "total_interviews": time_to_hire["total_hires"]
+            })
+        
+        return {
+            "success": True,
+            "historical_trends": list(reversed(trends_data)),
+            "last_updated": current_date.isoformat()
+        }
+    except Exception as e:
+        logging.error(f"Historical trends error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get historical trends: {str(e)}")
+
+@api_router.get("/admin/executive-dashboard/real-time-analytics")
+async def get_real_time_analytics():
+    """Get real-time analytics for executive dashboard"""
+    try:
+        current_date = datetime.utcnow()
+        
+        # Real-time metrics (last 24 hours)
+        last_24_hours = (current_date - timedelta(hours=24), current_date)
+        
+        # Count active sessions
+        active_sessions = await db.sessions.count_documents({
+            "status": "in_progress",
+            "started_at": {"$gte": last_24_hours[0]}
+        })
+        
+        # Count completed interviews today
+        completed_today = await db.sessions.count_documents({
+            "status": "completed",
+            "completed_at": {"$gte": last_24_hours[0]}
+        })
+        
+        # Count new candidates today
+        new_candidates_today = await db.sessions.count_documents({
+            "started_at": {"$gte": last_24_hours[0]}
+        })
+        
+        # Average score today
+        today_assessments = await db.assessments.find({
+            "created_at": {"$gte": last_24_hours[0]}
+        }).to_list(None)
+        
+        avg_score_today = 0
+        if today_assessments:
+            scores = [a.get("overall_score", 0) for a in today_assessments]
+            avg_score_today = sum(scores) / len(scores)
+        
+        # Recent activity feed
+        recent_sessions = await db.sessions.find({
+            "started_at": {"$gte": last_24_hours[0]}
+        }).sort("started_at", -1).limit(10).to_list(None)
+        
+        activity_feed = []
+        for session in recent_sessions:
+            activity_feed.append({
+                "type": "interview_started" if session.get("status") == "in_progress" else "interview_completed",
+                "candidate_name": session.get("candidate_name", "Anonymous"),
+                "job_title": session.get("job_title", "Unknown Position"),
+                "timestamp": session.get("started_at"),
+                "status": session.get("status")
+            })
+        
+        return {
+            "success": True,
+            "real_time_metrics": {
+                "active_interviews": active_sessions,
+                "completed_today": completed_today,
+                "new_candidates_today": new_candidates_today,
+                "average_score_today": round(avg_score_today, 2),
+                "activity_feed": activity_feed
+            },
+            "last_updated": current_date.isoformat()
+        }
+    except Exception as e:
+        logging.error(f"Real-time analytics error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get real-time analytics: {str(e)}")
+
+@api_router.get("/admin/executive-dashboard/advanced-reporting")
+async def get_advanced_reporting_data():
+    """Get advanced reporting data for executive dashboard"""
+    try:
+        current_date = datetime.utcnow()
+        last_90_days = (current_date - timedelta(days=90), current_date)
+        
+        # Hiring funnel analysis
+        total_invites = await db.tokens.count_documents({}) + await db.enhanced_tokens.count_documents({})
+        total_started = await db.sessions.count_documents({})
+        total_completed = await db.sessions.count_documents({"status": "completed"})
+        total_hired = await db.assessments.count_documents({"overall_score": {"$gte": 70}})
+        
+        hiring_funnel = {
+            "invites_sent": total_invites,
+            "interviews_started": total_started,
+            "interviews_completed": total_completed,
+            "candidates_hired": total_hired,
+            "conversion_rates": {
+                "invite_to_start": round((total_started / total_invites * 100), 2) if total_invites > 0 else 0,
+                "start_to_complete": round((total_completed / total_started * 100), 2) if total_started > 0 else 0,
+                "complete_to_hire": round((total_hired / total_completed * 100), 2) if total_completed > 0 else 0
+            }
+        }
+        
+        # Performance by role archetype
+        role_performance = {}
+        enhanced_tokens = await db.enhanced_tokens.find({}).to_list(None)
+        for token in enhanced_tokens:
+            role = token.get("role_archetype", "General")
+            if role not in role_performance:
+                role_performance[role] = {"interviews": 0, "avg_score": 0, "total_score": 0}
+            
+            # Find assessment for this token
+            assessment = await db.assessments.find_one({"token": token["token"]})
+            if assessment:
+                role_performance[role]["interviews"] += 1
+                role_performance[role]["total_score"] += assessment.get("overall_score", 0)
+                role_performance[role]["avg_score"] = role_performance[role]["total_score"] / role_performance[role]["interviews"]
+        
+        # Interview focus effectiveness
+        focus_effectiveness = {}
+        for token in enhanced_tokens:
+            focus = token.get("interview_focus", "Balanced")
+            if focus not in focus_effectiveness:
+                focus_effectiveness[focus] = {"interviews": 0, "success_rate": 0, "successful": 0}
+            
+            assessment = await db.assessments.find_one({"token": token["token"]})
+            if assessment:
+                focus_effectiveness[focus]["interviews"] += 1
+                if assessment.get("overall_score", 0) >= 70:
+                    focus_effectiveness[focus]["successful"] += 1
+                focus_effectiveness[focus]["success_rate"] = (
+                    focus_effectiveness[focus]["successful"] / focus_effectiveness[focus]["interviews"] * 100
+                )
+        
+        return {
+            "success": True,
+            "advanced_reporting": {
+                "hiring_funnel": hiring_funnel,
+                "role_performance": role_performance,
+                "focus_effectiveness": focus_effectiveness,
+                "last_updated": current_date.isoformat()
+            }
+        }
+    except Exception as e:
+        logging.error(f"Advanced reporting error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get advanced reporting data: {str(e)}")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
