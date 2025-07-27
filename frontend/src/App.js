@@ -569,32 +569,32 @@ const AIVoiceSpeaker = ({ text, voiceMode, onSpeechComplete, preventRepeats = fa
   );
 };
 
-// Enhanced Landing Page Component
+// Enhanced Landing Page Component with i18n support
 const EnhancedLandingPage = ({ setCurrentPage }) => {
+  const { t } = useI18n();
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <h1 className="text-6xl font-bold text-white mb-6">
-            🎯 Elite AI Interview Platform
+            🎯 {t('landing.title')}
           </h1>
           <p className="text-xl text-gray-300 mb-12 max-w-4xl mx-auto">
-            Experience the future of hiring with our advanced AI-powered interview system. 
-            Features interactive coding challenges, empathetic candidate workflow, multi-vector assessments, 
-            and comprehensive bias mitigation controls.
+            {t('landing.subtitle')}
           </p>
           <div className="flex flex-wrap justify-center gap-4 mb-8">
             <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3">
-              <span className="text-green-200">✅ Interactive Coding Challenges</span>
+              <span className="text-green-200">✅ {t('landing.features.codingChallenges')}</span>
             </div>
             <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3">
-              <span className="text-blue-200">✅ Voice Interview with AI</span>
+              <span className="text-blue-200">✅ {t('landing.features.voiceInterview')}</span>
             </div>
             <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-3">
-              <span className="text-purple-200">✅ Multi-Vector Assessments</span>
+              <span className="text-purple-200">✅ {t('landing.features.multiVectorAssessment')}</span>
             </div>
             <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-3">
-              <span className="text-orange-200">✅ Bias Mitigation Controls</span>
+              <span className="text-orange-200">✅ {t('landing.features.biasMitigation')}</span>
             </div>
           </div>
         </div>
@@ -608,30 +608,29 @@ const EnhancedLandingPage = ({ setCurrentPage }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-4">Admin Dashboard</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">{t('landing.adminPortal.title')}</h2>
               <p className="text-gray-300 mb-6">
-                Comprehensive hiring management with candidate pipeline, interview customization, 
-                coding challenges, and advanced multi-vector reporting with bias controls.
+                {t('landing.adminPortal.description')}
               </p>
               <div className="mb-6 space-y-2">
                 <div className="flex items-center justify-center text-sm text-gray-300">
                   <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                  Candidate Pipeline & Comparison Tools
+                  {t('landing.adminPortal.features.candidatePipeline')}
                 </div>
                 <div className="flex items-center justify-center text-sm text-gray-300">
                   <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                  Role Archetypes & Interview Focus
+                  {t('landing.adminPortal.features.roleArchetypes')}
                 </div>
                 <div className="flex items-center justify-center text-sm text-gray-300">
                   <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                  Interactive Coding Challenges
+                  {t('landing.adminPortal.features.codingChallenges')}
                 </div>
               </div>
               <button 
                 onClick={() => setCurrentPage('admin-login')}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl"
               >
-                Access Admin Portal
+                {t('landing.adminPortal.button')}
               </button>
             </div>
           </div>
@@ -644,30 +643,29 @@ const EnhancedLandingPage = ({ setCurrentPage }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-4">Candidate Experience</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">{t('landing.candidatePortal.title')}</h2>
               <p className="text-gray-300 mb-6">
-                Interactive and empathetic interview experience with guided setup, practice rounds, 
-                question controls, and adaptive AI questioning for a fair assessment.
+                {t('landing.candidatePortal.description')}
               </p>
               <div className="mb-6 space-y-2">
                 <div className="flex items-center justify-center text-sm text-gray-300">
                   <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                  Camera/Mic Check & Practice Round
+                  {t('landing.candidatePortal.features.setupCheck')}
                 </div>
                 <div className="flex items-center justify-center text-sm text-gray-300">
                   <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                  Question Cards with Thinking Time
+                  {t('landing.candidatePortal.features.questionCards')}
                 </div>
                 <div className="flex items-center justify-center text-sm text-gray-300">
                   <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                  Interactive Modules & Coding Tasks
+                  {t('landing.candidatePortal.features.interactiveModules')}
                 </div>
               </div>
               <button 
                 onClick={() => setCurrentPage('candidate-login')}
                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl"
               >
-                Start Interview Experience
+                {t('landing.candidatePortal.button')}
               </button>
             </div>
           </div>
