@@ -3243,12 +3243,20 @@ const InterviewSession = ({ setCurrentPage }) => {
   );
 };
 
-// Main App Component
+// Main App Component with Phase 3 features
 function App() {
   const [currentPage, setCurrentPage] = useState('landing');
   const [isAdmin, setIsAdmin] = useState(false);
   const [token, setToken] = useState('');
   const [validatedJob, setValidatedJob] = useState(null);
+  const [accessibilityOpen, setAccessibilityOpen] = useState(false);
+
+  // Clear global spoken texts when starting new sessions
+  useEffect(() => {
+    if (currentPage === 'landing') {
+      globalSpokenTexts.clear();
+    }
+  }, [currentPage]);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -3270,9 +3278,38 @@ function App() {
   };
 
   return (
-    <div className="App">
-      {renderPage()}
-    </div>
+    <PWAProvider>
+      <I18nProvider>
+        <AccessibilityProvider>
+          <div className="App">
+            {/* Top Navigation with Language and Accessibility */}
+            <nav className="fixed top-4 right-4 z-40 flex items-center gap-4">
+              <LanguageSelector />
+            </nav>
+
+            {/* PWA Banners */}
+            <InstallBanner />
+            <UpdateBanner />
+            <OfflineBanner />
+
+            {/* Main Content */}
+            <main id="main-content" role="main" className="min-h-screen">
+              {renderPage()}
+            </main>
+
+            {/* Accessibility Controls */}
+            <AccessibilityControls 
+              isOpen={accessibilityOpen} 
+              onClose={() => setAccessibilityOpen(false)} 
+            />
+            <AccessibilityButton 
+              onClick={() => setAccessibilityOpen(!accessibilityOpen)}
+              isOpen={accessibilityOpen}
+            />
+          </div>
+        </AccessibilityProvider>
+      </I18nProvider>
+    </PWAProvider>
   );
 }
 
