@@ -279,6 +279,9 @@ const useVoiceRecorder = (onRecordingComplete) => {
   // Voice level monitoring
   const startVoiceLevelMonitoring = async () => {
     try {
+      // Clean up existing AudioContext first
+      await cleanupAudioContext();
+      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
       analyserRef.current = audioContextRef.current.createAnalyser();
@@ -291,14 +294,18 @@ const useVoiceRecorder = (onRecordingComplete) => {
       const dataArray = new Uint8Array(bufferLength);
       
       const updateVoiceLevel = () => {
-        if (!isRecording) return;
+        if (!isRecording || !audioContextRef.current || audioContextRef.current.state === 'closed') return;
         
-        analyserRef.current.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-        const normalizedLevel = (average / 255) * 100;
-        setVoiceLevel(normalizedLevel);
-        
-        animationFrameRef.current = requestAnimationFrame(updateVoiceLevel);
+        try {
+          analyserRef.current.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+          const normalizedLevel = (average / 255) * 100;
+          setVoiceLevel(normalizedLevel);
+          
+          animationFrameRef.current = requestAnimationFrame(updateVoiceLevel);
+        } catch (error) {
+          console.log('Voice level monitoring stopped due to context cleanup');
+        }
       };
       
       updateVoiceLevel();
@@ -307,14 +314,32 @@ const useVoiceRecorder = (onRecordingComplete) => {
     }
   };
 
-  const stopVoiceLevelMonitoring = () => {
+  const cleanupAudioContext = async () => {
+    // Cancel any pending animation frames
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
+    
+    // Close AudioContext only if it exists and is not already closed
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      try {
+        await audioContextRef.current.close();
+        console.log('AudioContext closed successfully');
+      } catch (error) {
+        console.log('AudioContext was already closed or closing');
+      }
     }
+    
+    // Clear references
+    audioContextRef.current = null;
+    analyserRef.current = null;
+    microphoneRef.current = null;
     setVoiceLevel(0);
+  };
+
+  const stopVoiceLevelMonitoring = () => {
+    cleanupAudioContext();
   };
 
   const startRecording = async () => {
