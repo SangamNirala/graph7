@@ -59,3 +59,4 @@ aiosignal
 frozenlist
 distro
 propcache
+httpcore
