@@ -2222,19 +2222,35 @@ class VoiceProcessor:
         
         return text
     
-    async def text_to_speech(self, text: str) -> str:
-        """Prepare text for Web Speech API - return cleaned text instead of audio"""
+    async def text_to_speech(self, text: str) -> dict:
+        """Prepare text for Web Speech API - return cleaned text with metadata"""
         try:
             # Clean text before sending to frontend
             cleaned_text = self.clean_text_for_speech(text)
             
-            # Return cleaned text for frontend Web Speech API processing
-            return cleaned_text
+            # Generate a dummy file ID for compatibility
+            file_id = str(uuid.uuid4())
+            
+            # Return dictionary format expected by calling code
+            return {
+                "file_id": file_id,
+                "cleaned_text": cleaned_text,
+                "original_text": text,
+                "audio_base64": "",  # Empty since Web Speech API handles TTS on frontend
+                "success": True
+            }
             
         except Exception as e:
             logging.error(f"Text cleaning error: {str(e)}")
-            # Return original text if cleaning fails
-            return text
+            # Return error format
+            return {
+                "file_id": str(uuid.uuid4()),
+                "cleaned_text": text,
+                "original_text": text,
+                "audio_base64": "",
+                "success": False,
+                "error": str(e)
+            }
     
     async def speech_to_text(self, audio_data: bytes) -> str:
         """STT is now handled by Web Speech API on the frontend"""
