@@ -3496,11 +3496,23 @@ class VoiceProcessor:
             # Fallback message
             return "Speech-to-text is handled by Web Speech API on the frontend"
 
-# Initialize all managers and analyzers
+# Initialize all managers and analyzers with Open-Source AI Integration
 interview_ai = InterviewAI()
 voice_processor = VoiceProcessor()
 data_privacy_manager = DataPrivacyManager()
 personality_analyzer = PersonalityAnalyzer()
+
+# Phase 3: Initialize Open-Source AI Components
+try:
+    open_source_ai_engine = get_ai_engine()
+    speech_analyzer = get_speech_analyzer()
+    emotion_detector = get_emotion_detector()
+    logging.info("✅ Phase 3: Open-Source AI components initialized successfully")
+except Exception as e:
+    logging.error(f"❌ Error initializing open-source AI components: {str(e)}")
+    open_source_ai_engine = None
+    speech_analyzer = None
+    emotion_detector = None
 
 # Background task for automatic data cleanup
 async def scheduled_data_cleanup():
