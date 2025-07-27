@@ -61,3 +61,4 @@ distro
 propcache
 httpcore
 tiktoken
+tokenizers
