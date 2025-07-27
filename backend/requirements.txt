@@ -53,6 +53,7 @@ absl-py>=1.0.0
 multidict
 attrs
 google-auth
+googleapis-common-protos>=1.56.0
 yarl
 aiohappyeyeballs
 aiosignal
