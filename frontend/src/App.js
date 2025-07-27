@@ -2,6 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useReactMediaRecorder } from 'react-media-recorder';
 import AdvancedVideoAnalyzer from './AdvancedVideoAnalyzer';
 import './App.css';
+import './accessibility.css';
+
+// Phase 3 imports
+import { AccessibilityProvider } from './AccessibilityProvider';
+import AccessibilityControls, { AccessibilityButton } from './AccessibilityControls';
+import { I18nProvider, useI18n, LanguageSelector } from './I18nProvider';
+import { PWAProvider, InstallBanner, UpdateBanner, OfflineBanner } from './PWAProvider';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
