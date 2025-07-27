@@ -1992,6 +1992,7 @@ class VoiceProcessor:
 interview_ai = InterviewAI()
 voice_processor = VoiceProcessor()
 data_privacy_manager = DataPrivacyManager()
+personality_analyzer = PersonalityAnalyzer()
 
 # Background task for automatic data cleanup
 async def scheduled_data_cleanup():
