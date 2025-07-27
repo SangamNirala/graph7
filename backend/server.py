@@ -1256,6 +1256,40 @@ interview_ai = InterviewAI()
 voice_processor = VoiceProcessor()
 data_privacy_manager = DataPrivacyManager()
 
+# Background task for automatic data cleanup
+async def scheduled_data_cleanup():
+    """Scheduled task to automatically cleanup expired data"""
+    while True:
+        try:
+            # Sleep for 24 hours (86400 seconds)
+            await asyncio.sleep(86400)
+            
+            # Perform cleanup
+            result = await data_privacy_manager.cleanup_expired_data()
+            
+            # Log the automated cleanup
+            audit_record = {
+                "action": "automated_data_cleanup",
+                "result": result,
+                "timestamp": datetime.utcnow(),
+                "source": "scheduled_task"
+            }
+            await db.audit_logs.insert_one(audit_record)
+            
+            logging.info(f"Automated data cleanup completed: {result}")
+            
+        except Exception as e:
+            logging.error(f"Automated data cleanup failed: {str(e)}")
+            # Continue the loop even if cleanup fails
+            continue
+
+# Start background cleanup task when the app starts
+@app.on_event("startup")
+async def startup_background_tasks():
+    """Start background maintenance tasks"""
+    asyncio.create_task(scheduled_data_cleanup())
+    logging.info("Background data cleanup task started")
+
 # Helper Functions
 def generate_secure_token() -> str:
     return ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(16))
