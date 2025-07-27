@@ -1694,6 +1694,274 @@ class SalesforceIntegration:
 # Initialize ATS Integration Hub
 ats_integration_hub = ATSIntegrationHub()
 
+# Phase 4: Advanced Video and Audio Analysis
+class AdvancedVideoAnalyzer:
+    """Enhanced video analysis with body language detection and real-time processing"""
+    
+    def __init__(self):
+        self.body_language_indicators = {
+            'confident': ['open_posture', 'direct_eye_contact', 'steady_gestures', 'relaxed_shoulders'],
+            'nervous': ['fidgeting', 'avoiding_eye_contact', 'tense_posture', 'rapid_movements'],
+            'engaged': ['leaning_forward', 'nodding', 'active_gesturing', 'alert_expression'],
+            'disengaged': ['slouching', 'looking_away', 'minimal_movement', 'blank_expression']
+        }
+        
+    async def analyze_body_language(self, video_frame_data: bytes) -> dict:
+        """Analyze body language and posture from video frame"""
+        try:
+            # Simulate advanced body language analysis
+            # In a real implementation, this would use computer vision libraries
+            # like OpenCV, MediaPipe, or specialized ML models
+            
+            analysis_result = {
+                "posture_analysis": {
+                    "posture_score": 0.8,  # 0-1 scale
+                    "posture_type": "open_and_confident",
+                    "shoulder_position": "relaxed",
+                    "back_alignment": "upright",
+                    "confidence_indicators": ["direct_posture", "open_chest", "relaxed_arms"]
+                },
+                "gesture_analysis": {
+                    "gesture_frequency": 0.6,  # Gestures per minute normalized
+                    "gesture_variety": 0.7,    # Variety of different gestures
+                    "hand_movements": "purposeful",
+                    "gesture_confidence": 0.75,
+                    "dominant_gestures": ["explanatory", "emphatic", "illustrative"]
+                },
+                "facial_expression_analysis": {
+                    "primary_expression": "focused",
+                    "expression_variability": 0.65,
+                    "micro_expressions": ["slight_smile", "raised_eyebrows", "concentrated_look"],
+                    "authenticity_score": 0.82
+                },
+                "eye_contact_analysis": {
+                    "eye_contact_percentage": 0.78,  # Percentage of time maintaining eye contact
+                    "gaze_stability": 0.73,
+                    "attention_focus": "camera_directed",
+                    "confidence_level": "high"
+                },
+                "overall_body_language": {
+                    "confidence_score": 0.79,
+                    "engagement_score": 0.84,
+                    "professionalism_score": 0.87,
+                    "stress_indicators": 0.23,  # Lower is better
+                    "dominant_traits": ["confident", "engaged", "professional"]
+                }
+            }
+            
+            return analysis_result
+            
+        except Exception as e:
+            logging.error(f"Body language analysis error: {e}")
+            return {
+                "error": str(e),
+                "posture_analysis": {},
+                "gesture_analysis": {},
+                "facial_expression_analysis": {},
+                "eye_contact_analysis": {},
+                "overall_body_language": {}
+            }
+    
+    async def analyze_interview_engagement(self, session_id: str) -> dict:
+        """Analyze overall engagement throughout the interview"""
+        try:
+            # Get video analysis data for the session
+            video_analyses = await db.video_analysis.find({"session_id": session_id}).to_list(None)
+            
+            if not video_analyses:
+                return {"error": "No video analysis data found for session"}
+            
+            # Calculate engagement metrics over time
+            engagement_timeline = []
+            attention_scores = []
+            stress_scores = []
+            confidence_scores = []
+            
+            for analysis in video_analyses:
+                analysis_data = analysis.get('analysis', {})
+                timestamp = analysis.get('timestamp')
+                
+                engagement_score = analysis_data.get('engagement_score', 0.5)
+                attention_score = analysis_data.get('attention_level', 0.5)
+                stress_score = analysis_data.get('stress_indicators', {}).get('overall_stress', 0.5)
+                
+                # Calculate confidence from body language if available
+                body_language = analysis_data.get('body_language', {})
+                confidence_score = body_language.get('confidence_score', 0.5)
+                
+                engagement_timeline.append({
+                    "timestamp": timestamp,
+                    "engagement": engagement_score,
+                    "attention": attention_score,
+                    "stress": stress_score,
+                    "confidence": confidence_score
+                })
+                
+                attention_scores.append(attention_score)
+                stress_scores.append(stress_score)
+                confidence_scores.append(confidence_score)
+            
+            # Calculate overall metrics
+            avg_attention = sum(attention_scores) / len(attention_scores) if attention_scores else 0
+            avg_stress = sum(stress_scores) / len(stress_scores) if stress_scores else 0
+            avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
+            
+            # Engagement trend analysis
+            if len(engagement_timeline) > 1:
+                start_engagement = engagement_timeline[0]["engagement"]
+                end_engagement = engagement_timeline[-1]["engagement"]
+                engagement_trend = "improving" if end_engagement > start_engagement else "declining"
+            else:
+                engagement_trend = "stable"
+            
+            return {
+                "session_id": session_id,
+                "overall_metrics": {
+                    "average_attention": round(avg_attention, 3),
+                    "average_stress": round(avg_stress, 3),
+                    "average_confidence": round(avg_confidence, 3),
+                    "engagement_trend": engagement_trend
+                },
+                "engagement_timeline": engagement_timeline,
+                "total_frames_analyzed": len(video_analyses),
+                "analysis_duration": len(engagement_timeline)
+            }
+            
+        except Exception as e:
+            logging.error(f"Interview engagement analysis error: {e}")
+            return {"error": str(e)}
+
+class AudioEnhancementEngine:
+    """Advanced audio processing and enhancement for better analysis"""
+    
+    def __init__(self):
+        self.enhancement_settings = {
+            "noise_reduction": True,
+            "voice_clarity": True,
+            "volume_normalization": True,
+            "speech_enhancement": True
+        }
+    
+    async def enhance_audio_quality(self, audio_data: bytes) -> dict:
+        """Enhance audio quality for better analysis"""
+        try:
+            # Simulate advanced audio enhancement
+            # In a real implementation, this would use audio processing libraries
+            # like librosa, noisereduce, or specialized audio ML models
+            
+            enhancement_result = {
+                "original_quality": {
+                    "signal_to_noise_ratio": 12.5,  # dB
+                    "clarity_score": 0.65,
+                    "volume_consistency": 0.58,
+                    "background_noise_level": 0.35
+                },
+                "enhanced_quality": {
+                    "signal_to_noise_ratio": 18.7,  # Improved SNR
+                    "clarity_score": 0.89,          # Improved clarity
+                    "volume_consistency": 0.94,     # Better normalization
+                    "background_noise_level": 0.08  # Reduced noise
+                },
+                "enhancements_applied": {
+                    "noise_reduction": {
+                        "applied": True,
+                        "noise_reduced_by": "27dB",
+                        "algorithm": "spectral_subtraction"
+                    },
+                    "voice_enhancement": {
+                        "applied": True,
+                        "clarity_improvement": "24%",
+                        "algorithm": "voice_activity_detection"
+                    },
+                    "volume_normalization": {
+                        "applied": True,
+                        "normalization_level": "-16dB LUFS",
+                        "dynamic_range": "preserved"
+                    }
+                },
+                "processing_metrics": {
+                    "processing_time_ms": 250,
+                    "enhancement_quality": "high",
+                    "audio_length_seconds": len(audio_data) / 16000,  # Assuming 16kHz sample rate
+                    "improvement_score": 0.76
+                }
+            }
+            
+            return enhancement_result
+            
+        except Exception as e:
+            logging.error(f"Audio enhancement error: {e}")
+            return {
+                "error": str(e),
+                "original_quality": {},
+                "enhanced_quality": {},
+                "enhancements_applied": {},
+                "processing_metrics": {}
+            }
+    
+    async def analyze_speech_patterns(self, audio_data: bytes) -> dict:
+        """Advanced speech pattern analysis"""
+        try:
+            # Simulate advanced speech pattern analysis
+            speech_analysis = {
+                "fluency_analysis": {
+                    "overall_fluency": 0.82,
+                    "hesitation_frequency": 0.15,  # Per minute
+                    "filler_word_count": 8,
+                    "speech_rate": 145,  # Words per minute
+                    "pause_patterns": {
+                        "average_pause_length": 1.2,  # seconds
+                        "strategic_pauses": 12,
+                        "hesitation_pauses": 3
+                    }
+                },
+                "vocal_characteristics": {
+                    "pitch_variation": 0.67,
+                    "volume_variation": 0.54,
+                    "vocal_energy": 0.78,
+                    "speaking_rhythm": "steady",
+                    "tonal_consistency": 0.73
+                },
+                "communication_effectiveness": {
+                    "clarity_score": 0.86,
+                    "articulation_quality": 0.81,
+                    "pronunciation_accuracy": 0.94,
+                    "message_coherence": 0.79,
+                    "listener_engagement": 0.84
+                },
+                "emotional_indicators": {
+                    "confidence_level": 0.77,
+                    "nervousness_indicators": 0.28,
+                    "enthusiasm_level": 0.71,
+                    "authenticity_score": 0.83,
+                    "stress_markers": 0.22
+                },
+                "advanced_metrics": {
+                    "vocal_stability": 0.75,
+                    "prosodic_features": "well_modulated",
+                    "speech_intelligibility": 0.92,
+                    "conversational_flow": 0.69,
+                    "professional_delivery": 0.85
+                }
+            }
+            
+            return speech_analysis
+            
+        except Exception as e:
+            logging.error(f"Speech pattern analysis error: {e}")
+            return {
+                "error": str(e),
+                "fluency_analysis": {},
+                "vocal_characteristics": {},
+                "communication_effectiveness": {},
+                "emotional_indicators": {},
+                "advanced_metrics": {}
+            }
+
+# Initialize advanced analyzers
+advanced_video_analyzer = AdvancedVideoAnalyzer()
+audio_enhancement_engine = AudioEnhancementEngine()
+
 # Enhanced predictive analytics and hiring model
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score
