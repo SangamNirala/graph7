@@ -345,64 +345,56 @@ const useVoiceRecorder = (onRecordingComplete) => {
   const startRecording = async () => {
     try {
       if (recognitionRef.current && !isRecording) {
+        console.log('Starting voice recording...');
         setTranscript('');
+        currentTranscriptRef.current = '';
         isStoppingRef.current = false;
+        
+        // Start speech recognition first
         recognitionRef.current.start();
+        
+        // Start voice level monitoring
         await startVoiceLevelMonitoring();
       }
     } catch (error) {
       console.error('Failed to start recording:', error);
       alert('Failed to start voice recording. Please check microphone permissions.');
+      setIsRecording(false);
     }
   };
 
   const stopRecording = () => {
-    console.log('Stop recording called - implementing instant stop');
+    console.log('Stop recording called - implementing safe stop');
     
-    // INSTANT UI RESPONSE - No dependencies on Web Speech API
-    setIsRecording(false);
+    // Set stopping flag first to prevent race conditions
     isStoppingRef.current = true;
-    
-    // Immediately stop voice level monitoring
-    stopVoiceLevelMonitoring();
+    setIsRecording(false);
     
     // Capture current transcript immediately
     const currentTranscript = transcript.trim() || currentTranscriptRef.current.trim();
-    console.log('Captured transcript for instant processing:', currentTranscript);
+    console.log('Captured transcript for processing:', currentTranscript);
     
-    // Process transcript immediately without any delays
+    // Stop voice level monitoring immediately
+    stopVoiceLevelMonitoring();
+    
+    // Process transcript if available
     if (currentTranscript) {
       onRecordingComplete(currentTranscript);
       setTranscript('');
       currentTranscriptRef.current = '';
     }
     
-    // Background cleanup of Web Speech API (non-blocking)
+    // Stop speech recognition safely
     setTimeout(() => {
       try {
         if (recognitionRef.current) {
-          console.log('Background cleanup: stopping recognition');
+          console.log('Stopping speech recognition...');
           recognitionRef.current.stop();
-          
-          // Force abort after minimal delay
-          setTimeout(() => {
-            if (recognitionRef.current) {
-              try {
-                recognitionRef.current.abort();
-                console.log('Background cleanup: recognition aborted');
-              } catch (e) {
-                console.log('Recognition already cleaned up');
-              }
-            }
-          }, 100);
         }
       } catch (error) {
-        console.log('Background cleanup error:', error);
+        console.log('Speech recognition cleanup error (safe to ignore):', error);
       }
-      
-      // Reset flags
-      isStoppingRef.current = false;
-    }, 0); // Execute immediately but non-blocking
+    }, 100);
   };
 
   // Cleanup function
