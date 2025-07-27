@@ -2734,6 +2734,90 @@ async def get_proctoring_report(session_id: str):
         logging.error(f"Proctoring report error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate report: {str(e)}")
 
+# Data Privacy and Retention Management Endpoints
+@api_router.post("/admin/data-privacy/request-consent")
+async def request_consent(candidate_id: str, data_types: List[str]):
+    """Request explicit consent for data collection"""
+    try:
+        consent_record = data_privacy_manager.request_consent(candidate_id, data_types)
+        
+        # Store consent record in database
+        await db.consent_records.insert_one(consent_record)
+        
+        return {
+            "success": True,
+            "consent_record": consent_record,
+            "message": "Consent recorded successfully"
+        }
+    except Exception as e:
+        logging.error(f"Consent request failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to record consent: {str(e)}")
+
+@api_router.post("/admin/data-privacy/right-to-erasure/{candidate_id}")
+async def request_data_erasure(candidate_id: str):
+    """GDPR Article 17 - Right to be forgotten"""
+    try:
+        result = await data_privacy_manager.right_to_erasure(candidate_id)
+        
+        # Log the erasure request for audit trail
+        audit_record = {
+            "action": "data_erasure",
+            "candidate_id": candidate_id,
+            "result": result,
+            "timestamp": datetime.utcnow(),
+            "compliance": "GDPR Article 17"
+        }
+        await db.audit_logs.insert_one(audit_record)
+        
+        return result
+    except Exception as e:
+        logging.error(f"Data erasure failed for {candidate_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Data erasure failed: {str(e)}")
+
+@api_router.post("/admin/data-privacy/cleanup-expired")
+async def cleanup_expired_data():
+    """Manually trigger cleanup of expired data based on retention policies"""
+    try:
+        result = await data_privacy_manager.cleanup_expired_data()
+        
+        # Log cleanup operation for audit trail
+        audit_record = {
+            "action": "data_cleanup",
+            "result": result,
+            "timestamp": datetime.utcnow(),
+            "retention_policies": data_privacy_manager.data_retention_policies
+        }
+        await db.audit_logs.insert_one(audit_record)
+        
+        return result
+    except Exception as e:
+        logging.error(f"Data cleanup failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Data cleanup failed: {str(e)}")
+
+@api_router.get("/admin/data-privacy/retention-status")
+async def get_data_retention_status():
+    """Get current data retention status and counts"""
+    try:
+        status = await data_privacy_manager.get_data_retention_status()
+        return status
+    except Exception as e:
+        logging.error(f"Failed to get retention status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get retention status: {str(e)}")
+
+@api_router.get("/admin/data-privacy/policies")
+async def get_retention_policies():
+    """Get current data retention policies"""
+    return {
+        "retention_policies": data_privacy_manager.data_retention_policies,
+        "description": {
+            "interview_data": "Sessions, assessments, tokens, coding challenges - stored for compliance and analysis",
+            "audio_files": "Raw audio recordings from voice interviews - deleted for privacy",
+            "video_analysis": "Video analysis data and facial recognition results - stored for limited time"
+        },
+        "compliance": ["GDPR", "CCPA"],
+        "last_updated": datetime.utcnow()
+    }
+
 # Health check
 @api_router.get("/health")
 async def health_check():
