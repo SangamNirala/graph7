@@ -590,8 +590,254 @@ class EmotionalIntelligenceAnalyzer:
 # Initialize the emotional intelligence analyzer
 ei_analyzer = EmotionalIntelligenceAnalyzer()
 
+# Enhanced predictive analytics and hiring model
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+import pandas as pd
+
+class PredictiveHiringModel:
+    """ML-Based Success Prediction with Random Forest"""
+    
+    def __init__(self):
+        self.model = RandomForestClassifier(n_estimators=100, random_state=42)
+        self.feature_columns = [
+            'technical_score', 'behavioral_score', 'communication_score',
+            'confidence_level', 'stress_indicators', 'engagement_score'
+        ]
+        self.is_trained = False
+        self.performance_weights = {
+            "technical_score": 0.35,
+            "behavioral_score": 0.25,
+            "emotional_intelligence": 0.20,
+            "communication_effectiveness": 0.20
+        }
+    
+    def train_model(self, historical_data: pd.DataFrame) -> dict:
+        """Train model on historical hiring data"""
+        try:
+            if 'hiring_success' not in historical_data.columns:
+                # If no ground truth, create synthetic training data based on scores
+                historical_data['hiring_success'] = (
+                    (historical_data['technical_score'] >= 70) & 
+                    (historical_data['behavioral_score'] >= 65)
+                ).astype(int)
+            
+            # Ensure all feature columns exist
+            missing_columns = []
+            for col in self.feature_columns:
+                if col not in historical_data.columns:
+                    if col in ['technical_score', 'behavioral_score']:
+                        historical_data[col] = 70  # Default score
+                    else:
+                        historical_data[col] = 0.5  # Default normalized value
+                        missing_columns.append(col)
+            
+            X = historical_data[self.feature_columns]
+            y = historical_data['hiring_success']
+            
+            # Train the model
+            self.model.fit(X, y)
+            self.is_trained = True
+            
+            # Calculate training metrics
+            predictions = self.model.predict(X)
+            accuracy = accuracy_score(y, predictions)
+            precision = precision_score(y, predictions, zero_division=0)
+            recall = recall_score(y, predictions, zero_division=0)
+            
+            # Feature importance
+            feature_importance = dict(zip(self.feature_columns, self.model.feature_importances_))
+            
+            return {
+                "training_successful": True,
+                "training_accuracy": accuracy,
+                "precision": precision,
+                "recall": recall,
+                "training_samples": len(historical_data),
+                "feature_importance": feature_importance,
+                "missing_columns": missing_columns
+            }
+            
+        except Exception as e:
+            return {
+                "training_successful": False,
+                "error": str(e),
+                "training_samples": len(historical_data) if historical_data is not None else 0
+            }
+    
+    def predict_success_probability(self, candidate_assessment: dict) -> dict:
+        """Predict probability of candidate success"""
+        try:
+            if not self.is_trained:
+                # Use rule-based prediction if model not trained
+                return self._rule_based_prediction(candidate_assessment)
+            
+            # Extract features for ML prediction
+            features = []
+            for col in self.feature_columns:
+                if col in candidate_assessment:
+                    features.append(candidate_assessment[col])
+                else:
+                    # Provide default values for missing features
+                    if col == 'technical_score':
+                        features.append(candidate_assessment.get('technical_score', 70))
+                    elif col == 'behavioral_score':
+                        features.append(candidate_assessment.get('behavioral_score', 70))
+                    elif col == 'communication_score':
+                        features.append(self._calculate_communication_score(candidate_assessment))
+                    elif col == 'confidence_level':
+                        features.append(candidate_assessment.get('emotional_intelligence_metrics', {}).get('confidence', 0.5))
+                    elif col == 'stress_indicators':
+                        features.append(candidate_assessment.get('emotional_intelligence_metrics', {}).get('stress_level', 0.5))
+                    elif col == 'engagement_score':
+                        features.append(candidate_assessment.get('engagement_score', 0.7))
+                    else:
+                        features.append(0.5)  # Default fallback
+            
+            # Get prediction probability
+            probability = self.model.predict_proba([features])[0][1]
+            prediction = self.model.predict([features])[0]
+            
+            # Get feature contributions (simplified)
+            feature_contributions = {}
+            for i, col in enumerate(self.feature_columns):
+                feature_contributions[col] = {
+                    "value": features[i],
+                    "importance": self.model.feature_importances_[i]
+                }
+            
+            return {
+                "success_probability": float(probability),
+                "prediction": "hire" if prediction == 1 else "no_hire",
+                "confidence": "high" if abs(probability - 0.5) > 0.3 else "medium" if abs(probability - 0.5) > 0.1 else "low",
+                "model_used": "random_forest",
+                "feature_contributions": feature_contributions
+            }
+            
+        except Exception as e:
+            return {
+                "success_probability": 0.5,
+                "prediction": "uncertain",
+                "error": str(e),
+                "model_used": "fallback"
+            }
+    
+    def _rule_based_prediction(self, candidate_assessment: dict) -> dict:
+        """Fallback rule-based prediction when ML model is not available"""
+        # Extract scores
+        technical_score = candidate_assessment.get('technical_score', 0) / 100.0
+        behavioral_score = candidate_assessment.get('behavioral_score', 0) / 100.0
+        
+        # Calculate emotional intelligence composite score
+        ei_metrics = candidate_assessment.get('emotional_intelligence_metrics', {})
+        ei_score = (
+            ei_metrics.get('enthusiasm', 0.5) * 0.3 +
+            ei_metrics.get('confidence', 0.5) * 0.3 +
+            ei_metrics.get('emotional_stability', 0.5) * 0.2 +
+            (1 - ei_metrics.get('stress_level', 0.5)) * 0.2  # Lower stress = better
+        )
+        
+        # Communication effectiveness from response analysis
+        communication_score = self._calculate_communication_score(candidate_assessment)
+        
+        # Weighted success probability
+        success_probability = (
+            technical_score * self.performance_weights['technical_score'] +
+            behavioral_score * self.performance_weights['behavioral_score'] +
+            ei_score * self.performance_weights['emotional_intelligence'] +
+            communication_score * self.performance_weights['communication_effectiveness']
+        )
+        
+        # Success prediction categories
+        if success_probability >= 0.75:
+            prediction = "hire"
+            recommendation = "Strong candidate - recommend for hire"
+        elif success_probability >= 0.60:
+            prediction = "hire"
+            recommendation = "Good candidate - consider for hire pending reference check"
+        elif success_probability >= 0.45:
+            prediction = "uncertain"
+            recommendation = "Average candidate - additional interviews recommended"
+        else:
+            prediction = "no_hire"
+            recommendation = "Candidate may not be suitable for this role"
+        
+        return {
+            "success_probability": float(success_probability),
+            "prediction": prediction,
+            "recommendation": recommendation,
+            "model_used": "rule_based",
+            "score_breakdown": {
+                "technical": float(technical_score),
+                "behavioral": float(behavioral_score), 
+                "emotional_intelligence": float(ei_score),
+                "communication": float(communication_score)
+            },
+            "key_strengths": self._identify_strengths(
+                technical_score, behavioral_score, ei_score, communication_score
+            ),
+            "improvement_areas": self._identify_improvements(
+                technical_score, behavioral_score, ei_score, communication_score
+            )
+        }
+    
+    def _calculate_communication_score(self, assessment_data: dict) -> float:
+        """Calculate communication effectiveness score"""
+        responses = assessment_data.get('responses', [])
+        if not responses:
+            return 0.5
+        
+        total_readability = 0
+        total_clarity = 0
+        
+        for response in responses:
+            # Readability score using Flesch Reading Ease
+            try:
+                readability = flesch_reading_ease(response.get('answer', ''))
+                readability_normalized = min(1.0, max(0.0, readability / 100.0))
+            except:
+                readability_normalized = 0.5
+            
+            # Response length appropriateness (50-300 words ideal)
+            word_count = len(response.get('answer', '').split())
+            length_score = 1.0 if 50 <= word_count <= 300 else max(0.3, 1 - abs(word_count - 175) / 200)
+            
+            total_readability += readability_normalized
+            total_clarity += length_score
+        
+        avg_readability = total_readability / len(responses)
+        avg_clarity = total_clarity / len(responses)
+        
+        return (avg_readability + avg_clarity) / 2
+    
+    def _identify_strengths(self, tech: float, behav: float, ei: float, comm: float) -> list:
+        """Identify candidate's key strengths"""
+        scores = {"Technical Skills": tech, "Behavioral Fit": behav, 
+                 "Emotional Intelligence": ei, "Communication": comm}
+        strengths = [k for k, v in scores.items() if v >= 0.7]
+        return strengths[:3]  # Top 3 strengths
+    
+    def _identify_improvements(self, tech: float, behav: float, ei: float, comm: float) -> list:
+        """Identify areas for improvement"""
+        scores = {"Technical Skills": tech, "Behavioral Fit": behav,
+                 "Emotional Intelligence": ei, "Communication": comm}
+        improvements = [k for k, v in scores.items() if v < 0.6]
+        return improvements[:2]  # Top 2 improvement areas
+    
+    def get_model_info(self) -> dict:
+        """Get information about the current model"""
+        return {
+            "model_type": "RandomForestClassifier",
+            "is_trained": self.is_trained,
+            "feature_columns": self.feature_columns,
+            "n_estimators": self.model.n_estimators,
+            "random_state": self.model.random_state,
+            "feature_importance": dict(zip(self.feature_columns, self.model.feature_importances_)) if self.is_trained else None
+        }
+
+# Legacy PredictiveAnalytics class for backward compatibility
 class PredictiveAnalytics:
-    """ML-powered predictive analytics for interview success"""
+    """Legacy ML-powered predictive analytics for interview success"""
     
     def __init__(self):
         self.performance_weights = {
