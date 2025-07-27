@@ -5144,6 +5144,188 @@ async def get_advanced_reporting_data():
         logging.error(f"Advanced reporting error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get advanced reporting data: {str(e)}")
 
+# Phase 4: ATS/CRM Integration API Endpoints
+
+@api_router.get("/admin/integrations/supported-systems")
+async def get_supported_systems():
+    """Get list of supported ATS/CRM systems"""
+    return {
+        "success": True,
+        "supported_systems": {
+            "workday": {
+                "name": "Workday",
+                "type": "Enterprise ATS",
+                "description": "Enterprise-grade talent acquisition and HR management",
+                "authentication": ["username", "password", "tenant"],
+                "features": ["candidate_sync", "job_requisitions", "assessment_scores", "interview_notes"]
+            },
+            "greenhouse": {
+                "name": "Greenhouse",
+                "type": "Recruiting ATS",
+                "description": "Modern recruiting and candidate tracking system",
+                "authentication": ["api_key"],
+                "features": ["candidate_sync", "applications", "custom_fields", "interview_feedback"]
+            },
+            "lever": {
+                "name": "Lever",
+                "type": "Modern ATS",
+                "description": "Collaborative recruiting platform for modern teams",
+                "authentication": ["api_key"],
+                "features": ["candidate_sync", "posting_sync", "tags", "custom_questions"]
+            },
+            "salesforce": {
+                "name": "Salesforce CRM",
+                "type": "Customer Relationship Management",
+                "description": "Enterprise CRM with candidate/lead management capabilities",
+                "authentication": ["username", "password", "security_token"],
+                "features": ["lead_sync", "contact_sync", "custom_fields", "opportunity_tracking"]
+            }
+        }
+    }
+
+@api_router.post("/admin/integrations/{system_name}/sync-candidate")
+async def sync_candidate_to_system(system_name: str, candidate_data: dict):
+    """Sync individual candidate to ATS/CRM system"""
+    try:
+        if system_name not in ats_integration_hub.supported_systems:
+            raise HTTPException(status_code=400, detail=f"Unsupported system: {system_name}")
+        
+        sync_result = await ats_integration_hub.sync_candidate_data(system_name, candidate_data)
+        
+        return {
+            "success": True,
+            "sync_result": sync_result,
+            "system": system_name,
+            "candidate_id": candidate_data.get("candidate_id", "unknown")
+        }
+    except Exception as e:
+        logging.error(f"Candidate sync error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to sync candidate: {str(e)}")
+
+@api_router.post("/admin/integrations/{system_name}/bulk-sync")
+async def bulk_sync_candidates_to_system(system_name: str, request_data: dict):
+    """Bulk sync multiple candidates to ATS/CRM system"""
+    try:
+        if system_name not in ats_integration_hub.supported_systems:
+            raise HTTPException(status_code=400, detail=f"Unsupported system: {system_name}")
+        
+        candidates = request_data.get("candidates", [])
+        if not candidates:
+            raise HTTPException(status_code=400, detail="No candidates provided for sync")
+        
+        bulk_result = await ats_integration_hub.bulk_sync_candidates(system_name, candidates)
+        
+        return {
+            "success": True,
+            "bulk_sync_result": bulk_result,
+            "system": system_name
+        }
+    except Exception as e:
+        logging.error(f"Bulk sync error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to bulk sync candidates: {str(e)}")
+
+@api_router.post("/admin/integrations/sync-assessment-data")
+async def sync_assessment_data():
+    """Sync all completed assessments with configured ATS/CRM systems"""
+    try:
+        # Get all completed assessments
+        assessments = await db.assessments.find({}).to_list(None)
+        
+        sync_results = {
+            "workday": {"attempted": 0, "successful": 0, "failed": 0},
+            "greenhouse": {"attempted": 0, "successful": 0, "failed": 0},
+            "lever": {"attempted": 0, "successful": 0, "failed": 0},
+            "salesforce": {"attempted": 0, "successful": 0, "failed": 0}
+        }
+        
+        for assessment in assessments:
+            # Get session data for context
+            session = await db.sessions.find_one({"session_id": assessment.get("session_id")})
+            
+            candidate_data = {
+                "candidate_id": assessment.get("id"),
+                "candidate_name": assessment.get("candidate_name", "Unknown"),
+                "job_title": assessment.get("job_title", ""),
+                "technical_score": assessment.get("technical_score", 0),
+                "behavioral_score": assessment.get("behavioral_score", 0),
+                "overall_score": assessment.get("overall_score", 0),
+                "overall_feedback": assessment.get("overall_feedback", ""),
+                "created_at": assessment.get("created_at"),
+                "token": assessment.get("token", ""),
+                "session_id": assessment.get("session_id", ""),
+                "email": f"{assessment.get('candidate_name', 'candidate').replace(' ', '.').lower()}@email.com",
+                "phone": "+1-555-0100",
+                "company": "Previous Company"
+            }
+            
+            # Sync to all systems
+            for system_name in ats_integration_hub.supported_systems.keys():
+                sync_results[system_name]["attempted"] += 1
+                
+                result = await ats_integration_hub.sync_candidate_data(system_name, candidate_data)
+                if result.get("status") == "success":
+                    sync_results[system_name]["successful"] += 1
+                else:
+                    sync_results[system_name]["failed"] += 1
+        
+        return {
+            "success": True,
+            "message": "Assessment data sync completed",
+            "sync_results": sync_results,
+            "total_assessments": len(assessments)
+        }
+    except Exception as e:
+        logging.error(f"Assessment data sync error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to sync assessment data: {str(e)}")
+
+@api_router.get("/admin/integrations/sync-history")
+async def get_integration_sync_history(system_name: str = None, limit: int = 100):
+    """Get synchronization history for ATS/CRM integrations"""
+    try:
+        sync_history = await ats_integration_hub.get_sync_history(system_name, limit)
+        
+        return {
+            "success": True,
+            "sync_history": sync_history,
+            "total_records": len(sync_history),
+            "system_filter": system_name
+        }
+    except Exception as e:
+        logging.error(f"Sync history error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get sync history: {str(e)}")
+
+@api_router.get("/admin/integrations/system-status")
+async def get_integration_system_status():
+    """Get status and health of all ATS/CRM integrations"""
+    try:
+        system_status = {}
+        
+        for system_name, integration in ats_integration_hub.supported_systems.items():
+            # Get recent sync attempts
+            recent_syncs = [h for h in ats_integration_hub.sync_history 
+                          if h["system"] == system_name][-10:]
+            
+            successful_syncs = len([s for s in recent_syncs if s["status"] == "success"])
+            total_syncs = len(recent_syncs)
+            
+            system_status[system_name] = {
+                "status": "healthy" if successful_syncs == total_syncs else "degraded" if successful_syncs > 0 else "down",
+                "success_rate": (successful_syncs / total_syncs * 100) if total_syncs > 0 else 0,
+                "last_sync": recent_syncs[-1]["timestamp"] if recent_syncs else None,
+                "total_syncs_today": total_syncs,
+                "successful_syncs_today": successful_syncs
+            }
+        
+        return {
+            "success": True,
+            "system_status": system_status,
+            "overall_health": "healthy" if all(s["status"] == "healthy" for s in system_status.values()) else "degraded",
+            "last_updated": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logging.error(f"System status error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get system status: {str(e)}")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
