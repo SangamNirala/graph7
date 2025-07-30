@@ -4413,6 +4413,16 @@ RECOMMENDATION:
     if '_id' in assessment:
         assessment['_id'] = str(assessment['_id'])
     
+    # Generate comprehensive AI analysis
+    comprehensive_analysis = await generate_comprehensive_ai_analysis(
+        session_id, 
+        questions, 
+        candidate_messages, 
+        assessment, 
+        session_metadata,
+        question_scores
+    )
+    
     return {
         "session_id": session_id,
         "candidate_name": candidate_name,
@@ -4427,7 +4437,8 @@ RECOMMENDATION:
         },
         "question_scores": question_scores,
         "detailed_justification": justification,
-        "full_assessment": assessment
+        "full_assessment": assessment,
+        "ai_analysis": comprehensive_analysis
     }
 
 # Voice Routes
