@@ -2123,8 +2123,8 @@ const AdminDashboard = ({ setCurrentPage }) => {
                       </div>
                     </div>
 
-                    {/* Scores Summary */}
-                    <div className="grid md:grid-cols-3 gap-4">
+                    {/* Enhanced Scores Summary with Individual Scoring */}
+                    <div className="grid md:grid-cols-4 gap-4">
                       <div className="bg-white/10 rounded-lg p-4 text-center">
                         <div className="text-sm text-gray-300">Technical Score</div>
                         <div className="text-3xl font-bold text-blue-400">
@@ -2143,7 +2143,313 @@ const AdminDashboard = ({ setCurrentPage }) => {
                           {detailedReportModal.data.assessment_summary.overall_score}/100
                         </div>
                       </div>
+                      <div className="bg-white/10 rounded-lg p-4 text-center">
+                        <div className="text-sm text-gray-300">Average Individual Score</div>
+                        <div className="text-3xl font-bold text-orange-400">
+                          {detailedReportModal.data.assessment_summary.average_individual_score}/100
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Individual Question Scores */}
+                    {detailedReportModal.data.question_scores && (
+                      <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                        <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                          📊 Individual Question Analysis
+                        </h4>
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {detailedReportModal.data.question_scores.map((questionScore, index) => (
+                            <div key={index} className="bg-black/20 rounded-lg p-4 border border-white/10">
+                              <div className="flex justify-between items-start mb-2">
+                                <span className="text-sm font-medium text-purple-300">
+                                  Question {questionScore.question_number}
+                                </span>
+                                <span className="text-lg font-bold text-yellow-400">
+                                  {questionScore.score}/100
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-300 mb-2 italic">
+                                "{questionScore.question}"
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 mb-2 text-xs">
+                                <div className="text-center">
+                                  <div className="text-gray-400">Accuracy</div>
+                                  <div className="text-blue-300 font-semibold">{questionScore.accuracy}%</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-gray-400">Relevance</div>
+                                  <div className="text-green-300 font-semibold">{questionScore.relevance}%</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-gray-400">Completeness</div>
+                                  <div className="text-purple-300 font-semibold">{questionScore.completeness}%</div>
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-300 bg-black/30 rounded p-2">
+                                {questionScore.feedback}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Comprehensive AI Analysis */}
+                    {detailedReportModal.data.ai_analysis && (
+                      <>
+                        {/* Big Five Personality Analysis */}
+                        {detailedReportModal.data.ai_analysis.personality_analysis && (
+                          <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                            <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                              🧠 Big Five Personality Analysis
+                            </h4>
+                            <div className="grid md:grid-cols-5 gap-4 mb-4">
+                              {Object.entries(detailedReportModal.data.ai_analysis.personality_analysis.big_five_scores || {}).map(([trait, score]) => (
+                                <div key={trait} className="bg-black/20 rounded-lg p-3 text-center">
+                                  <div className="text-xs text-gray-400 capitalize mb-1">{trait}</div>
+                                  <div className="text-lg font-bold text-cyan-400">{Math.round(score * 100)}%</div>
+                                  <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+                                    <div 
+                                      className="bg-cyan-400 h-1.5 rounded-full" 
+                                      style={{width: `${score * 100}%`}}
+                                    ></div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="text-sm text-gray-300">
+                              <strong>Dominant Traits:</strong> {detailedReportModal.data.ai_analysis.personality_analysis.personality_summary?.dominant_traits?.map(([trait, score]) => `${trait} (${Math.round(score * 100)}%)`).join(', ')}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Bias Detection Analysis */}
+                        {detailedReportModal.data.ai_analysis.bias_detection && (
+                          <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                            <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                              ⚖️ Bias Detection & Fairness Analysis
+                            </h4>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <div className="text-sm text-gray-400 mb-2">Overall Bias Score</div>
+                                <div className={`text-2xl font-bold ${detailedReportModal.data.ai_analysis.bias_detection.overall_bias_score > 0.2 ? 'text-red-400' : 'text-green-400'}`}>
+                                  {Math.round(detailedReportModal.data.ai_analysis.bias_detection.overall_bias_score * 100)}%
+                                </div>
+                                <div className={`text-xs ${detailedReportModal.data.ai_analysis.bias_detection.is_biased ? 'text-red-300' : 'text-green-300'}`}>
+                                  {detailedReportModal.data.ai_analysis.bias_detection.is_biased ? 'Bias Detected' : 'Fair Assessment'}
+                                </div>
+                              </div>
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <div className="text-sm text-gray-400 mb-2">Fairness Metrics</div>
+                                <div className="space-y-1 text-xs">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-300">Length Fairness:</span>
+                                    <span className="text-blue-300">{Math.round((detailedReportModal.data.ai_analysis.bias_detection.fairness_metrics?.response_length_fairness || 1) * 100)}%</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-300">Score Consistency:</span>
+                                    <span className="text-green-300">{Math.round((detailedReportModal.data.ai_analysis.bias_detection.fairness_metrics?.score_consistency || 1) * 100)}%</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-300">Cultural Sensitivity:</span>
+                                    <span className="text-purple-300">{Math.round((detailedReportModal.data.ai_analysis.bias_detection.fairness_metrics?.cultural_sensitivity || 1) * 100)}%</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {detailedReportModal.data.ai_analysis.bias_detection.bias_indicators?.length > 0 && (
+                              <div className="mt-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+                                <div className="text-sm font-semibold text-yellow-300 mb-2">⚠️ Bias Indicators Detected:</div>
+                                <ul className="text-xs text-yellow-200 space-y-1">
+                                  {detailedReportModal.data.ai_analysis.bias_detection.bias_indicators.map((indicator, index) => (
+                                    <li key={index}>• {indicator}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Predictive Hiring Analysis */}
+                        {detailedReportModal.data.ai_analysis.predictive_hiring && (
+                          <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                            <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                              🎯 Predictive Hiring Analytics
+                            </h4>
+                            <div className="grid md:grid-cols-3 gap-4 mb-4">
+                              <div className="bg-black/20 rounded-lg p-4 text-center">
+                                <div className="text-sm text-gray-400 mb-1">Success Probability</div>
+                                <div className="text-2xl font-bold text-green-400">
+                                  {Math.round((detailedReportModal.data.ai_analysis.predictive_hiring.success_probability || 0) * 100)}%
+                                </div>
+                              </div>
+                              <div className="bg-black/20 rounded-lg p-4 text-center">
+                                <div className="text-sm text-gray-400 mb-1">Hiring Probability</div>
+                                <div className="text-2xl font-bold text-blue-400">
+                                  {Math.round((detailedReportModal.data.ai_analysis.predictive_hiring.hiring_probability || 0) * 100)}%
+                                </div>
+                              </div>
+                              <div className="bg-black/20 rounded-lg p-4 text-center">
+                                <div className="text-sm text-gray-400 mb-1">Growth Potential</div>
+                                <div className="text-2xl font-bold text-purple-400">
+                                  {Math.round(detailedReportModal.data.ai_analysis.predictive_hiring.growth_potential || 0)}%
+                                </div>
+                              </div>
+                            </div>
+                            <div className="bg-black/20 rounded-lg p-4">
+                              <div className="text-sm text-gray-400 mb-2">Risk Assessment</div>
+                              <div className="flex flex-wrap gap-2">
+                                {Object.entries(detailedReportModal.data.ai_analysis.predictive_hiring.risk_factors || {}).map(([risk, hasRisk]) => (
+                                  <span key={risk} className={`px-2 py-1 rounded text-xs ${hasRisk ? 'bg-red-900/30 text-red-300 border border-red-500/30' : 'bg-green-900/30 text-green-300 border border-green-500/30'}`}>
+                                    {risk.replace(/_/g, ' ')}: {hasRisk ? 'High' : 'Low'}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Communication Analysis */}
+                        {detailedReportModal.data.ai_analysis.communication_analysis && (
+                          <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                            <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                              💬 Communication Analysis
+                            </h4>
+                            <div className="grid md:grid-cols-5 gap-3">
+                              {Object.entries(detailedReportModal.data.ai_analysis.communication_analysis).map(([metric, score]) => (
+                                <div key={metric} className="bg-black/20 rounded-lg p-3 text-center">
+                                  <div className="text-xs text-gray-400 capitalize mb-1">{metric.replace(/_/g, ' ')}</div>
+                                  <div className="text-lg font-bold text-cyan-400">{Math.round(score)}</div>
+                                  <div className="w-full bg-gray-700 rounded-full h-1 mt-2">
+                                    <div 
+                                      className="bg-cyan-400 h-1 rounded-full" 
+                                      style={{width: `${Math.min(100, score)}%`}}
+                                    ></div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Technical & Behavioral Analysis */}
+                        <div className="grid md:grid-cols-2 gap-4">
+                          {detailedReportModal.data.ai_analysis.technical_analysis && (
+                            <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                              <h4 className="text-lg font-bold text-white mb-4 flex items-center">
+                                ⚙️ Technical Analysis
+                              </h4>
+                              <div className="space-y-3 text-sm">
+                                {Object.entries(detailedReportModal.data.ai_analysis.technical_analysis).filter(([key]) => key !== 'accuracy_breakdown').map(([key, value]) => (
+                                  <div key={key} className="bg-black/20 rounded p-3">
+                                    <div className="text-gray-400 capitalize text-xs mb-1">{key.replace(/_/g, ' ')}</div>
+                                    <div className="text-gray-200">{value}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {detailedReportModal.data.ai_analysis.behavioral_analysis && (
+                            <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                              <h4 className="text-lg font-bold text-white mb-4 flex items-center">
+                                👥 Behavioral Analysis
+                              </h4>
+                              <div className="space-y-3 text-sm">
+                                {Object.entries(detailedReportModal.data.ai_analysis.behavioral_analysis).filter(([key]) => key !== 'emotional_intelligence').map(([key, value]) => (
+                                  <div key={key} className="bg-black/20 rounded p-3">
+                                    <div className="text-gray-400 capitalize text-xs mb-1">{key.replace(/_/g, ' ')}</div>
+                                    <div className="text-gray-200">{value}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* AI Recommendations */}
+                        {detailedReportModal.data.ai_analysis.improvement_recommendations && (
+                          <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                            <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                              💡 AI-Generated Recommendations
+                            </h4>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <div className="text-sm font-semibold text-green-300 mb-2">✅ Strengths to Leverage</div>
+                                <ul className="text-xs text-gray-300 space-y-1">
+                                  {(detailedReportModal.data.ai_analysis.improvement_recommendations.strengths_to_leverage || []).map((strength, index) => (
+                                    <li key={index}>• {strength}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <div className="text-sm font-semibold text-orange-300 mb-2">🎯 Development Areas</div>
+                                <ul className="text-xs text-gray-300 space-y-1">
+                                  {(detailedReportModal.data.ai_analysis.improvement_recommendations.development_areas || []).map((area, index) => (
+                                    <li key={index}>• {area}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                            <div className="mt-4 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                              <div className="text-sm font-semibold text-blue-300 mb-2">🚀 Immediate Actions</div>
+                              <ul className="text-xs text-blue-200 space-y-1">
+                                {(detailedReportModal.data.ai_analysis.improvement_recommendations.immediate_actions || []).map((action, index) => (
+                                  <li key={index}>• {action}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Overall AI Assessment */}
+                        {detailedReportModal.data.ai_analysis.overall_assessment && (
+                          <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-lg p-6 border border-purple-500/30">
+                            <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                              🎯 Final AI Assessment
+                            </h4>
+                            <div className="grid md:grid-cols-3 gap-4 mb-4">
+                              <div className="text-center">
+                                <div className="text-sm text-gray-400">Hiring Recommendation</div>
+                                <div className="text-lg font-bold text-purple-300">
+                                  {detailedReportModal.data.ai_analysis.overall_assessment.hiring_recommendation}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-sm text-gray-400">Analysis Confidence</div>
+                                <div className="text-lg font-bold text-blue-300">
+                                  {Math.round((detailedReportModal.data.ai_analysis.overall_assessment.confidence_level || 0) * 100)}%
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-sm text-gray-400">Analysis Date</div>
+                                <div className="text-sm text-gray-300">
+                                  {new Date(detailedReportModal.data.ai_analysis.analysis_timestamp).toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <div className="text-sm font-semibold text-green-300 mb-2">💪 Key Strengths</div>
+                                <ul className="text-xs text-gray-300 space-y-1">
+                                  {(detailedReportModal.data.ai_analysis.overall_assessment.strengths || []).map((strength, index) => (
+                                    <li key={index}>• {strength}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <div className="text-sm font-semibold text-yellow-300 mb-2">📈 Development Areas</div>
+                                <ul className="text-xs text-gray-300 space-y-1">
+                                  {(detailedReportModal.data.ai_analysis.overall_assessment.areas_for_development || []).map((area, index) => (
+                                    <li key={index}>• {area}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
 
                     {/* Detailed Justification */}
                     <div className="bg-white/5 rounded-lg p-6 border border-white/10">
