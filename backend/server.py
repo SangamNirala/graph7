@@ -3496,6 +3496,124 @@ class VoiceProcessor:
             # Fallback message
             return "Speech-to-text is handled by Web Speech API on the frontend"
 
+# Individual Question Scoring Function
+async def generate_individual_question_score(question: str, answer: str, is_technical: bool = True) -> Dict[str, Any]:
+    """Generate individual question score with detailed analysis"""
+    try:
+        # Create a temporary AI session for scoring
+        session_id_for_ai = interview_ai.generate_session_id()
+        
+        # Determine question type context
+        question_type = "technical" if is_technical else "behavioral"
+        
+        # Create scoring prompt
+        scoring_prompt = f"""
+        You are an expert interview evaluator. Analyze this {question_type} interview question and answer.
+        
+        Question: {question}
+        Answer: {answer}
+        
+        Provide a detailed evaluation with the following structure (respond in plain text without formatting):
+        
+        SCORE: [0-100]
+        ACCURACY: [0-100] - How technically accurate or factually correct is the answer
+        RELEVANCE: [0-100] - How well does the answer address the question asked
+        COMPLETENESS: [0-100] - How thorough and complete is the response
+        FEEDBACK: [2-3 sentences of specific feedback about the answer quality, strengths, and areas for improvement]
+        """
+        
+        # Use the open-source AI engine for scoring
+        try:
+            if hasattr(interview_ai, 'open_source_ai_engine') and interview_ai.open_source_ai_engine:
+                response = await interview_ai.open_source_ai_engine.generate_response(scoring_prompt)
+            else:
+                # Fallback to basic scoring algorithm
+                response = _fallback_individual_scoring(question, answer, is_technical)
+        except Exception as e:
+            logging.warning(f"AI scoring failed, using fallback: {e}")
+            response = _fallback_individual_scoring(question, answer, is_technical)
+        
+        # Parse the response
+        score_data = _parse_individual_score_response(response, answer)
+        return score_data
+        
+    except Exception as e:
+        logging.error(f"Individual question scoring error: {e}")
+        # Return fallback scoring
+        return _fallback_individual_scoring(question, answer, is_technical)
+
+def _fallback_individual_scoring(question: str, answer: str, is_technical: bool) -> Dict[str, Any]:
+    """Fallback scoring when AI is unavailable"""
+    answer_length = len(answer.split())
+    
+    # Basic scoring based on answer length and content
+    base_score = min(90, max(30, answer_length * 2))
+    
+    # Adjust for question type
+    if is_technical:
+        # Look for technical keywords
+        technical_keywords = ['algorithm', 'function', 'variable', 'loop', 'condition', 'data', 'structure', 'method', 'class', 'object']
+        keyword_bonus = sum(5 for keyword in technical_keywords if keyword.lower() in answer.lower())
+        base_score = min(100, base_score + keyword_bonus)
+    else:
+        # Look for behavioral indicators
+        behavioral_keywords = ['experience', 'team', 'challenge', 'learned', 'improved', 'collaborated', 'leadership', 'problem']
+        keyword_bonus = sum(3 for keyword in behavioral_keywords if keyword.lower() in answer.lower())
+        base_score = min(100, base_score + keyword_bonus)
+    
+    return {
+        "score": base_score,
+        "accuracy": base_score,
+        "relevance": max(50, base_score - 10),
+        "completeness": max(40, base_score - 20),
+        "feedback": f"Answer demonstrates {'technical understanding' if is_technical else 'relevant experience'} with a score of {base_score}/100. {'Consider providing more technical details and examples.' if is_technical else 'Consider sharing more specific examples and outcomes.'}"
+    }
+
+def _parse_individual_score_response(response: str, answer: str) -> Dict[str, Any]:
+    """Parse AI response into structured score data"""
+    try:
+        lines = response.strip().split('\n')
+        score_data = {
+            "score": 70,
+            "accuracy": 70,
+            "relevance": 70,
+            "completeness": 70,
+            "feedback": "Answer provided shows understanding of the topic."
+        }
+        
+        for line in lines:
+            line = line.strip()
+            if line.startswith('SCORE:'):
+                try:
+                    score_data["score"] = int(re.findall(r'\d+', line)[0])
+                except:
+                    pass
+            elif line.startswith('ACCURACY:'):
+                try:
+                    score_data["accuracy"] = int(re.findall(r'\d+', line)[0])
+                except:
+                    pass
+            elif line.startswith('RELEVANCE:'):
+                try:
+                    score_data["relevance"] = int(re.findall(r'\d+', line)[0])
+                except:
+                    pass
+            elif line.startswith('COMPLETENESS:'):
+                try:
+                    score_data["completeness"] = int(re.findall(r'\d+', line)[0])
+                except:
+                    pass
+            elif line.startswith('FEEDBACK:'):
+                feedback_text = line.replace('FEEDBACK:', '').strip()
+                if feedback_text:
+                    score_data["feedback"] = feedback_text
+        
+        return score_data
+        
+    except Exception as e:
+        logging.error(f"Error parsing individual score response: {e}")
+        return _fallback_individual_scoring("", answer, True)
+
 # Initialize all managers and analyzers with Open-Source AI Integration
 interview_ai = InterviewAI()
 voice_processor = VoiceProcessor()
