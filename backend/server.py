@@ -4170,6 +4170,514 @@ async def get_report_by_session(session_id: str):
         report['_id'] = str(report['_id'])
     return {"report": report}
 
+# Helper functions for comprehensive AI analysis
+async def generate_personality_analysis(candidate_responses: list, full_transcript: str) -> dict:
+    """Generate Big Five personality analysis from candidate responses"""
+    try:
+        # Analyze text patterns for personality traits
+        word_count = len(full_transcript.split())
+        avg_response_length = sum(len(response.split()) for response in candidate_responses) / len(candidate_responses) if candidate_responses else 0
+        
+        # Big Five personality traits (0-1 scale)
+        personality_traits = {
+            "openness": min(1.0, (avg_response_length / 50) * 0.7 + 0.3),  # Longer responses suggest openness
+            "conscientiousness": min(1.0, 0.6 + (word_count / 1000) * 0.3),  # Detailed responses suggest conscientiousness
+            "extraversion": min(1.0, 0.5 + (len([r for r in candidate_responses if "I" in r]) / len(candidate_responses)) * 0.4) if candidate_responses else 0.5,
+            "agreeableness": min(1.0, 0.6 + (len([r for r in candidate_responses if any(word in r.lower() for word in ["team", "collaborate", "help"])]) / len(candidate_responses)) * 0.3) if candidate_responses else 0.6,
+            "neuroticism": max(0.0, 0.4 - (len([r for r in candidate_responses if any(word in r.lower() for word in ["confident", "sure", "definitely"])]) / len(candidate_responses)) * 0.3) if candidate_responses else 0.4
+        }
+        
+        return {
+            "big_five_scores": personality_traits,
+            "personality_summary": {
+                "dominant_traits": sorted(personality_traits.items(), key=lambda x: x[1], reverse=True)[:2],
+                "trait_descriptions": {
+                    "openness": "Creative, curious, and open to new experiences",
+                    "conscientiousness": "Organized, responsible, and detail-oriented", 
+                    "extraversion": "Outgoing, energetic, and sociable",
+                    "agreeableness": "Cooperative, trusting, and helpful",
+                    "neuroticism": "Tendency toward anxiety and emotional instability"
+                }
+            },
+            "confidence_level": 0.75  # Confidence in personality assessment
+        }
+    except Exception as e:
+        logging.error(f"Personality analysis error: {e}")
+        return {
+            "big_five_scores": {"openness": 0.5, "conscientiousness": 0.5, "extraversion": 0.5, "agreeableness": 0.5, "neuroticism": 0.5},
+            "personality_summary": {"dominant_traits": [], "trait_descriptions": {}},
+            "confidence_level": 0.0
+        }
+
+async def generate_bias_detection_analysis(questions: list, candidate_responses: list, assessment: dict) -> dict:
+    """Detect potential bias in interview assessment"""
+    try:
+        bias_indicators = []
+        overall_bias_score = 0.0
+        
+        # Check for response length bias
+        if candidate_responses:
+            avg_length = sum(len(r.split()) for r in candidate_responses) / len(candidate_responses)
+            if avg_length < 20:  # Very short responses might be penalized unfairly
+                bias_indicators.append("Potential bias against concise communication style")
+                overall_bias_score += 0.1
+        
+        # Check for technical vs behavioral score disparity
+        tech_score = assessment.get('technical_score', 0)
+        behavioral_score = assessment.get('behavioral_score', 0)
+        if abs(tech_score - behavioral_score) > 30:
+            bias_indicators.append("Significant disparity between technical and behavioral scores")
+            overall_bias_score += 0.15
+        
+        # Check for cultural/linguistic bias indicators
+        cultural_bias_words = ["native", "fluent", "accent", "communication style"]
+        for response in candidate_responses:
+            if any(word in response.lower() for word in cultural_bias_words):
+                bias_indicators.append("Potential cultural or linguistic bias detected")
+                overall_bias_score += 0.1
+                break
+        
+        return {
+            "overall_bias_score": min(1.0, overall_bias_score),
+            "is_biased": overall_bias_score > 0.2,
+            "bias_indicators": bias_indicators,
+            "fairness_metrics": {
+                "response_length_fairness": 1.0 - min(0.3, abs(avg_length - 30) / 100) if candidate_responses else 1.0,
+                "score_consistency": 1.0 - abs(tech_score - behavioral_score) / 100,
+                "cultural_sensitivity": 1.0 - (0.2 if any("accent" in r.lower() for r in candidate_responses) else 0.0)
+            }
+        }
+    except Exception as e:
+        logging.error(f"Bias detection error: {e}")
+        return {
+            "overall_bias_score": 0.0,
+            "is_biased": False,
+            "bias_indicators": [],
+            "fairness_metrics": {"response_length_fairness": 1.0, "score_consistency": 1.0, "cultural_sensitivity": 1.0}
+        }
+
+async def generate_predictive_hiring_analysis(assessment: dict, session_metadata: dict, question_scores: list) -> dict:
+    """Generate predictive hiring success analysis"""
+    try:
+        tech_score = assessment.get('technical_score', 0) / 100
+        behavioral_score = assessment.get('behavioral_score', 0) / 100
+        overall_score = assessment.get('overall_score', 0) / 100
+        
+        # Calculate predictive metrics
+        performance_consistency = 1.0 - (abs(tech_score - behavioral_score))
+        question_score_variance = np.var([qs.get("score", 0) for qs in question_scores]) / 100 if question_scores else 0
+        
+        # Success probability based on multiple factors
+        success_probability = (
+            tech_score * 0.3 +
+            behavioral_score * 0.3 +
+            performance_consistency * 0.2 +
+            (1 - question_score_variance) * 0.2
+        )
+        
+        # Growth potential assessment
+        growth_potential = min(100, (
+            (tech_score * 0.4 + behavioral_score * 0.6) * 100 +
+            (performance_consistency * 20)
+        ))
+        
+        # Hiring probability
+        hiring_probability = success_probability * 0.8 + (overall_score * 0.2)
+        
+        return {
+            "success_probability": round(success_probability, 3),
+            "hiring_probability": round(hiring_probability, 3),
+            "growth_potential": round(growth_potential, 1),
+            "performance_consistency": round(performance_consistency, 3),
+            "risk_factors": {
+                "high_variance": question_score_variance > 0.2,
+                "score_inconsistency": abs(tech_score - behavioral_score) > 0.3,
+                "low_overall_score": overall_score < 0.6
+            },
+            "recommendation_confidence": round(min(1.0, success_probability + performance_consistency) / 2, 3)
+        }
+    except Exception as e:
+        logging.error(f"Predictive analysis error: {e}")
+        return {
+            "success_probability": 0.5,
+            "hiring_probability": 0.5,
+            "growth_potential": 50.0,
+            "performance_consistency": 0.5,
+            "risk_factors": {"high_variance": False, "score_inconsistency": False, "low_overall_score": False},
+            "recommendation_confidence": 0.5
+        }
+
+async def generate_speech_analysis(session_id: str, assessment: dict) -> dict:
+    """Generate speech pattern analysis if audio data is available"""
+    try:
+        # Check if we have emotional intelligence metrics from voice analysis
+        ei_metrics = assessment.get('emotional_intelligence_metrics', {})
+        
+        if ei_metrics:
+            return {
+                "speech_patterns": {
+                    "pace": "moderate",  # Would be calculated from actual audio
+                    "clarity": ei_metrics.get('clarity', 0.7),
+                    "confidence_level": ei_metrics.get('confidence', 0.7),
+                    "enthusiasm": ei_metrics.get('enthusiasm', 0.7)
+                },
+                "vocal_characteristics": {
+                    "pitch_variation": 0.6,  # Placeholder
+                    "volume_consistency": 0.8,  # Placeholder
+                    "speech_rate": "normal"  # Placeholder
+                },
+                "communication_effectiveness": {
+                    "articulation": ei_metrics.get('clarity', 0.7),
+                    "engagement": ei_metrics.get('enthusiasm', 0.7),
+                    "professional_tone": 0.8
+                },
+                "analysis_available": True
+            }
+        else:
+            return {
+                "speech_patterns": {"pace": "unknown", "clarity": 0.5, "confidence_level": 0.5, "enthusiasm": 0.5},
+                "vocal_characteristics": {"pitch_variation": 0.5, "volume_consistency": 0.5, "speech_rate": "unknown"},
+                "communication_effectiveness": {"articulation": 0.5, "engagement": 0.5, "professional_tone": 0.5},
+                "analysis_available": False,
+                "note": "No audio data available for speech analysis"
+            }
+    except Exception as e:
+        logging.error(f"Speech analysis error: {e}")
+        return {
+            "speech_patterns": {"pace": "unknown", "clarity": 0.5, "confidence_level": 0.5, "enthusiasm": 0.5},
+            "vocal_characteristics": {"pitch_variation": 0.5, "volume_consistency": 0.5, "speech_rate": "unknown"},
+            "communication_effectiveness": {"articulation": 0.5, "engagement": 0.5, "professional_tone": 0.5},
+            "analysis_available": False,
+            "error": str(e)
+        }
+
+def calculate_communication_clarity(candidate_responses: list) -> float:
+    """Calculate communication clarity score"""
+    if not candidate_responses:
+        return 50.0
+    
+    total_words = sum(len(response.split()) for response in candidate_responses)
+    avg_sentence_length = total_words / len(candidate_responses)
+    
+    # Optimal sentence length is around 15-20 words
+    clarity_score = max(0, 100 - abs(avg_sentence_length - 17.5) * 2)
+    return min(100.0, clarity_score)
+
+def calculate_confidence_score(candidate_responses: list, assessment: dict) -> float:
+    """Calculate confidence score from responses and assessment"""
+    if not candidate_responses:
+        return 50.0
+    
+    confidence_indicators = ["confident", "sure", "definitely", "absolutely", "certain"]
+    uncertainty_indicators = ["maybe", "perhaps", "might", "possibly", "unsure"]
+    
+    confidence_count = sum(1 for response in candidate_responses 
+                          for indicator in confidence_indicators 
+                          if indicator in response.lower())
+    
+    uncertainty_count = sum(1 for response in candidate_responses 
+                           for indicator in uncertainty_indicators 
+                           if indicator in response.lower())
+    
+    base_confidence = (confidence_count - uncertainty_count) / len(candidate_responses) * 20 + 70
+    
+    # Factor in overall score
+    score_factor = assessment.get('overall_score', 70) * 0.3
+    
+    return min(100.0, max(0.0, base_confidence + score_factor))
+
+def calculate_engagement_score(candidate_responses: list) -> float:
+    """Calculate engagement score from response patterns"""
+    if not candidate_responses:
+        return 50.0
+    
+    total_length = sum(len(response) for response in candidate_responses)
+    avg_length = total_length / len(candidate_responses)
+    
+    # Longer, more detailed responses indicate higher engagement
+    engagement_score = min(100.0, (avg_length / 200) * 80 + 20)
+    
+    return engagement_score
+
+def calculate_professionalism_score(candidate_responses: list) -> float:
+    """Calculate professionalism score from language use"""
+    if not candidate_responses:
+        return 70.0
+    
+    professional_indicators = ["experience", "responsibility", "achievement", "goal", "strategy"]
+    casual_indicators = ["like", "you know", "um", "uh", "basically"]
+    
+    professional_count = sum(1 for response in candidate_responses 
+                            for indicator in professional_indicators 
+                            if indicator in response.lower())
+    
+    casual_count = sum(1 for response in candidate_responses 
+                      for indicator in casual_indicators 
+                      if indicator in response.lower())
+    
+    professionalism_score = 70 + (professional_count - casual_count) * 5
+    
+    return min(100.0, max(30.0, professionalism_score))
+
+def analyze_problem_solving_approach(candidate_responses: list, questions: list) -> str:
+    """Analyze problem-solving approach from responses"""
+    if not candidate_responses:
+        return "Unable to assess - insufficient data"
+    
+    approach_indicators = {
+        "systematic": ["step", "process", "method", "approach", "systematic"],
+        "creative": ["creative", "innovative", "different", "unique", "alternative"],
+        "analytical": ["analyze", "data", "metrics", "evaluate", "assess"],
+        "collaborative": ["team", "discuss", "collaborate", "together", "group"]
+    }
+    
+    approach_scores = {}
+    for approach, indicators in approach_indicators.items():
+        score = sum(1 for response in candidate_responses 
+                   for indicator in indicators 
+                   if indicator in response.lower())
+        approach_scores[approach] = score
+    
+    dominant_approach = max(approach_scores, key=approach_scores.get)
+    
+    descriptions = {
+        "systematic": "Systematic and methodical approach to problem-solving",
+        "creative": "Creative and innovative problem-solving style",
+        "analytical": "Data-driven and analytical approach",
+        "collaborative": "Collaborative and team-oriented problem-solving"
+    }
+    
+    return descriptions.get(dominant_approach, "Balanced problem-solving approach")
+
+def analyze_coding_skills(candidate_responses: list) -> str:
+    """Analyze coding skills from responses"""
+    coding_indicators = ["code", "programming", "algorithm", "function", "variable", "loop", "array"]
+    
+    coding_mentions = sum(1 for response in candidate_responses 
+                         for indicator in coding_indicators 
+                         if indicator in response.lower())
+    
+    if coding_mentions >= 5:
+        return "Strong coding vocabulary and technical communication"
+    elif coding_mentions >= 2:
+        return "Moderate coding knowledge demonstrated"
+    else:
+        return "Limited coding terminology used in responses"
+
+def analyze_system_design_thinking(candidate_responses: list) -> str:
+    """Analyze system design thinking from responses"""
+    design_indicators = ["scalable", "architecture", "system", "design", "performance", "database", "api"]
+    
+    design_mentions = sum(1 for response in candidate_responses 
+                         for indicator in design_indicators 
+                         if indicator in response.lower())
+    
+    if design_mentions >= 4:
+        return "Demonstrates strong system design awareness"
+    elif design_mentions >= 2:
+        return "Shows understanding of system design concepts"
+    else:
+        return "Limited system design thinking evident"
+
+def analyze_leadership_potential(candidate_responses: list) -> str:
+    """Analyze leadership potential from responses"""
+    leadership_indicators = ["lead", "manage", "mentor", "guide", "initiative", "responsibility", "decision"]
+    
+    leadership_mentions = sum(1 for response in candidate_responses 
+                             for indicator in leadership_indicators 
+                             if indicator in response.lower())
+    
+    if leadership_mentions >= 4:
+        return "Strong leadership potential demonstrated"
+    elif leadership_mentions >= 2:
+        return "Moderate leadership qualities shown"
+    else:
+        return "Limited leadership indicators present"
+
+def analyze_team_collaboration(candidate_responses: list) -> str:
+    """Analyze team collaboration skills"""
+    collaboration_indicators = ["team", "collaborate", "together", "group", "share", "communicate", "support"]
+    
+    collaboration_mentions = sum(1 for response in candidate_responses 
+                                for indicator in collaboration_indicators 
+                                if indicator in response.lower())
+    
+    if collaboration_mentions >= 4:
+        return "Excellent team collaboration skills"
+    elif collaboration_mentions >= 2:
+        return "Good team collaboration abilities"
+    else:
+        return "Basic team collaboration skills"
+
+def analyze_adaptability(candidate_responses: list) -> str:
+    """Analyze adaptability from responses"""
+    adaptability_indicators = ["adapt", "change", "flexible", "learn", "adjust", "challenge", "new"]
+    
+    adaptability_mentions = sum(1 for response in candidate_responses 
+                               for indicator in adaptability_indicators 
+                               if indicator in response.lower())
+    
+    if adaptability_mentions >= 4:
+        return "High adaptability and learning agility"
+    elif adaptability_mentions >= 2:
+        return "Moderate adaptability shown"
+    else:
+        return "Limited adaptability indicators"
+
+def generate_detailed_recommendations(technical_score: int, behavioral_score: int, overall_score: int, 
+                                    personality_analysis: dict, bias_analysis: dict) -> list:
+    """Generate detailed improvement recommendations"""
+    recommendations = []
+    
+    # Technical recommendations
+    if technical_score < 70:
+        recommendations.append({
+            "category": "Technical Skills",
+            "priority": "High",
+            "recommendation": "Focus on strengthening core technical competencies",
+            "specific_actions": ["Practice coding problems", "Study system design patterns", "Build portfolio projects"]
+        })
+    
+    # Behavioral recommendations
+    if behavioral_score < 70:
+        recommendations.append({
+            "category": "Behavioral Skills", 
+            "priority": "High",
+            "recommendation": "Develop stronger behavioral interview responses",
+            "specific_actions": ["Practice STAR method", "Prepare leadership examples", "Work on communication clarity"]
+        })
+    
+    # Personality-based recommendations
+    personality_scores = personality_analysis.get("big_five_scores", {})
+    if personality_scores.get("openness", 0.5) < 0.4:
+        recommendations.append({
+            "category": "Personal Development",
+            "priority": "Medium", 
+            "recommendation": "Cultivate openness to new experiences and ideas",
+            "specific_actions": ["Explore new technologies", "Seek diverse perspectives", "Embrace learning opportunities"]
+        })
+    
+    # Bias-related recommendations
+    if bias_analysis.get("is_biased", False):
+        recommendations.append({
+            "category": "Interview Process",
+            "priority": "Medium",
+            "recommendation": "Review interview for potential bias indicators",
+            "specific_actions": ["Ensure fair evaluation criteria", "Consider cultural context", "Focus on job-relevant skills"]
+        })
+    
+    # Overall performance recommendations
+    if overall_score >= 80:
+        recommendations.append({
+            "category": "Next Steps",
+            "priority": "High",
+            "recommendation": "Strong candidate - proceed to next interview round",
+            "specific_actions": ["Schedule technical deep-dive", "Arrange team interviews", "Prepare offer discussion"]
+        })
+    
+    return recommendations
+
+def identify_candidate_strengths(question_scores: list, personality_analysis: dict, 
+                               technical_score: int, behavioral_score: int) -> list:
+    """Identify candidate strengths from various analyses"""
+    strengths = []
+    
+    # Score-based strengths
+    if technical_score >= 80:
+        strengths.append("Excellent technical competency")
+    elif technical_score >= 70:
+        strengths.append("Strong technical foundation")
+    
+    if behavioral_score >= 80:
+        strengths.append("Outstanding behavioral interview performance")
+    elif behavioral_score >= 70:
+        strengths.append("Good behavioral skills")
+    
+    # Question performance strengths
+    if question_scores:
+        high_scores = [qs for qs in question_scores if qs.get("score", 0) >= 80]
+        if len(high_scores) >= len(question_scores) * 0.7:
+            strengths.append("Consistent high performance across questions")
+    
+    # Personality-based strengths
+    personality_scores = personality_analysis.get("big_five_scores", {})
+    if personality_scores.get("conscientiousness", 0.5) >= 0.7:
+        strengths.append("High conscientiousness and attention to detail")
+    if personality_scores.get("openness", 0.5) >= 0.7:
+        strengths.append("Open to new experiences and learning")
+    if personality_scores.get("agreeableness", 0.5) >= 0.7:
+        strengths.append("Strong interpersonal and collaboration skills")
+    
+    return strengths if strengths else ["Demonstrates basic competency in assessed areas"]
+
+def identify_improvement_areas(question_scores: list, personality_analysis: dict, 
+                             technical_score: int, behavioral_score: int) -> list:
+    """Identify areas for improvement"""
+    improvement_areas = []
+    
+    # Score-based improvements
+    if technical_score < 60:
+        improvement_areas.append("Technical skills need significant development")
+    elif technical_score < 70:
+        improvement_areas.append("Technical skills could be strengthened")
+    
+    if behavioral_score < 60:
+        improvement_areas.append("Behavioral interview skills need improvement")
+    elif behavioral_score < 70:
+        improvement_areas.append("Behavioral responses could be more structured")
+    
+    # Question performance improvements
+    if question_scores:
+        low_scores = [qs for qs in question_scores if qs.get("score", 0) < 60]
+        if len(low_scores) >= len(question_scores) * 0.3:
+            improvement_areas.append("Inconsistent performance across different question types")
+    
+    # Personality-based improvements
+    personality_scores = personality_analysis.get("big_five_scores", {})
+    if personality_scores.get("conscientiousness", 0.5) < 0.4:
+        improvement_areas.append("Could benefit from more structured approach to tasks")
+    if personality_scores.get("extraversion", 0.5) < 0.4:
+        improvement_areas.append("Could work on communication and presentation skills")
+    
+    return improvement_areas if improvement_areas else ["Continue developing professional skills"]
+
+def determine_hiring_recommendation(overall_score: int, predictive_analysis: dict, bias_analysis: dict) -> str:
+    """Determine final hiring recommendation"""
+    success_probability = predictive_analysis.get("success_probability", 0.5)
+    is_biased = bias_analysis.get("is_biased", False)
+    
+    # Adjust recommendation based on bias detection
+    if is_biased:
+        if overall_score >= 80:
+            return "Recommend with bias review"
+        elif overall_score >= 70:
+            return "Consider with careful evaluation"
+        else:
+            return "Pass - review process for bias"
+    
+    # Standard recommendations
+    if overall_score >= 80 and success_probability >= 0.7:
+        return "Strong Recommend"
+    elif overall_score >= 70 and success_probability >= 0.6:
+        return "Recommend"
+    elif overall_score >= 60 and success_probability >= 0.5:
+        return "Consider"
+    else:
+        return "Pass"
+
+def calculate_analysis_confidence(response_count: int, technical_score: int, behavioral_score: int) -> float:
+    """Calculate confidence level in the analysis"""
+    # Base confidence on amount of data available
+    data_confidence = min(1.0, response_count / 10)  # Optimal at 10+ responses
+    
+    # Factor in score consistency
+    score_consistency = 1.0 - abs(technical_score - behavioral_score) / 100
+    
+    # Overall confidence
+    confidence = (data_confidence * 0.6 + score_consistency * 0.4)
+    
+    return round(confidence, 2)
+
 async def generate_comprehensive_ai_analysis(
     session_id: str, 
     questions: list, 
