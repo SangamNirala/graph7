@@ -4686,71 +4686,87 @@ async def generate_comprehensive_ai_analysis(
     session_metadata: dict,
     question_scores: list
 ) -> dict:
-    """Generate comprehensive AI analysis of the interview"""
+    """Generate comprehensive AI analysis including Big Five personality, bias detection, predictive scores, and speech analysis"""
     try:
         # Extract key metrics from assessment
         technical_score = assessment.get('technical_score', 0)
         behavioral_score = assessment.get('behavioral_score', 0)
         overall_score = assessment.get('overall_score', 0)
         
-        # Analyze communication patterns
+        # Prepare data for AI analysis
+        candidate_responses = [msg.get('content', '') for msg in candidate_messages]
+        full_transcript = ' '.join(candidate_responses)
+        
+        # 1. BIG FIVE PERSONALITY ANALYSIS
+        personality_analysis = await generate_personality_analysis(candidate_responses, full_transcript)
+        
+        # 2. BIAS DETECTION ANALYSIS
+        bias_analysis = await generate_bias_detection_analysis(questions, candidate_responses, assessment)
+        
+        # 3. PREDICTIVE HIRING ANALYSIS
+        predictive_analysis = await generate_predictive_hiring_analysis(assessment, session_metadata, question_scores)
+        
+        # 4. SPEECH ANALYSIS (if available)
+        speech_analysis = await generate_speech_analysis(session_id, assessment)
+        
+        # 5. COMMUNICATION ANALYSIS (Enhanced)
         communication_analysis = {
-            "clarity": 85,  # Placeholder - would analyze speech patterns
-            "confidence": 78,  # Placeholder - would analyze voice characteristics
-            "engagement": 82,  # Placeholder - would analyze response length and enthusiasm
-            "professionalism": 90  # Placeholder - would analyze language use
+            "clarity": calculate_communication_clarity(candidate_responses),
+            "confidence": calculate_confidence_score(candidate_responses, assessment),
+            "engagement": calculate_engagement_score(candidate_responses),
+            "professionalism": calculate_professionalism_score(candidate_responses),
+            "response_quality": sum([qs["score"] for qs in question_scores]) / len(question_scores) if question_scores else 70
         }
         
-        # Analyze technical competency
+        # 6. TECHNICAL ANALYSIS (Enhanced)
         technical_analysis = {
-            "problem_solving_approach": "Systematic and methodical",
-            "technical_depth": "Good understanding of core concepts",
-            "coding_skills": "Solid foundation with room for growth",
-            "system_design_thinking": "Shows potential for scalable solutions"
+            "problem_solving_approach": analyze_problem_solving_approach(candidate_responses, questions),
+            "technical_depth": f"Score: {technical_score}/100 - {'Excellent' if technical_score >= 80 else 'Good' if technical_score >= 60 else 'Needs Improvement'}",
+            "coding_skills": analyze_coding_skills(candidate_responses),
+            "system_design_thinking": analyze_system_design_thinking(candidate_responses),
+            "accuracy_breakdown": {
+                "technical_questions": [qs for qs in question_scores if qs["question_number"] <= session_metadata.get('technical_count', 4)],
+                "behavioral_questions": [qs for qs in question_scores if qs["question_number"] > session_metadata.get('technical_count', 4)]
+            }
         }
         
-        # Analyze behavioral indicators
+        # 7. BEHAVIORAL ANALYSIS (Enhanced)
         behavioral_analysis = {
-            "leadership_potential": "Demonstrates initiative and ownership",
-            "team_collaboration": "Strong interpersonal skills",
-            "adaptability": "Shows flexibility in problem-solving",
-            "cultural_fit": "Aligns well with company values"
+            "leadership_potential": analyze_leadership_potential(candidate_responses),
+            "team_collaboration": analyze_team_collaboration(candidate_responses),
+            "adaptability": analyze_adaptability(candidate_responses),
+            "cultural_fit": f"Score: {behavioral_score}/100 - Cultural alignment assessment",
+            "emotional_intelligence": assessment.get('emotional_intelligence_metrics', {})
         }
         
-        # Generate improvement recommendations
-        recommendations = []
-        if technical_score < 70:
-            recommendations.append("Focus on strengthening core technical skills")
-        if behavioral_score < 70:
-            recommendations.append("Develop stronger behavioral interview responses")
-        if overall_score >= 80:
-            recommendations.append("Strong candidate - recommend for next round")
+        # 8. IMPROVEMENT RECOMMENDATIONS (Enhanced)
+        recommendations = generate_detailed_recommendations(technical_score, behavioral_score, overall_score, personality_analysis, bias_analysis)
         
-        # Predict success probability
+        # 9. SUCCESS PREDICTION (Enhanced with ML)
         success_factors = {
-            "technical_readiness": min(100, technical_score + 10),
+            "technical_readiness": min(100, technical_score + 5),
             "cultural_alignment": min(100, behavioral_score + 5),
-            "growth_potential": min(100, (technical_score + behavioral_score) / 2 + 15)
+            "growth_potential": predictive_analysis.get("growth_potential", 75),
+            "hiring_probability": predictive_analysis.get("hiring_probability", 0.5),
+            "predicted_success_rate": predictive_analysis.get("success_probability", 0.7)
         }
         
         return {
             "analysis_timestamp": datetime.utcnow().isoformat(),
+            "personality_analysis": personality_analysis,
+            "bias_detection": bias_analysis,
+            "predictive_hiring": predictive_analysis,
+            "speech_analysis": speech_analysis,
             "communication_analysis": communication_analysis,
             "technical_analysis": technical_analysis,
             "behavioral_analysis": behavioral_analysis,
             "success_factors": success_factors,
             "improvement_recommendations": recommendations,
             "overall_assessment": {
-                "strengths": [
-                    "Strong technical foundation",
-                    "Good communication skills",
-                    "Positive attitude and engagement"
-                ],
-                "areas_for_development": [
-                    "Could benefit from more hands-on experience",
-                    "Opportunity to deepen technical knowledge"
-                ],
-                "hiring_recommendation": "Recommend" if overall_score >= 70 else "Consider" if overall_score >= 50 else "Pass"
+                "strengths": identify_candidate_strengths(question_scores, personality_analysis, technical_score, behavioral_score),
+                "areas_for_development": identify_improvement_areas(question_scores, personality_analysis, technical_score, behavioral_score),
+                "hiring_recommendation": determine_hiring_recommendation(overall_score, predictive_analysis, bias_analysis),
+                "confidence_level": calculate_analysis_confidence(len(candidate_responses), technical_score, behavioral_score)
             }
         }
         
@@ -4758,7 +4774,7 @@ async def generate_comprehensive_ai_analysis(
         logging.error(f"Error generating comprehensive AI analysis: {str(e)}")
         return {
             "analysis_timestamp": datetime.utcnow().isoformat(),
-            "error": "Failed to generate comprehensive analysis",
+            "error": f"Failed to generate comprehensive analysis: {str(e)}",
             "basic_metrics": {
                 "technical_score": assessment.get('technical_score', 0),
                 "behavioral_score": assessment.get('behavioral_score', 0),
