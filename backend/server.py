@@ -4678,6 +4678,314 @@ def calculate_analysis_confidence(response_count: int, technical_score: int, beh
     
     return round(confidence, 2)
 
+# Additional helper functions for comprehensive analysis
+def calculate_communication_clarity(candidate_responses: list) -> float:
+    """Calculate communication clarity score based on response structure"""
+    if not candidate_responses:
+        return 50.0
+    
+    total_clarity = 0
+    for response in candidate_responses:
+        words = response.split()
+        # Clarity factors: sentence structure, word count, coherence
+        clarity_score = min(100, (len(words) * 2) + 30)  # Base score + word bonus
+        
+        # Bonus for clear indicators
+        if any(indicator in response.lower() for indicator in ['first', 'second', 'then', 'because', 'therefore']):
+            clarity_score += 10
+            
+        total_clarity += clarity_score
+    
+    return round(total_clarity / len(candidate_responses), 1)
+
+def calculate_confidence_score(candidate_responses: list, assessment: dict) -> float:
+    """Calculate confidence score from response patterns"""
+    if not candidate_responses:
+        return 50.0
+        
+    confidence_indicators = ['definitely', 'confident', 'sure', 'certain', 'absolutely', 'experience shows']
+    uncertainty_indicators = ['maybe', 'perhaps', 'i think', 'probably', 'not sure', 'unsure']
+    
+    total_confidence = 0
+    for response in candidate_responses:
+        response_lower = response.lower()
+        confidence_count = sum(1 for indicator in confidence_indicators if indicator in response_lower)
+        uncertainty_count = sum(1 for indicator in uncertainty_indicators if indicator in response_lower)
+        
+        # Base confidence from emotional intelligence if available
+        base_confidence = assessment.get('emotional_intelligence_metrics', {}).get('confidence', 0.6) * 100
+        
+        # Adjust based on language patterns
+        confidence_score = base_confidence + (confidence_count * 10) - (uncertainty_count * 8)
+        total_confidence += max(0, min(100, confidence_score))
+    
+    return round(total_confidence / len(candidate_responses), 1)
+
+def calculate_engagement_score(candidate_responses: list) -> float:
+    """Calculate engagement score based on response depth and enthusiasm"""
+    if not candidate_responses:
+        return 50.0
+        
+    engagement_indicators = ['excited', 'passionate', 'love', 'enjoy', 'interesting', 'fascinating']
+    
+    total_engagement = 0
+    for response in candidate_responses:
+        # Base engagement from response length
+        word_count = len(response.split())
+        engagement_score = min(80, word_count * 1.5 + 30)
+        
+        # Bonus for enthusiasm indicators
+        enthusiasm_bonus = sum(5 for indicator in engagement_indicators if indicator in response.lower())
+        engagement_score += enthusiasm_bonus
+        
+        total_engagement += min(100, engagement_score)
+    
+    return round(total_engagement / len(candidate_responses), 1)
+
+def calculate_professionalism_score(candidate_responses: list) -> float:
+    """Calculate professionalism score based on language use"""
+    if not candidate_responses:
+        return 75.0
+        
+    professional_indicators = ['experience', 'responsibility', 'project', 'team', 'develop', 'implement', 'analyze']
+    unprofessional_indicators = ['like', 'you know', 'um', 'uh', 'whatever', 'stuff']
+    
+    total_professionalism = 0
+    for response in candidate_responses:
+        response_lower = response.lower()
+        professional_count = sum(1 for indicator in professional_indicators if indicator in response_lower)
+        unprofessional_count = sum(1 for indicator in unprofessional_indicators if indicator in response_lower)
+        
+        # Base professionalism score
+        professionalism_score = 75 + (professional_count * 5) - (unprofessional_count * 8)
+        total_professionalism += max(30, min(100, professionalism_score))
+    
+    return round(total_professionalism / len(candidate_responses), 1)
+
+def analyze_problem_solving_approach(candidate_responses: list, questions: list) -> str:
+    """Analyze problem-solving approach from responses"""
+    approach_indicators = {
+        'systematic': ['first', 'then', 'next', 'step', 'process', 'approach'],
+        'analytical': ['analyze', 'consider', 'evaluate', 'compare', 'assess'],
+        'creative': ['innovative', 'creative', 'alternative', 'different', 'unique'],
+        'collaborative': ['team', 'discuss', 'collaborate', 'feedback', 'together']
+    }
+    
+    approach_scores = {approach: 0 for approach in approach_indicators.keys()}
+    
+    for response in candidate_responses:
+        response_lower = response.lower()
+        for approach, indicators in approach_indicators.items():
+            approach_scores[approach] += sum(1 for indicator in indicators if indicator in response_lower)
+    
+    dominant_approach = max(approach_scores, key=approach_scores.get)
+    
+    approach_descriptions = {
+        'systematic': 'Systematic and methodical approach to problem-solving',
+        'analytical': 'Analytical and data-driven problem-solving style',
+        'creative': 'Creative and innovative problem-solving approach',
+        'collaborative': 'Collaborative and team-oriented problem-solving'
+    }
+    
+    return approach_descriptions.get(dominant_approach, 'Balanced problem-solving approach')
+
+def analyze_coding_skills(candidate_responses: list) -> str:
+    """Analyze coding skills from technical responses"""
+    coding_indicators = ['algorithm', 'function', 'variable', 'loop', 'array', 'object', 'class', 'method', 'API', 'database']
+    advanced_indicators = ['optimization', 'complexity', 'scalability', 'architecture', 'design pattern', 'refactor']
+    
+    coding_count = sum(sum(1 for indicator in coding_indicators if indicator in response.lower()) for response in candidate_responses)
+    advanced_count = sum(sum(1 for indicator in advanced_indicators if indicator in response.lower()) for response in candidate_responses)
+    
+    if advanced_count >= 3:
+        return "Advanced coding skills with architectural thinking"
+    elif coding_count >= 5:
+        return "Solid coding foundation with good technical vocabulary"
+    elif coding_count >= 2:
+        return "Basic coding knowledge with room for growth"
+    else:
+        return "Limited coding terminology detected"
+
+def analyze_system_design_thinking(candidate_responses: list) -> str:
+    """Analyze system design thinking capabilities"""
+    design_indicators = ['scalable', 'architecture', 'system', 'design', 'component', 'interface', 'integration', 'performance']
+    
+    design_count = sum(sum(1 for indicator in design_indicators if indicator in response.lower()) for response in candidate_responses)
+    
+    if design_count >= 4:
+        return "Strong system design thinking with scalability considerations"
+    elif design_count >= 2:
+        return "Good understanding of system design concepts"
+    else:
+        return "Basic system design awareness"
+
+def analyze_leadership_potential(candidate_responses: list) -> str:
+    """Analyze leadership potential from responses"""
+    leadership_indicators = ['led', 'managed', 'coordinated', 'initiative', 'decision', 'responsibility', 'mentored', 'guided']
+    
+    leadership_count = sum(sum(1 for indicator in leadership_indicators if indicator in response.lower()) for response in candidate_responses)
+    
+    if leadership_count >= 4:
+        return "Strong leadership potential with demonstrated experience"
+    elif leadership_count >= 2:
+        return "Good leadership indicators and initiative-taking"
+    else:
+        return "Developing leadership skills"
+
+def analyze_team_collaboration(candidate_responses: list) -> str:
+    """Analyze team collaboration skills"""
+    collaboration_indicators = ['team', 'collaborate', 'together', 'shared', 'communicate', 'support', 'help', 'feedback']
+    
+    collaboration_count = sum(sum(1 for indicator in collaboration_indicators if indicator in response.lower()) for response in candidate_responses)
+    
+    if collaboration_count >= 5:
+        return "Excellent team collaboration skills"
+    elif collaboration_count >= 2:
+        return "Good collaborative mindset"
+    else:
+        return "Individual contributor with developing team skills"
+
+def analyze_adaptability(candidate_responses: list) -> str:
+    """Analyze adaptability and learning agility"""
+    adaptability_indicators = ['learn', 'adapt', 'flexible', 'change', 'new', 'challenge', 'growth', 'improve', 'different']
+    
+    adaptability_count = sum(sum(1 for indicator in adaptability_indicators if indicator in response.lower()) for response in candidate_responses)
+    
+    if adaptability_count >= 6:
+        return "High adaptability with strong learning agility"
+    elif adaptability_count >= 3:
+        return "Good adaptability and openness to change"
+    else:
+        return "Moderate adaptability - may need support with changes"
+
+def generate_detailed_recommendations(technical_score: int, behavioral_score: int, overall_score: int, personality_analysis: dict, bias_analysis: dict) -> dict:
+    """Generate detailed improvement recommendations"""
+    recommendations = {
+        "immediate_actions": [],
+        "development_areas": [],
+        "strengths_to_leverage": [],
+        "long_term_goals": []
+    }
+    
+    # Technical recommendations
+    if technical_score < 70:
+        recommendations["immediate_actions"].append("Focus on strengthening core technical skills")
+        recommendations["development_areas"].append("Technical knowledge gaps need addressing")
+    else:
+        recommendations["strengths_to_leverage"].append("Strong technical foundation to build upon")
+    
+    # Behavioral recommendations
+    if behavioral_score < 70:
+        recommendations["immediate_actions"].append("Develop stronger behavioral interview responses")
+        recommendations["development_areas"].append("Soft skills and behavioral competencies")
+    else:
+        recommendations["strengths_to_leverage"].append("Excellent behavioral skills and cultural fit")
+    
+    # Personality-based recommendations
+    personality_scores = personality_analysis.get("big_five_scores", {})
+    if personality_scores.get("openness", 0.5) > 0.7:
+        recommendations["strengths_to_leverage"].append("High openness - excellent for innovation roles")
+    if personality_scores.get("conscientiousness", 0.5) > 0.7:
+        recommendations["strengths_to_leverage"].append("High conscientiousness - reliable and detail-oriented")
+    
+    # Bias-related recommendations
+    if bias_analysis.get("is_biased", False):
+        recommendations["long_term_goals"].append("Review interview process for potential bias")
+    
+    # Overall recommendations
+    if overall_score >= 80:
+        recommendations["immediate_actions"].append("Strong candidate - recommend for next round")
+    elif overall_score >= 60:
+        recommendations["long_term_goals"].append("Solid candidate with growth potential")
+    
+    return recommendations
+
+def identify_candidate_strengths(question_scores: list, personality_analysis: dict, technical_score: int, behavioral_score: int) -> list:
+    """Identify candidate's key strengths"""
+    strengths = []
+    
+    # Score-based strengths
+    if technical_score >= 80:
+        strengths.append("Excellent technical competency")
+    elif technical_score >= 70:
+        strengths.append("Strong technical foundation")
+    
+    if behavioral_score >= 80:
+        strengths.append("Outstanding behavioral skills and cultural fit")
+    elif behavioral_score >= 70:
+        strengths.append("Good behavioral responses and interpersonal skills")
+    
+    # Individual question performance
+    if question_scores:
+        high_scores = [qs for qs in question_scores if qs.get("score", 0) >= 80]
+        if len(high_scores) >= len(question_scores) * 0.6:
+            strengths.append("Consistent high performance across questions")
+    
+    # Personality-based strengths
+    personality_scores = personality_analysis.get("big_five_scores", {})
+    if personality_scores.get("conscientiousness", 0.5) > 0.7:
+        strengths.append("High conscientiousness and reliability")
+    if personality_scores.get("openness", 0.5) > 0.7:
+        strengths.append("Open to new experiences and innovative thinking")
+    
+    return strengths[:5]  # Return top 5 strengths
+
+def identify_improvement_areas(question_scores: list, personality_analysis: dict, technical_score: int, behavioral_score: int) -> list:
+    """Identify areas for candidate improvement"""
+    improvements = []
+    
+    # Score-based improvements
+    if technical_score < 60:
+        improvements.append("Technical skills need significant development")
+    elif technical_score < 70:
+        improvements.append("Technical knowledge could be strengthened")
+    
+    if behavioral_score < 60:
+        improvements.append("Behavioral responses need improvement")
+    elif behavioral_score < 70:
+        improvements.append("Soft skills could be enhanced")
+    
+    # Individual question performance
+    if question_scores:
+        low_scores = [qs for qs in question_scores if qs.get("score", 0) < 60]
+        if len(low_scores) >= len(question_scores) * 0.3:
+            improvements.append("Inconsistent performance across questions")
+    
+    # Personality-based improvements
+    personality_scores = personality_analysis.get("big_five_scores", {})
+    if personality_scores.get("neuroticism", 0.5) > 0.7:
+        improvements.append("May benefit from stress management techniques")
+    
+    return improvements[:4]  # Return top 4 improvement areas
+
+def determine_hiring_recommendation(overall_score: int, predictive_analysis: dict, bias_analysis: dict) -> str:
+    """Determine final hiring recommendation"""
+    success_probability = predictive_analysis.get("success_probability", 0.5)
+    is_biased = bias_analysis.get("is_biased", False)
+    
+    if is_biased:
+        return "Review Required - Potential bias detected in assessment"
+    elif overall_score >= 80 and success_probability >= 0.7:
+        return "Strong Hire - Excellent candidate with high success probability"
+    elif overall_score >= 70 and success_probability >= 0.6:
+        return "Hire - Good candidate with solid potential"
+    elif overall_score >= 60 and success_probability >= 0.5:
+        return "Consider - Moderate candidate, may benefit from additional assessment"
+    else:
+        return "No Hire - Below threshold for current requirements"
+
+def calculate_analysis_confidence(response_count: int, technical_score: int, behavioral_score: int) -> float:
+    """Calculate confidence level in the analysis"""
+    base_confidence = min(1.0, response_count / 8)  # Higher confidence with more responses
+    
+    # Adjust based on score consistency
+    score_consistency = 1.0 - abs(technical_score - behavioral_score) / 100
+    
+    # Final confidence calculation
+    confidence = (base_confidence * 0.6) + (score_consistency * 0.4)
+    
+    return round(confidence, 2)
+
 async def generate_comprehensive_ai_analysis(
     session_id: str, 
     questions: list, 
