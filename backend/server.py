@@ -4334,8 +4334,10 @@ RECOMMENDATION:
         "assessment_summary": {
             "technical_score": technical_score,
             "behavioral_score": behavioral_score,
-            "overall_score": overall_score
+            "overall_score": overall_score,
+            "average_individual_score": round(average_individual_score, 2)
         },
+        "question_scores": question_scores,
         "detailed_justification": justification,
         "full_assessment": assessment
     }
