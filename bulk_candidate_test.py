@@ -412,13 +412,19 @@ Tech Institute, 2020"""
             if success:
                 result = response.json()
                 success = ("candidates" in result and 
-                          "total_count" in result and
-                          result.get("page") == 1 and
-                          result.get("page_size") == 10)
+                          "pagination" in result and
+                          result.get("success", False))
+                
+                if success:
+                    pagination = result.get("pagination", {})
+                    success = (pagination.get("current_page") == 1 and
+                              pagination.get("page_size") == 10)
             
             details = f"Status: {response.status_code}"
             if success:
-                details += f", Filtered results: {len(result.get('candidates', []))}/{result.get('total_count', 0)}"
+                pagination = result.get("pagination", {})
+                total = pagination.get("total_count", 0)
+                details += f", Filtered results: {len(result.get('candidates', []))}/{total}"
             else:
                 details += f", Response: {response.text[:300]}"
             
