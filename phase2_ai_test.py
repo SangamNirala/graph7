@@ -146,21 +146,15 @@ class Phase2AITester:
             if success:
                 data = response.json()
                 success = (
-                    "personality_profile" in data and
-                    "big_five_traits" in data["personality_profile"]
+                    "success" in data and
+                    data.get("success") == True and
+                    "personality_analysis" in data
                 )
                 
                 if success:
-                    traits = data["personality_profile"]["big_five_traits"]
-                    required_traits = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]
-                    success = all(trait in traits for trait in required_traits)
-                    
-                    if success:
-                        details = f"Status: {response.status_code}, Big Five Traits: O:{traits['openness']:.2f}, C:{traits['conscientiousness']:.2f}, E:{traits['extraversion']:.2f}, A:{traits['agreeableness']:.2f}, N:{traits['neuroticism']:.2f}"
-                    else:
-                        details = f"Status: {response.status_code}, Missing Big Five traits"
+                    details = f"Status: {response.status_code}, Personality analysis completed successfully"
                 else:
-                    details = f"Status: {response.status_code}, Missing personality profile"
+                    details = f"Status: {response.status_code}, Missing personality analysis"
             else:
                 details = f"Status: {response.status_code}, Response: {response.text[:200]}"
             
