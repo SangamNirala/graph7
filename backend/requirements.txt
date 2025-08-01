@@ -83,3 +83,8 @@ webrtcvad>=2.0.10
 fer>=22.4.0
 imutils>=0.5.4
 Pillow>=10.0.0
+
+# Phase 2: AI-Powered Screening & Shortlisting Dependencies
+spacy>=3.4.0
+nltk>=3.8.0
+spacy[transformers]>=3.4.0
