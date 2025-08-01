@@ -167,17 +167,9 @@ class Phase2AITester:
     def test_fairness_metrics(self) -> bool:
         """Test fairness metrics calculation"""
         try:
-            payload = {
-                "assessment_groups": [
-                    {"group": "A", "scores": [85, 78, 92, 76, 88], "hired": [1, 1, 1, 0, 1]},
-                    {"group": "B", "scores": [82, 80, 75, 89, 84], "hired": [1, 1, 0, 1, 1]}
-                ]
-            }
-            
             response = self.session.post(
-                f"{self.base_url}/ai-enhancements/fairness-metrics",
-                json=payload,
-                timeout=10
+                f"{self.base_url}/admin/ai-enhancement/calculate-fairness-metrics",
+                timeout=15
             )
             
             success = response.status_code == 200
