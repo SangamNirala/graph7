@@ -92,22 +92,21 @@ class Phase2AITester:
     def test_predictive_hiring_model(self) -> bool:
         """Test ML-based hiring success prediction"""
         try:
-            payload = {
-                "assessment_data": {
-                    "technical_score": 85,
-                    "behavioral_score": 78,
-                    "overall_score": 82,
-                    "experience_years": 5,
-                    "education_level": "Masters",
-                    "skills_match": 0.85,
-                    "communication_score": 80,
-                    "problem_solving_score": 88
-                }
-            }
-            
+            # First train the model
             response = self.session.post(
-                f"{self.base_url}/ai-enhancements/predictive-hiring",
-                json=payload,
+                f"{self.base_url}/admin/ai-enhancement/train-hiring-model",
+                timeout=20
+            )
+            
+            if response.status_code != 200:
+                details = f"Model training failed - Status: {response.status_code}, Response: {response.text[:200]}"
+                self.log_test("Predictive Hiring Model", False, details)
+                return False
+            
+            # Now test prediction with a session ID (we'll use our test session)
+            response = self.session.post(
+                f"{self.base_url}/admin/ai-enhancement/predict-hiring-success",
+                params={"session_id": self.test_session_id},
                 timeout=15
             )
             
