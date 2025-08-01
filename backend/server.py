@@ -780,6 +780,82 @@ class UpdateCandidateRequest(BaseModel):
     tags: Optional[List[str]] = None
     notes: Optional[str] = None
 
+# ===== PHASE 2: AI SCREENING & SHORTLISTING MODELS =====
+
+class JobRequirements(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_title: str
+    job_description: str
+    required_skills: List[str] = []
+    preferred_skills: List[str] = []
+    experience_level: str = "mid"  # entry, mid, senior, executive
+    education_requirements: Dict[str, Any] = {}
+    industry_preferences: List[str] = []
+    scoring_weights: Dict[str, float] = {
+        'skills_match': 0.4,
+        'experience_level': 0.3,
+        'education_fit': 0.2,
+        'career_progression': 0.1
+    }
+    threshold_settings: Dict[str, float] = {
+        'min_score': 70.0,
+        'top_candidate': 90.0,
+        'strong_match': 80.0,
+        'good_fit': 70.0
+    }
+    auto_tagging_rules: Dict[str, List[str]] = {}
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: str = "admin"
+
+class ScreeningSession(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_requirements_id: str
+    candidates_screened: List[str] = []  # candidate IDs
+    total_candidates: int = 0
+    processed_candidates: int = 0
+    results_summary: Dict[str, Any] = {}
+    threshold_applied: float = 70.0
+    shortlist_generated: bool = False
+    shortlist_candidate_ids: List[str] = []
+    created_by: str = "admin"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+    status: str = "pending"  # pending, processing, completed, failed
+
+# Request models for Phase 2 API endpoints
+class JobRequirementsRequest(BaseModel):
+    job_title: str
+    job_description: str
+    required_skills: List[str] = []
+    preferred_skills: List[str] = []
+    experience_level: str = "mid"
+    education_requirements: Dict[str, Any] = {}
+    industry_preferences: List[str] = []
+    scoring_weights: Optional[Dict[str, float]] = None
+
+class BulkScreeningRequest(BaseModel):
+    job_requirements_id: str
+    candidate_ids: Optional[List[str]] = None  # If None, screen all candidates
+    batch_id: Optional[str] = None  # Screen all candidates from specific batch
+
+class CandidateScoringRequest(BaseModel):
+    job_requirements_id: str
+    candidate_ids: List[str]
+    custom_weights: Optional[Dict[str, float]] = None
+
+class AutoShortlistRequest(BaseModel):
+    screening_session_id: str
+    shortlist_size: int = 10
+    min_score_threshold: Optional[float] = None
+
+class ThresholdConfigRequest(BaseModel):
+    threshold_name: str
+    min_score: float = 70.0
+    top_candidate: float = 90.0
+    strong_match: float = 80.0
+    good_fit: float = 70.0
+    auto_tagging_rules: Dict[str, List[str]] = {}
+
 # Document parsing utilities
 def extract_text_from_pdf(file_content: bytes) -> str:
     try:
