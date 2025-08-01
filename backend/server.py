@@ -32,7 +32,7 @@ import gridfs
 import librosa
 import numpy as np
 import torch
-from transformers import pipeline
+# from transformers import pipeline  # Commented out due to dependency issues
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from textstat import flesch_reading_ease
 
