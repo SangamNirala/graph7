@@ -57,25 +57,12 @@ class Phase2AITester:
     def test_bias_detection_analysis(self) -> bool:
         """Test bias detection and fairness analysis"""
         try:
-            payload = {
-                "assessment_data": {
-                    "session_id": self.test_session_id,
-                    "candidate_responses": [
-                        "I have 5 years of experience in machine learning and AI development.",
-                        "I believe diversity in teams leads to better innovation and problem-solving.",
-                        "My approach to leadership is collaborative and inclusive."
-                    ],
-                    "interview_questions": [
-                        "Tell me about your technical experience.",
-                        "How do you view diversity in the workplace?",
-                        "Describe your leadership style."
-                    ]
-                }
-            }
+            # Test question bias analysis
+            question_text = "Tell me about your technical experience and how you handle challenging situations."
             
             response = self.session.post(
-                f"{self.base_url}/ai-enhancements/bias-detection",
-                json=payload,
+                f"{self.base_url}/admin/ai-enhancement/analyze-question-bias",
+                params={"question_text": question_text},
                 timeout=15
             )
             
