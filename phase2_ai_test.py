@@ -261,7 +261,7 @@ class Phase2AITester:
         """Test data retention policies management"""
         try:
             response = self.session.get(
-                f"{self.base_url}/admin/data-privacy/retention-policies",
+                f"{self.base_url}/admin/data-privacy/policies",
                 timeout=10
             )
             
