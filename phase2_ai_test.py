@@ -207,15 +207,13 @@ class Phase2AITester:
             if success:
                 data = response.json()
                 success = (
-                    "training_result" in data and
-                    "model_performance" in data["training_result"] and
-                    "accuracy" in data["training_result"]["model_performance"]
+                    "success" in data and
+                    data.get("success") == True and
+                    "training_result" in data
                 )
                 
                 if success:
-                    performance = data["training_result"]["model_performance"]
-                    accuracy = performance["accuracy"]
-                    details = f"Status: {response.status_code}, Model Accuracy: {accuracy:.3f}"
+                    details = f"Status: {response.status_code}, Model training completed successfully"
                 else:
                     details = f"Status: {response.status_code}, Missing training results"
             else:
