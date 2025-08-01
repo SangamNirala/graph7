@@ -3623,12 +3623,15 @@ voice_processor = VoiceProcessor()
 data_privacy_manager = DataPrivacyManager()
 personality_analyzer = PersonalityAnalyzer()
 
-# Phase 3: Initialize Open-Source AI Components
+# Phase 3: Initialize Open-Source AI Components - Temporarily disabled due to dependency issues
 try:
-    open_source_ai_engine = get_ai_engine()
-    speech_analyzer = get_speech_analyzer()
-    emotion_detector = get_emotion_detector()
-    logging.info("✅ Phase 3: Open-Source AI components initialized successfully")
+    # open_source_ai_engine = get_ai_engine()
+    # speech_analyzer = get_speech_analyzer()
+    # emotion_detector = get_emotion_detector()
+    open_source_ai_engine = None
+    speech_analyzer = None
+    emotion_detector = None
+    logging.info("⚠️  Phase 3: Open-Source AI components temporarily disabled due to dependency issues")
 except Exception as e:
     logging.error(f"❌ Error initializing open-source AI components: {str(e)}")
     open_source_ai_engine = None
