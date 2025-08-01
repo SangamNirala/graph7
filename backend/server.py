@@ -2893,10 +2893,13 @@ class OpenSourceInterviewAI:
     """
     
     def __init__(self):
-        # Initialize open-source AI engine
-        self.ai_engine = get_ai_engine()
-        self.speech_analyzer = get_speech_analyzer()
-        self.emotion_detector = get_emotion_detector()
+        # Initialize open-source AI engine - Temporarily disabled due to dependency issues
+        # self.ai_engine = get_ai_engine()
+        # self.speech_analyzer = get_speech_analyzer()
+        # self.emotion_detector = get_emotion_detector()
+        self.ai_engine = None
+        self.speech_analyzer = None
+        self.emotion_detector = None
         
     def generate_session_id(self) -> str:
         return str(uuid.uuid4())
