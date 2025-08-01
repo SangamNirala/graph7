@@ -361,13 +361,10 @@ class Phase2AITester:
     def test_right_to_erasure(self) -> bool:
         """Test GDPR Article 17 right to erasure"""
         try:
-            payload = {
-                "candidate_id": "test-candidate-erasure"
-            }
+            candidate_id = "test-candidate-erasure"
             
             response = self.session.post(
-                f"{self.base_url}/admin/data-privacy/erasure",
-                json=payload,
+                f"{self.base_url}/admin/data-privacy/right-to-erasure/{candidate_id}",
                 timeout=15
             )
             
