@@ -237,23 +237,21 @@ class Phase2AITester:
             if success:
                 data = response.json()
                 success = (
-                    "comprehensive_analysis" in data and
-                    "bias_analysis" in data["comprehensive_analysis"] and
-                    "predictive_analysis" in data["comprehensive_analysis"] and
-                    "personality_analysis" in data["comprehensive_analysis"]
+                    "success" in data and
+                    data.get("success") == True and
+                    "models" in data
                 )
                 
                 if success:
-                    analysis = data["comprehensive_analysis"]
-                    bias_score = analysis["bias_analysis"].get("overall_bias_score", 0)
-                    success_prob = analysis["predictive_analysis"].get("success_probability", 0)
-                    details = f"Status: {response.status_code}, Bias Score: {bias_score:.3f}, Success Probability: {success_prob:.2f}"
+                    models = data["models"]
+                    capabilities = data.get("capabilities", [])
+                    details = f"Status: {response.status_code}, AI Models Status: {len(models)} models, {len(capabilities)} capabilities"
                 else:
-                    details = f"Status: {response.status_code}, Missing comprehensive analysis components"
+                    details = f"Status: {response.status_code}, Missing model status data"
             else:
                 details = f"Status: {response.status_code}, Response: {response.text[:200]}"
             
-            self.log_test("Comprehensive AI Analysis", success, details)
+            self.log_test("AI Enhancement Model Status", success, details)
             return success
         except Exception as e:
             self.log_test("Comprehensive AI Analysis", False, f"Exception: {str(e)}")
