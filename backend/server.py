@@ -6486,6 +6486,619 @@ async def get_model_status():
         logging.error(f"Model status check failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Status check failed: {str(e)}")
 
+# ===== BULK CANDIDATE MANAGEMENT ENDPOINTS =====
+
+@api_router.post("/admin/bulk-upload")
+async def bulk_upload_resumes(
+    files: List[UploadFile] = File(...),
+    batch_name: str = Form("")
+):
+    """Upload multiple resume files for bulk processing"""
+    try:
+        # Validate file count
+        if len(files) > 100:
+            raise HTTPException(status_code=400, detail="Maximum 100 files allowed per batch")
+        
+        # Create bulk upload record
+        bulk_upload = BulkUpload(
+            batch_name=batch_name or f"Batch {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}",
+            total_files=len(files),
+            status="pending"
+        )
+        
+        # Validate and process file metadata
+        file_list = []
+        for file in files:
+            # Check file type
+            filename = file.filename.lower()
+            if not filename.endswith(('.pdf', '.doc', '.docx', '.txt')):
+                file_list.append({
+                    "filename": file.filename,
+                    "size": 0,
+                    "status": "failed",
+                    "error_message": "Unsupported file type. Only PDF, DOC, DOCX, and TXT files are allowed."
+                })
+                continue
+            
+            # Check file size (max 10MB per file)
+            content = await file.read()
+            if len(content) > 10 * 1024 * 1024:  # 10MB
+                file_list.append({
+                    "filename": file.filename,
+                    "size": len(content),
+                    "status": "failed", 
+                    "error_message": "File too large. Maximum size is 10MB per file."
+                })
+                continue
+            
+            file_list.append({
+                "filename": file.filename,
+                "size": len(content),
+                "status": "pending",
+                "error_message": "",
+                "content": base64.b64encode(content).decode('utf-8')  # Store content for processing
+            })
+            
+            # Reset file pointer for next iteration
+            await file.seek(0)
+        
+        bulk_upload.file_list = file_list
+        
+        # Save to database
+        await db.bulk_uploads.insert_one(bulk_upload.dict())
+        
+        return {
+            "success": True,
+            "batch_id": bulk_upload.id,
+            "batch_name": bulk_upload.batch_name,
+            "total_files": bulk_upload.total_files,
+            "valid_files": len([f for f in file_list if f["status"] == "pending"]),
+            "invalid_files": len([f for f in file_list if f["status"] == "failed"]),
+            "message": f"Batch upload created successfully. {len([f for f in file_list if f['status'] == 'pending'])} files ready for processing."
+        }
+        
+    except Exception as e:
+        logging.error(f"Bulk upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Bulk upload failed: {str(e)}")
+
+@api_router.post("/admin/bulk-process/{batch_id}")
+async def bulk_process_batch(
+    batch_id: str,
+    request: BulkProcessRequest
+):
+    """Process all files in a batch to create candidate profiles"""
+    try:
+        # Get bulk upload record
+        bulk_upload = await db.bulk_uploads.find_one({"id": batch_id})
+        if not bulk_upload:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        if bulk_upload["status"] != "pending":
+            raise HTTPException(status_code=400, detail="Batch already processed or in progress")
+        
+        # Update status to processing
+        await db.bulk_uploads.update_one(
+            {"id": batch_id},
+            {
+                "$set": {
+                    "status": "processing",
+                    "started_at": datetime.utcnow(),
+                    "progress_percentage": 0.0
+                }
+            }
+        )
+        
+        # Process files one by one
+        processed_count = 0
+        successful_count = 0
+        failed_count = 0
+        
+        for i, file_info in enumerate(bulk_upload["file_list"]):
+            if file_info["status"] != "pending":
+                continue
+            
+            try:
+                # Parse resume content
+                content_bytes = base64.b64decode(file_info["content"])
+                
+                # Create mock UploadFile for parsing
+                class MockFile:
+                    def __init__(self, filename, content):
+                        self.filename = filename
+                        self.content = content
+                
+                mock_file = MockFile(file_info["filename"], content_bytes)
+                start_time = datetime.utcnow()
+                resume_text = parse_resume(mock_file, content_bytes)
+                parsing_duration = (datetime.utcnow() - start_time).total_seconds()
+                
+                if not resume_text.strip():
+                    raise Exception("No text could be extracted from resume")
+                
+                # Extract basic skills and experience level
+                extracted_skills = extract_skills_from_resume(resume_text)
+                experience_level = determine_experience_level(resume_text)
+                
+                # Create candidate profile
+                candidate_profile = CandidateProfile(
+                    filename=file_info["filename"],
+                    file_size=file_info["size"],
+                    file_type=file_info["filename"].split('.')[-1].lower(),
+                    resume_content=resume_text,
+                    resume_preview=resume_text[:200] + "..." if len(resume_text) > 200 else resume_text,
+                    batch_id=batch_id,
+                    processing_status="completed",
+                    parsing_duration=parsing_duration,
+                    extracted_skills=extracted_skills,
+                    experience_level=experience_level
+                )
+                
+                # Save candidate profile
+                await db.candidate_profiles.insert_one(candidate_profile.dict())
+                
+                # Update file status in bulk upload
+                file_info["status"] = "completed"
+                successful_count += 1
+                
+            except Exception as e:
+                logging.error(f"Error processing file {file_info['filename']}: {str(e)}")
+                file_info["status"] = "failed"
+                file_info["error_message"] = str(e)
+                failed_count += 1
+            
+            processed_count += 1
+            
+            # Update progress
+            progress = (processed_count / len([f for f in bulk_upload["file_list"] if f["status"] in ["pending", "completed", "failed"]])) * 100
+            await db.bulk_uploads.update_one(
+                {"id": batch_id},
+                {
+                    "$set": {
+                        "processed_files": processed_count,
+                        "successful_files": successful_count,
+                        "failed_files": failed_count,
+                        "progress_percentage": progress,
+                        "file_list": bulk_upload["file_list"]
+                    }
+                }
+            )
+        
+        # Mark batch as completed
+        await db.bulk_uploads.update_one(
+            {"id": batch_id},
+            {
+                "$set": {
+                    "status": "completed",
+                    "completed_at": datetime.utcnow(),
+                    "progress_percentage": 100.0
+                }
+            }
+        )
+        
+        return {
+            "success": True,
+            "batch_id": batch_id,
+            "processed_files": processed_count,
+            "successful_files": successful_count,
+            "failed_files": failed_count,
+            "message": f"Batch processing completed. {successful_count} candidates created successfully."
+        }
+        
+    except Exception as e:
+        logging.error(f"Batch processing error: {str(e)}")
+        # Update batch status to failed
+        await db.bulk_uploads.update_one(
+            {"id": batch_id},
+            {"$set": {"status": "failed"}}
+        )
+        raise HTTPException(status_code=500, detail=f"Batch processing failed: {str(e)}")
+
+@api_router.get("/admin/candidates")
+async def get_candidates_list(
+    page: int = 1,
+    page_size: int = 20,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
+    status_filter: Optional[str] = None,
+    tags_filter: Optional[str] = None,  # Comma-separated tag IDs
+    batch_filter: Optional[str] = None,
+    search_query: str = "",
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None
+):
+    """Get paginated list of candidates with filtering and sorting"""
+    try:
+        # Build query filters
+        query = {}
+        
+        if status_filter:
+            query["status"] = status_filter
+        
+        if batch_filter:
+            query["batch_id"] = batch_filter
+        
+        if search_query:
+            query["$or"] = [
+                {"name": {"$regex": search_query, "$options": "i"}},
+                {"filename": {"$regex": search_query, "$options": "i"}},
+                {"resume_content": {"$regex": search_query, "$options": "i"}}
+            ]
+        
+        if tags_filter:
+            tag_ids = tags_filter.split(",")
+            query["tags"] = {"$in": tag_ids}
+        
+        if date_from or date_to:
+            date_query = {}
+            if date_from:
+                date_query["$gte"] = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+            if date_to:
+                date_query["$lte"] = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+            query["created_at"] = date_query
+        
+        # Get total count
+        total_count = await db.candidate_profiles.count_documents(query)
+        
+        # Build sort criteria
+        sort_direction = 1 if sort_order == "asc" else -1
+        sort_criteria = [(sort_by, sort_direction)]
+        
+        # Get paginated results
+        skip = (page - 1) * page_size
+        cursor = db.candidate_profiles.find(query).sort(sort_criteria).skip(skip).limit(page_size)
+        candidates = await cursor.to_list(length=page_size)
+        
+        # Get batch names for candidates
+        batch_ids = list(set([c["batch_id"] for c in candidates]))
+        batches = await db.bulk_uploads.find({"id": {"$in": batch_ids}}).to_list(length=None)
+        batch_names = {b["id"]: b["batch_name"] for b in batches}
+        
+        # Get tag names for candidates
+        all_tag_ids = []
+        for candidate in candidates:
+            all_tag_ids.extend(candidate.get("tags", []))
+        unique_tag_ids = list(set(all_tag_ids))
+        tags = await db.candidate_tags.find({"id": {"$in": unique_tag_ids}}).to_list(length=None)
+        tag_names = {t["id"]: t["name"] for t in tags}
+        
+        # Enrich candidates with batch and tag names
+        for candidate in candidates:
+            candidate["batch_name"] = batch_names.get(candidate["batch_id"], "Unknown")
+            candidate["tag_names"] = [tag_names.get(tag_id, tag_id) for tag_id in candidate.get("tags", [])]
+        
+        return {
+            "success": True,
+            "candidates": candidates,
+            "pagination": {
+                "current_page": page,
+                "page_size": page_size,
+                "total_count": total_count,
+                "total_pages": (total_count + page_size - 1) // page_size
+            },
+            "filters": {
+                "status_filter": status_filter,
+                "tags_filter": tags_filter,
+                "batch_filter": batch_filter,
+                "search_query": search_query,
+                "date_from": date_from,
+                "date_to": date_to
+            }
+        }
+        
+    except Exception as e:
+        logging.error(f"Get candidates error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get candidates: {str(e)}")
+
+@api_router.post("/admin/candidates/bulk-actions")
+async def bulk_candidate_actions(request: BulkActionRequest):
+    """Perform bulk actions on selected candidates"""
+    try:
+        if not request.candidate_ids:
+            raise HTTPException(status_code=400, detail="No candidate IDs provided")
+        
+        results = []
+        
+        if request.action == "add_tags":
+            tag_ids = request.parameters.get("tag_ids", [])
+            if not tag_ids:
+                raise HTTPException(status_code=400, detail="No tag IDs provided")
+            
+            # Add tags to candidates
+            result = await db.candidate_profiles.update_many(
+                {"id": {"$in": request.candidate_ids}},
+                {"$addToSet": {"tags": {"$each": tag_ids}}, "$set": {"updated_at": datetime.utcnow()}}
+            )
+            
+            # Update tag usage counts
+            await db.candidate_tags.update_many(
+                {"id": {"$in": tag_ids}},
+                {"$inc": {"usage_count": result.modified_count}}
+            )
+            
+            results.append(f"Added tags to {result.modified_count} candidates")
+        
+        elif request.action == "remove_tags":
+            tag_ids = request.parameters.get("tag_ids", [])
+            if not tag_ids:
+                raise HTTPException(status_code=400, detail="No tag IDs provided")
+            
+            # Remove tags from candidates
+            result = await db.candidate_profiles.update_many(
+                {"id": {"$in": request.candidate_ids}},
+                {"$pullAll": {"tags": tag_ids}, "$set": {"updated_at": datetime.utcnow()}}
+            )
+            
+            # Update tag usage counts
+            await db.candidate_tags.update_many(
+                {"id": {"$in": tag_ids}},
+                {"$inc": {"usage_count": -result.modified_count}}
+            )
+            
+            results.append(f"Removed tags from {result.modified_count} candidates")
+        
+        elif request.action == "change_status":
+            new_status = request.parameters.get("status")
+            if not new_status:
+                raise HTTPException(status_code=400, detail="No status provided")
+            
+            valid_statuses = ["screening", "interviewed", "hired", "rejected", "archived"]
+            if new_status not in valid_statuses:
+                raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+            
+            result = await db.candidate_profiles.update_many(
+                {"id": {"$in": request.candidate_ids}},
+                {"$set": {"status": new_status, "updated_at": datetime.utcnow()}}
+            )
+            
+            results.append(f"Changed status to '{new_status}' for {result.modified_count} candidates")
+        
+        elif request.action == "archive":
+            result = await db.candidate_profiles.update_many(
+                {"id": {"$in": request.candidate_ids}},
+                {"$set": {"status": "archived", "updated_at": datetime.utcnow()}}
+            )
+            
+            results.append(f"Archived {result.modified_count} candidates")
+        
+        elif request.action == "delete":
+            result = await db.candidate_profiles.delete_many(
+                {"id": {"$in": request.candidate_ids}}
+            )
+            
+            results.append(f"Deleted {result.deleted_count} candidates")
+        
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown action: {request.action}")
+        
+        return {
+            "success": True,
+            "action": request.action,
+            "processed_candidates": len(request.candidate_ids),
+            "results": results
+        }
+        
+    except Exception as e:
+        logging.error(f"Bulk action error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Bulk action failed: {str(e)}")
+
+@api_router.get("/admin/candidates/{candidate_id}")
+async def get_candidate(candidate_id: str):
+    """Get individual candidate details"""
+    try:
+        candidate = await db.candidate_profiles.find_one({"id": candidate_id})
+        if not candidate:
+            raise HTTPException(status_code=404, detail="Candidate not found")
+        
+        # Get batch information
+        batch = await db.bulk_uploads.find_one({"id": candidate["batch_id"]})
+        candidate["batch_name"] = batch["batch_name"] if batch else "Unknown"
+        
+        # Get tag names
+        if candidate.get("tags"):
+            tags = await db.candidate_tags.find({"id": {"$in": candidate["tags"]}}).to_list(length=None)
+            candidate["tag_details"] = [{
+                "id": tag["id"],
+                "name": tag["name"],
+                "color": tag["color"]
+            } for tag in tags]
+        else:
+            candidate["tag_details"] = []
+        
+        return {"success": True, "candidate": candidate}
+        
+    except Exception as e:
+        logging.error(f"Get candidate error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get candidate: {str(e)}")
+
+@api_router.put("/admin/candidates/{candidate_id}")
+async def update_candidate(candidate_id: str, request: UpdateCandidateRequest):
+    """Update individual candidate details"""
+    try:
+        # Build update query
+        update_data = {"updated_at": datetime.utcnow()}
+        
+        if request.name is not None:
+            update_data["name"] = request.name
+        if request.email is not None:
+            update_data["email"] = request.email
+        if request.phone is not None:
+            update_data["phone"] = request.phone
+        if request.status is not None:
+            valid_statuses = ["screening", "interviewed", "hired", "rejected", "archived"]
+            if request.status not in valid_statuses:
+                raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+            update_data["status"] = request.status
+        if request.tags is not None:
+            update_data["tags"] = request.tags
+        if request.notes is not None:
+            update_data["notes"] = request.notes
+        
+        result = await db.candidate_profiles.update_one(
+            {"id": candidate_id},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Candidate not found")
+        
+        return {
+            "success": True,
+            "message": "Candidate updated successfully",
+            "updated_fields": list(update_data.keys())
+        }
+        
+    except Exception as e:
+        logging.error(f"Update candidate error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update candidate: {str(e)}")
+
+@api_router.delete("/admin/candidates/{candidate_id}")
+async def delete_candidate(candidate_id: str):
+    """Delete individual candidate"""
+    try:
+        result = await db.candidate_profiles.delete_one({"id": candidate_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Candidate not found")
+        
+        return {"success": True, "message": "Candidate deleted successfully"}
+        
+    except Exception as e:
+        logging.error(f"Delete candidate error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete candidate: {str(e)}")
+
+# Tag management endpoints
+@api_router.get("/admin/tags")
+async def get_tags():
+    """Get all available tags"""
+    try:
+        tags = await db.candidate_tags.find({}).sort("name", 1).to_list(length=None)
+        return {"success": True, "tags": tags}
+        
+    except Exception as e:
+        logging.error(f"Get tags error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get tags: {str(e)}")
+
+@api_router.post("/admin/tags")
+async def create_tag(request: CreateTagRequest):
+    """Create a new tag"""
+    try:
+        # Check if tag name already exists
+        existing_tag = await db.candidate_tags.find_one({"name": request.name})
+        if existing_tag:
+            raise HTTPException(status_code=400, detail="Tag with this name already exists")
+        
+        tag = CandidateTag(
+            name=request.name,
+            color=request.color,
+            description=request.description
+        )
+        
+        await db.candidate_tags.insert_one(tag.dict())
+        
+        return {"success": True, "tag": tag.dict(), "message": "Tag created successfully"}
+        
+    except Exception as e:
+        logging.error(f"Create tag error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create tag: {str(e)}")
+
+@api_router.get("/admin/bulk-uploads")
+async def get_bulk_uploads():
+    """Get all bulk upload batches"""
+    try:
+        batches = await db.bulk_uploads.find({}).sort("created_at", -1).to_list(length=None)
+        return {"success": True, "batches": batches}
+        
+    except Exception as e:
+        logging.error(f"Get bulk uploads error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get bulk uploads: {str(e)}")
+
+@api_router.get("/admin/bulk-uploads/{batch_id}/progress")
+async def get_batch_progress(batch_id: str):
+    """Get processing progress for a specific batch"""
+    try:
+        batch = await db.bulk_uploads.find_one({"id": batch_id})
+        if not batch:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        return {
+            "success": True,
+            "batch_id": batch_id,
+            "status": batch["status"],
+            "progress_percentage": batch["progress_percentage"],
+            "processed_files": batch["processed_files"],
+            "total_files": batch["total_files"],
+            "successful_files": batch["successful_files"],
+            "failed_files": batch["failed_files"]
+        }
+        
+    except Exception as e:
+        logging.error(f"Get batch progress error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get batch progress: {str(e)}")
+
+# Utility functions for resume processing
+def extract_skills_from_resume(resume_text: str) -> List[str]:
+    """Extract skills from resume text using simple keyword matching"""
+    skills_keywords = [
+        # Programming languages
+        "python", "java", "javascript", "typescript", "c++", "c#", "php", "ruby", "go", "rust",
+        "swift", "kotlin", "scala", "r", "matlab", "sql", "html", "css",
+        
+        # Frameworks and libraries
+        "react", "angular", "vue", "node.js", "express", "django", "flask", "spring", "laravel",
+        "tensorflow", "pytorch", "pandas", "numpy", "scikit-learn",
+        
+        # Databases
+        "mysql", "postgresql", "mongodb", "redis", "elasticsearch", "oracle", "sqlite",
+        
+        # Cloud and DevOps
+        "aws", "azure", "gcp", "docker", "kubernetes", "jenkins", "git", "gitlab", "github",
+        "terraform", "ansible", "chef", "puppet",
+        
+        # Other technical skills
+        "machine learning", "artificial intelligence", "data science", "blockchain", "cybersecurity",
+        "project management", "agile", "scrum", "leadership", "communication"
+    ]
+    
+    resume_lower = resume_text.lower()
+    found_skills = []
+    
+    for skill in skills_keywords:
+        if skill.lower() in resume_lower:
+            found_skills.append(skill.title())
+    
+    return list(set(found_skills))  # Remove duplicates
+
+def determine_experience_level(resume_text: str) -> str:
+    """Determine experience level from resume text"""
+    resume_lower = resume_text.lower()
+    
+    # Look for experience indicators
+    years_patterns = re.findall(r'(\d+)\s*(?:years?|yrs?)', resume_lower)
+    if years_patterns:
+        max_years = max([int(year) for year in years_patterns])
+        if max_years >= 10:
+            return "executive"
+        elif max_years >= 5:
+            return "senior"
+        elif max_years >= 2:
+            return "mid"
+        else:
+            return "entry"
+    
+    # Look for senior titles
+    senior_keywords = ["senior", "lead", "principal", "architect", "manager", "director", "vp", "cto", "ceo"]
+    for keyword in senior_keywords:
+        if keyword in resume_lower:
+            return "senior"
+    
+    # Look for entry-level indicators
+    entry_keywords = ["intern", "graduate", "junior", "entry", "trainee", "associate"]
+    for keyword in entry_keywords:
+        if keyword in resume_lower:
+            return "entry"
+    
+    return "mid"  # Default to mid-level
+
 # Health check
 @api_router.get("/health")
 async def health_check():
