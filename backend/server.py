@@ -7013,6 +7013,10 @@ async def get_bulk_uploads():
     """Get all bulk upload batches"""
     try:
         batches = await db.bulk_uploads.find({}).sort("created_at", -1).to_list(length=None)
+        # Convert MongoDB ObjectIds to strings for JSON serialization
+        for batch in batches:
+            if '_id' in batch:
+                batch['_id'] = str(batch['_id'])
         return {"success": True, "batches": batches}
         
     except Exception as e:
