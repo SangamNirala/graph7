@@ -675,6 +675,111 @@ class ConsentRequest(BaseModel):
     candidate_id: str
     data_types: List[str]
 
+# ===== BULK CANDIDATE MANAGEMENT MODELS =====
+
+class BulkUpload(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    batch_name: str = ""
+    total_files: int = 0
+    processed_files: int = 0
+    successful_files: int = 0
+    failed_files: int = 0
+    status: str = "pending"  # pending, processing, completed, failed
+    file_list: List[Dict[str, Any]] = []  # {filename, size, status, error_message}
+    progress_percentage: float = 0.0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    created_by: str = "admin"
+
+class CandidateTag(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    color: str = "#3B82F6"  # Default blue color
+    description: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    usage_count: int = 0
+
+class CandidateProfile(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    # Basic candidate information
+    name: str = ""
+    email: str = ""
+    phone: str = ""
+    
+    # Resume and parsing data
+    filename: str
+    file_size: int
+    file_type: str  # pdf, docx, txt
+    resume_content: str
+    resume_preview: str = ""  # First 200 characters
+    
+    # Batch and processing info
+    batch_id: str
+    processing_status: str = "pending"  # pending, processing, completed, failed
+    processing_error: str = ""
+    parsing_duration: float = 0.0  # seconds
+    
+    # Candidate management
+    status: str = "screening"  # screening, interviewed, hired, rejected, archived
+    tags: List[str] = []  # Tag IDs
+    notes: str = ""
+    score: Optional[float] = None
+    
+    # Skills and experience (extracted from resume)
+    extracted_skills: List[str] = []
+    experience_level: str = ""  # entry, mid, senior, executive
+    
+    # Interview data (if candidate completes interview)
+    interview_token: Optional[str] = None
+    interview_session_id: Optional[str] = None
+    interview_completed: bool = False
+    assessment_id: Optional[str] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    last_activity: datetime = Field(default_factory=datetime.utcnow)
+
+# Request models for bulk operations
+class BulkUploadRequest(BaseModel):
+    batch_name: str = ""
+
+class BulkProcessRequest(BaseModel):
+    job_title: str
+    job_description: str
+    job_requirements: str
+
+class CandidatesListRequest(BaseModel):
+    page: int = 1
+    page_size: int = 20
+    sort_by: str = "created_at"  # name, created_at, score, status
+    sort_order: str = "desc"  # asc, desc
+    status_filter: Optional[str] = None
+    tags_filter: List[str] = []
+    batch_filter: Optional[str] = None
+    search_query: str = ""
+    date_from: Optional[datetime] = None
+    date_to: Optional[datetime] = None
+
+class BulkActionRequest(BaseModel):
+    candidate_ids: List[str]
+    action: str  # add_tags, remove_tags, change_status, archive, delete
+    parameters: Dict[str, Any] = {}  # action-specific parameters
+
+class CreateTagRequest(BaseModel):
+    name: str
+    color: str = "#3B82F6"
+    description: str = ""
+
+class UpdateCandidateRequest(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    status: Optional[str] = None
+    tags: Optional[List[str]] = None
+    notes: Optional[str] = None
+
 # Document parsing utilities
 def extract_text_from_pdf(file_content: bytes) -> str:
     try:
