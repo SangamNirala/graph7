@@ -198,21 +198,8 @@ class Phase2AITester:
     def test_ml_model_training(self) -> bool:
         """Test ML model training endpoint"""
         try:
-            payload = {
-                "training_data": [
-                    {"features": [85, 78, 5, 0.85], "outcome": 1},
-                    {"features": [72, 65, 3, 0.70], "outcome": 0},
-                    {"features": [90, 88, 7, 0.92], "outcome": 1},
-                    {"features": [68, 70, 2, 0.65], "outcome": 0},
-                    {"features": [82, 80, 4, 0.80], "outcome": 1}
-                ],
-                "model_type": "random_forest",
-                "validation_split": 0.2
-            }
-            
             response = self.session.post(
-                f"{self.base_url}/ai-enhancements/train-model",
-                json=payload,
+                f"{self.base_url}/admin/ai-enhancement/train-hiring-model",
                 timeout=20
             )
             
