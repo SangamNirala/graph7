@@ -519,13 +519,17 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Voice Recording AudioContext Error Fixes"
-    - "Backend Voice Recording Endpoint Testing"
-    - "Speech-to-Text Processing and Transcript Saving"
+    - "Complete Backend Testing - All API Endpoints"
+    - "Voice Interview Functionality"
+    - "Enhanced Admin Dashboard Features"
+    - "Multi-format Resume Processing"
+    - "AI Assessment and Scoring Systems"
+    - "Frontend Voice Recording Interface"
+    - "Candidate Pipeline Management"
   stuck_tasks:
     - "Google Cloud Text-to-Speech Integration"
-  test_all: false
-  test_priority: "high_first"
+  test_all: true
+  test_priority: "comprehensive_verification"
 
 agent_communication:
     -agent: "main"
