@@ -5751,8 +5751,9 @@ async def analyze_video_frame(request: dict):
         if not frame_data:
             raise HTTPException(status_code=400, detail="No frame data provided")
         
-        # Analyze the frame using emotion analyzer
-        analysis_result = emotion_analyzer.process_video_stream(frame_data)
+        # Analyze the frame using emotion analyzer - Temporarily disabled due to dependency issues
+        # analysis_result = emotion_analyzer.process_video_stream(frame_data)
+        analysis_result = None
         
         if analysis_result is None:
             return {"analysis": None, "message": "No face detected in frame"}
