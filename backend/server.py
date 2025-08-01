@@ -6975,6 +6975,10 @@ async def get_tags():
     """Get all available tags"""
     try:
         tags = await db.candidate_tags.find({}).sort("name", 1).to_list(length=None)
+        # Convert MongoDB ObjectIds to strings for JSON serialization
+        for tag in tags:
+            if '_id' in tag:
+                tag['_id'] = str(tag['_id'])
         return {"success": True, "tags": tags}
         
     except Exception as e:
