@@ -7198,6 +7198,503 @@ def determine_experience_level(resume_text: str) -> str:
     
     return "mid"  # Default to mid-level
 
+# ===== PHASE 2: AI-POWERED SCREENING & SHORTLISTING ENDPOINTS =====
+
+# Initialize AI screening engines
+ai_resume_engine = AIResumeAnalysisEngine()
+smart_scoring_system = SmartScoringSystem()
+auto_shortlisting_engine = AutoShortlistingEngine(smart_scoring_system)
+
+@api_router.post("/admin/screening/analyze-resume/{candidate_id}")
+async def analyze_candidate_resume(candidate_id: str):
+    """Run AI analysis on specific candidate's resume"""
+    try:
+        # Fetch candidate profile
+        candidate = await db.candidate_profiles.find_one({"id": candidate_id})
+        if not candidate:
+            raise HTTPException(status_code=404, detail="Candidate not found")
+        
+        resume_content = candidate.get("resume_content", "")
+        if not resume_content:
+            raise HTTPException(status_code=400, detail="No resume content available for analysis")
+        
+        # Run AI analysis
+        logging.info(f"Starting AI analysis for candidate {candidate_id}")
+        
+        # Extract skills with confidence scores
+        extracted_skills = await ai_resume_engine.extract_skills_from_resume(resume_content)
+        
+        # Analyze experience level
+        experience_analysis = await ai_resume_engine.analyze_experience_level(resume_content)
+        
+        # Parse education data
+        education_data = await ai_resume_engine.parse_education(resume_content)
+        
+        # Enhanced AI analysis with Gemini
+        ai_enhanced_data = await ai_resume_engine.enhanced_skills_extraction_with_ai(resume_content)
+        
+        # Prepare analysis results
+        analysis_results = {
+            "skills_extracted": len(extracted_skills),
+            "top_skills": [skill['skill'] for skill in extracted_skills[:10]],
+            "experience_level": experience_analysis['experience_level'],
+            "years_of_experience": experience_analysis['years_of_experience'],
+            "education_entries": len(education_data),
+            "analysis_timestamp": datetime.utcnow().isoformat(),
+            "processing_time": 0  # Will be calculated
+        }
+        
+        start_time = datetime.utcnow()
+        
+        # Update candidate profile with new analysis data
+        update_data = {
+            "extracted_skills_detailed": extracted_skills,
+            "experience_analysis": experience_analysis,
+            "education_data": education_data,
+            "last_screened": datetime.utcnow(),
+            "screening_metadata": {
+                "analysis_method": "ai_enhanced",
+                "skills_confidence_avg": sum(s['confidence'] for s in extracted_skills) / len(extracted_skills) if extracted_skills else 0,
+                "ai_enhanced_data": ai_enhanced_data,
+                "processing_time": (datetime.utcnow() - start_time).total_seconds()
+            },
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Also update the legacy extracted_skills field for backward compatibility
+        update_data["extracted_skills"] = [skill['skill'] for skill in extracted_skills]
+        update_data["experience_level"] = experience_analysis['experience_level']
+        
+        await db.candidate_profiles.update_one(
+            {"id": candidate_id},
+            {"$set": update_data}
+        )
+        
+        analysis_results["processing_time"] = update_data["screening_metadata"]["processing_time"]
+        
+        logging.info(f"AI analysis completed for candidate {candidate_id}")
+        
+        return {
+            "success": True,
+            "candidate_id": candidate_id,
+            "analysis_results": analysis_results,
+            "extracted_skills": extracted_skills,
+            "experience_analysis": experience_analysis,
+            "education_data": education_data,
+            "ai_enhanced_data": ai_enhanced_data
+        }
+        
+    except Exception as e:
+        logging.error(f"Resume analysis error for candidate {candidate_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+@api_router.post("/admin/screening/bulk-analyze/{batch_id}")
+async def bulk_analyze_batch(batch_id: str, background_tasks):
+    """Process all candidates in a batch for AI screening"""
+    try:
+        # Get batch information
+        batch = await db.bulk_uploads.find_one({"id": batch_id})
+        if not batch:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        # Get all candidates in the batch
+        candidates_cursor = db.candidate_profiles.find({"batch_id": batch_id})
+        candidates = await candidates_cursor.to_list(length=None)
+        
+        if not candidates:
+            raise HTTPException(status_code=404, detail="No candidates found in batch")
+        
+        # Create screening session
+        screening_session = ScreeningSession(
+            job_requirements_id="",  # To be set when job requirements are specified
+            candidates_screened=[],
+            total_candidates=len(candidates),
+            processed_candidates=0,
+            status="processing"
+        )
+        
+        await db.screening_sessions.insert_one(screening_session.dict())
+        session_id = screening_session.id
+        
+        # Process candidates in background
+        async def process_batch():
+            processed = 0
+            successful = 0
+            errors = []
+            
+            for candidate in candidates:
+                try:
+                    candidate_id = candidate["id"]
+                    resume_content = candidate.get("resume_content", "")
+                    
+                    if not resume_content:
+                        errors.append(f"No resume content for candidate {candidate_id}")
+                        continue
+                    
+                    # Run AI analysis
+                    extracted_skills = await ai_resume_engine.extract_skills_from_resume(resume_content)
+                    experience_analysis = await ai_resume_engine.analyze_experience_level(resume_content)
+                    education_data = await ai_resume_engine.parse_education(resume_content)
+                    ai_enhanced_data = await ai_resume_engine.enhanced_skills_extraction_with_ai(resume_content)
+                    
+                    # Update candidate profile
+                    update_data = {
+                        "extracted_skills_detailed": extracted_skills,
+                        "experience_analysis": experience_analysis,
+                        "education_data": education_data,
+                        "last_screened": datetime.utcnow(),
+                        "screening_metadata": {
+                            "analysis_method": "bulk_ai_enhanced",
+                            "skills_confidence_avg": sum(s['confidence'] for s in extracted_skills) / len(extracted_skills) if extracted_skills else 0,
+                            "ai_enhanced_data": ai_enhanced_data,
+                            "batch_analysis": True
+                        },
+                        "extracted_skills": [skill['skill'] for skill in extracted_skills],
+                        "experience_level": experience_analysis['experience_level'],
+                        "updated_at": datetime.utcnow()
+                    }
+                    
+                    await db.candidate_profiles.update_one(
+                        {"id": candidate_id},
+                        {"$set": update_data}
+                    )
+                    
+                    successful += 1
+                    
+                except Exception as e:
+                    errors.append(f"Error processing candidate {candidate.get('id', 'unknown')}: {str(e)}")
+                    logging.error(f"Error in bulk analysis: {str(e)}")
+                
+                processed += 1
+                
+                # Update session progress
+                await db.screening_sessions.update_one(
+                    {"id": session_id},
+                    {"$set": {
+                        "processed_candidates": processed,
+                        "candidates_screened": [c["id"] for c in candidates[:processed]]
+                    }}
+                )
+            
+            # Mark session as completed
+            await db.screening_sessions.update_one(
+                {"id": session_id},
+                {"$set": {
+                    "status": "completed",
+                    "completed_at": datetime.utcnow(),
+                    "results_summary": {
+                        "total_processed": processed,
+                        "successful_analyses": successful,
+                        "errors": errors[:10]  # Limit error list size
+                    }
+                }}
+            )
+        
+        # Start background processing
+        background_tasks.add_task(process_batch)
+        
+        return {
+            "success": True,
+            "message": "Bulk analysis started",
+            "session_id": session_id,
+            "batch_id": batch_id,
+            "total_candidates": len(candidates),
+            "status": "processing"
+        }
+        
+    except Exception as e:
+        logging.error(f"Bulk analyze error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Bulk analysis failed: {str(e)}")
+
+@api_router.post("/admin/screening/job-requirements")
+async def create_job_requirements(request: JobRequirementsRequest):
+    """Create new job requirements and qualification criteria"""
+    try:
+        # Create job requirements record
+        job_requirements = JobRequirements(
+            job_title=request.job_title,
+            job_description=request.job_description,
+            required_skills=request.required_skills,
+            preferred_skills=request.preferred_skills,
+            experience_level=request.experience_level,
+            education_requirements=request.education_requirements,
+            industry_preferences=request.industry_preferences,
+            scoring_weights=request.scoring_weights or {
+                'skills_match': 0.4,
+                'experience_level': 0.3,
+                'education_fit': 0.2,
+                'career_progression': 0.1
+            }
+        )
+        
+        await db.job_requirements.insert_one(job_requirements.dict())
+        
+        logging.info(f"Created job requirements: {job_requirements.id}")
+        
+        return {
+            "success": True,
+            "job_requirements_id": job_requirements.id,
+            "job_title": job_requirements.job_title,
+            "required_skills": job_requirements.required_skills,
+            "preferred_skills": job_requirements.preferred_skills,
+            "scoring_weights": job_requirements.scoring_weights
+        }
+        
+    except Exception as e:
+        logging.error(f"Create job requirements error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create job requirements: {str(e)}")
+
+@api_router.get("/admin/screening/job-requirements")
+async def get_all_job_requirements():
+    """Get all job requirements templates"""
+    try:
+        cursor = db.job_requirements.find({})
+        requirements = await cursor.to_list(length=None)
+        
+        # Convert MongoDB ObjectIds to strings
+        for req in requirements:
+            if '_id' in req:
+                req['_id'] = str(req['_id'])
+        
+        return {
+            "success": True,
+            "job_requirements": requirements,
+            "total": len(requirements)
+        }
+        
+    except Exception as e:
+        logging.error(f"Get job requirements error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get job requirements: {str(e)}")
+
+@api_router.post("/admin/screening/score-candidates")
+async def score_candidates_against_job(request: CandidateScoringRequest):
+    """Score candidates against specific job requirements"""
+    try:
+        # Get job requirements
+        job_requirements = await db.job_requirements.find_one({"id": request.job_requirements_id})
+        if not job_requirements:
+            raise HTTPException(status_code=404, detail="Job requirements not found")
+        
+        # Get candidates
+        candidates_cursor = db.candidate_profiles.find({"id": {"$in": request.candidate_ids}})
+        candidates = await candidates_cursor.to_list(length=None)
+        
+        if not candidates:
+            raise HTTPException(status_code=404, detail="No candidates found")
+        
+        # Score each candidate
+        scored_candidates = []
+        
+        for candidate in candidates:
+            try:
+                # Prepare candidate data for scoring
+                candidate_profile = {
+                    'extracted_skills': candidate.get('extracted_skills_detailed', []),
+                    'experience_level': candidate.get('experience_analysis', {}).get('experience_level', 'entry'),
+                    'years_of_experience': candidate.get('experience_analysis', {}).get('years_of_experience', 0),
+                    'education_data': candidate.get('education_data', [])
+                }
+                
+                # Calculate score
+                scoring_result = await smart_scoring_system.score_candidate_against_job(
+                    candidate_profile, job_requirements, request.custom_weights
+                )
+                
+                # Update candidate record with scoring results
+                scoring_data = {
+                    'screening_scores': scoring_result,
+                    'score': scoring_result['overall_score'],
+                    'updated_at': datetime.utcnow(),
+                    'last_screened': datetime.utcnow()
+                }
+                
+                await db.candidate_profiles.update_one(
+                    {"id": candidate["id"]},
+                    {"$set": scoring_data}
+                )
+                
+                scored_candidates.append({
+                    'candidate_id': candidate['id'],
+                    'name': candidate.get('name', 'Unknown'),
+                    'overall_score': scoring_result['overall_score'],
+                    'component_scores': scoring_result['component_scores'],
+                    'score_breakdown': scoring_result['score_breakdown']
+                })
+                
+            except Exception as e:
+                logging.error(f"Error scoring candidate {candidate.get('id', 'unknown')}: {str(e)}")
+                continue
+        
+        # Sort by score descending
+        scored_candidates.sort(key=lambda x: x['overall_score'], reverse=True)
+        
+        return {
+            "success": True,
+            "job_requirements_id": request.job_requirements_id,
+            "candidates_scored": len(scored_candidates),
+            "scored_candidates": scored_candidates,
+            "average_score": sum(c['overall_score'] for c in scored_candidates) / len(scored_candidates) if scored_candidates else 0
+        }
+        
+    except Exception as e:
+        logging.error(f"Candidate scoring error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
+
+@api_router.post("/admin/screening/auto-shortlist")
+async def generate_auto_shortlist(request: AutoShortlistRequest):
+    """Generate shortlist based on scoring results with AI recommendations"""
+    try:
+        # Get screening session
+        session = await db.screening_sessions.find_one({"id": request.screening_session_id})
+        if not session:
+            raise HTTPException(status_code=404, detail="Screening session not found")
+        
+        # Get job requirements
+        job_requirements = await db.job_requirements.find_one({"id": session.get("job_requirements_id", "")})
+        if not job_requirements:
+            # Use default requirements if not specified
+            job_requirements = {
+                "required_skills": [],
+                "preferred_skills": [],
+                "experience_level": "mid"
+            }
+        
+        # Get all candidates that were screened
+        candidate_ids = session.get("candidates_screened", [])
+        if not candidate_ids:
+            raise HTTPException(status_code=400, detail="No candidates have been screened in this session")
+        
+        candidates_cursor = db.candidate_profiles.find({"id": {"$in": candidate_ids}})
+        candidates = await candidates_cursor.to_list(length=None)
+        
+        # Prepare candidate data for shortlisting
+        candidate_profiles = []
+        for candidate in candidates:
+            profile = {
+                'id': candidate['id'],
+                'name': candidate.get('name', 'Unknown'),
+                'extracted_skills': candidate.get('extracted_skills_detailed', []),
+                'experience_level': candidate.get('experience_analysis', {}).get('experience_level', 'entry'),
+                'years_of_experience': candidate.get('experience_analysis', {}).get('years_of_experience', 0),
+                'education_data': candidate.get('education_data', []),
+                'ai_score': candidate.get('score', 0)  # Use existing score if available
+            }
+            candidate_profiles.append(profile)
+        
+        # Generate shortlist using AI engine
+        shortlist_result = await auto_shortlisting_engine.generate_shortlist(
+            candidate_profiles,
+            job_requirements,
+            request.shortlist_size,
+            request.min_score_threshold or job_requirements.get('threshold_settings', {}).get('min_score', 70.0)
+        )
+        
+        # Update candidates with auto-tags
+        shortlist_candidate_ids = []
+        for candidate in shortlist_result['shortlist']:
+            candidate_id = candidate['id']
+            shortlist_candidate_ids.append(candidate_id)
+            
+            # Update candidate with auto-tags
+            auto_tags = candidate.get('auto_tags', [])
+            await db.candidate_profiles.update_one(
+                {"id": candidate_id},
+                {"$set": {
+                    "auto_tags": auto_tags,
+                    "updated_at": datetime.utcnow()
+                }}
+            )
+        
+        # Update screening session with shortlist results
+        await db.screening_sessions.update_one(
+            {"id": request.screening_session_id},
+            {"$set": {
+                "shortlist_generated": True,
+                "shortlist_candidate_ids": shortlist_candidate_ids,
+                "results_summary": {
+                    **session.get("results_summary", {}),
+                    "shortlist_results": shortlist_result
+                },
+                "completed_at": datetime.utcnow()
+            }}
+        )
+        
+        return {
+            "success": True,
+            "screening_session_id": request.screening_session_id,
+            "shortlist": shortlist_result['shortlist'],
+            "total_candidates_scored": shortlist_result['total_candidates_scored'],
+            "qualified_candidates": shortlist_result['qualified_candidates'],
+            "shortlist_size": shortlist_result['shortlist_size'],
+            "average_score": shortlist_result['average_score'],
+            "recommendations": shortlist_result['recommendations'],
+            "score_distribution": shortlist_result['score_distribution']
+        }
+        
+    except Exception as e:
+        logging.error(f"Auto-shortlist error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Shortlist generation failed: {str(e)}")
+
+@api_router.get("/admin/screening/thresholds")
+async def get_threshold_configurations():
+    """Get all threshold configurations"""
+    try:
+        # Get threshold configurations from job requirements
+        cursor = db.job_requirements.find({}, {"threshold_settings": 1, "auto_tagging_rules": 1, "job_title": 1})
+        configs = await cursor.to_list(length=None)
+        
+        # Convert MongoDB ObjectIds to strings
+        for config in configs:
+            if '_id' in config:
+                config['_id'] = str(config['_id'])
+        
+        return {
+            "success": True,
+            "threshold_configurations": configs,
+            "default_thresholds": {
+                "min_score": 70.0,
+                "top_candidate": 90.0,
+                "strong_match": 80.0,
+                "good_fit": 70.0
+            }
+        }
+        
+    except Exception as e:
+        logging.error(f"Get thresholds error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get thresholds: {str(e)}")
+
+@api_router.post("/admin/screening/thresholds")
+async def update_threshold_configuration(request: ThresholdConfigRequest):
+    """Update threshold configuration for auto-tagging"""
+    try:
+        # Create or update threshold configuration
+        threshold_config = {
+            "threshold_name": request.threshold_name,
+            "min_score": request.min_score,
+            "top_candidate": request.top_candidate,
+            "strong_match": request.strong_match,
+            "good_fit": request.good_fit,
+            "auto_tagging_rules": request.auto_tagging_rules,
+            "updated_at": datetime.utcnow()
+        }
+        
+        # For now, store as a separate collection for threshold configurations
+        await db.threshold_configurations.update_one(
+            {"threshold_name": request.threshold_name},
+            {"$set": threshold_config},
+            upsert=True
+        )
+        
+        return {
+            "success": True,
+            "message": f"Threshold configuration '{request.threshold_name}' updated successfully",
+            "threshold_config": threshold_config
+        }
+        
+    except Exception as e:
+        logging.error(f"Update thresholds error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update thresholds: {str(e)}")
+
 # Health check
 @api_router.get("/health")
 async def health_check():
