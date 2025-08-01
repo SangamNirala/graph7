@@ -397,7 +397,7 @@ class Phase2AITester:
         """Test automated data cleanup functionality"""
         try:
             response = self.session.post(
-                f"{self.base_url}/admin/data-privacy/cleanup",
+                f"{self.base_url}/admin/data-privacy/cleanup-expired",
                 timeout=20
             )
             
