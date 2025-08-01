@@ -34,7 +34,7 @@ import numpy as np
 import torch
 # from transformers import pipeline  # Commented out due to dependency issues
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from textstat import flesch_reading_ease
+# from textstat import flesch_reading_ease  # Temporarily disabled due to dependency issues
 
 # Advanced Analysis Engines - Temporarily disabled due to dependency issues
 # from emotion_analyzer import emotion_analyzer
