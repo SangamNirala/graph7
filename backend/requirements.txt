@@ -64,6 +64,7 @@ httpcore
 tiktoken
 tokenizers
 jinja2
+ml_dtypes>=0.5.0
 
 # Phase 3: Open-Source AI Model Integration Dependencies
 # Step 7.1: Replace Proprietary AI Services
