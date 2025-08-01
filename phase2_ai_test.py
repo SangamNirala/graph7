@@ -500,7 +500,7 @@ class Phase2AITester:
         categories = {
             "AI Enhancement Features": [
                 "bias_detection", "predictive_hiring", "personality_analysis",
-                "fairness_metrics", "ml_model_training", "comprehensive_ai_analysis"
+                "fairness_metrics", "ml_model_training", "ai_model_status"
             ],
             "Data Privacy & GDPR/CCPA": [
                 "data_retention_policies", "data_retention_status", "consent_tracking",
