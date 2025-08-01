@@ -6046,8 +6046,9 @@ async def monitor_candidate_behavior(request: dict):
         if not frame_data or not session_id:
             raise HTTPException(status_code=400, detail="Missing required data")
         
-        # Analyze frame for proctoring violations
-        analysis = emotion_analyzer.process_video_stream(frame_data)
+        # Analyze frame for proctoring violations - Temporarily disabled due to dependency issues
+        # analysis = emotion_analyzer.process_video_stream(frame_data)
+        analysis = None
         
         violations = []
         if analysis:
