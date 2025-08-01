@@ -88,3 +88,21 @@ Pillow>=10.0.0
 spacy>=3.4.0
 nltk>=3.8.0
 spacy[transformers]>=3.4.0
+
+# Additional dependencies to resolve import issues
+markupsafe>=3.0.0
+protobuf>=6.31.0
+grpcio>=1.74.0
+grpcio-status>=1.74.0
+cmudict>=1.1.0
+pyphen>=0.17.0
+thinc>=9.1.0
+spacy-legacy>=3.0.0
+spacy-loggers>=1.0.0
+catalogue>=2.0.0
+wasabi>=1.1.0
+srsly>=2.4.0
+murmurhash>=1.0.0
+cymem>=2.0.0
+preshed>=3.0.0
+blis>=0.7.0
