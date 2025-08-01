@@ -583,15 +583,17 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Complete Backend Testing - All API Endpoints"
-    - "Voice Interview Functionality"
-    - "Enhanced Admin Dashboard Features"
+    - "Complete Backend Testing - All Core API Endpoints"
+    - "Admin Authentication and File Upload"
+    - "Token Generation and Validation" 
+    - "Interview Session Management"
     - "Multi-format Resume Processing"
-    - "AI Assessment and Scoring Systems"
-    - "Frontend Voice Recording Interface"
-    - "Candidate Pipeline Management"
+    - "AI Interview Engine (Core Features)"
+    - "Assessment and Scoring System"
+    - "Data Privacy and Retention APIs"
+    - "Reporting Dashboard APIs"
   stuck_tasks:
-    - "Google Cloud Text-to-Speech Integration"
+    - "Advanced AI Components (Temporarily Disabled)"
   test_all: true
   test_priority: "comprehensive_verification"
 
