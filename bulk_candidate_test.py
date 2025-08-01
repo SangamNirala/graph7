@@ -366,9 +366,8 @@ Tech Institute, 2020"""
             if success:
                 result = response.json()
                 success = ("candidates" in result and 
-                          "total_count" in result and
-                          "page" in result and
-                          "page_size" in result)
+                          "pagination" in result and
+                          result.get("success", False))
                 
                 if success and result.get("candidates"):
                     # Store candidate IDs for bulk actions test
