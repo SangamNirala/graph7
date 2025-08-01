@@ -10,7 +10,7 @@ import time
 import io
 
 # Backend URL from frontend .env
-BASE_URL = "https://aa714438-8d57-4fa6-83d9-ca0077858a95.preview.emergentagent.com/api"
+BASE_URL = "https://ce77d578-c1a8-47ab-ac2a-9125c3e607be.preview.emergentagent.com/api"
 
 class AIQuestionTester:
     def __init__(self):
