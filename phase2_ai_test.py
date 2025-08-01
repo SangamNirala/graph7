@@ -477,7 +477,8 @@ class Phase2AITester:
         results["personality_analysis"] = self.test_personality_analysis()
         results["fairness_metrics"] = self.test_fairness_metrics()
         results["ml_model_training"] = self.test_ml_model_training()
-        results["comprehensive_ai_analysis"] = self.test_comprehensive_ai_analysis()
+        # Update test names in results
+        results["ai_model_status"] = self.test_comprehensive_ai_analysis()
         
         # Data Privacy & GDPR/CCPA Compliance
         results["data_retention_policies"] = self.test_data_retention_policies()
