@@ -828,6 +828,11 @@ const AdminDashboard = ({ setCurrentPage }) => {
   const [manualTechnicalQuestions, setManualTechnicalQuestions] = useState([]);
   const [manualBehavioralQuestions, setManualBehavioralQuestions] = useState([]);
 
+  // Phase 2: AI Screening & Shortlisting State
+  const [screeningResults, setScreeningResults] = useState(null);
+  const [bulkCandidates, setBulkCandidates] = useState([]);
+  const [screeningProgress, setScreeningProgress] = useState(null);
+
   const roleArchetypes = [
     'General',
     'Software Engineer',
