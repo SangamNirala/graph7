@@ -3326,47 +3326,30 @@ class InterviewAI(OpenSourceInterviewAI):
         }
     
     async def evaluate_answer(self, question: str, answer: str, question_type: str, unbiased_prompt: str = None) -> Dict[str, Any]:
-        # Use unbiased prompt if provided, otherwise use standard prompt
-        if unbiased_prompt:
-            system_message = unbiased_prompt
-        else:
-            system_message = f"""You are an expert interview evaluator. Evaluate the candidate's answer to this {question_type} question.
-
-        Question: {question}
-        Answer: {answer}
-
-        Provide evaluation in this exact JSON format:
-        {{
-            "score": [0-10],
-            "feedback": "detailed feedback on the answer",
-            "strengths": ["strength1", "strength2"],
-            "improvements": ["improvement1", "improvement2"]
-        }}"""
-        
-        session_id = self.generate_session_id()
-        chat = await self.create_chat_instance(session_id, system_message)
-        
-        user_message = UserMessage(text=f"Evaluate this answer: {answer}")
-        response = await chat.send_message(user_message)
-        
+        """
+        Evaluate candidate answer - now uses parent's open-source implementation
+        Maintains backward compatibility while using open-source AI models
+        """
         try:
-            # Try to extract JSON from response
-            start = response.find('{')
-            end = response.rfind('}') + 1
-            if start != -1 and end != -1:
-                json_str = response[start:end]
-                evaluation = json.loads(json_str)
-                return evaluation
-        except:
-            pass
-        
-        # Fallback evaluation
-        return {
-            "score": 7,
-            "feedback": "Answer provided shows understanding of the topic.",
-            "strengths": ["Shows knowledge"],
-            "improvements": ["Could provide more specific examples"]
-        }
+            # Use parent's open-source implementation
+            evaluation = await super().evaluate_answer(question, answer, question_type)
+            
+            # Convert to legacy format for backward compatibility
+            return {
+                "score": int(evaluation.get("content_quality", 0.5) * 10),
+                "feedback": f"Content quality: {evaluation.get('content_quality', 0.5):.2f}, Relevance: {evaluation.get('relevance', 0.5):.2f}",
+                "strengths": evaluation.get("strengths", ["Participated in the interview"]),
+                "improvements": evaluation.get("areas_for_improvement", ["Continue developing skills"])
+            }
+        except Exception as e:
+            logging.error(f"Error in evaluate_answer: {str(e)}")
+            # Fallback evaluation
+            return {
+                "score": 7,
+                "feedback": "Answer provided shows understanding of the topic.",
+                "strengths": ["Shows knowledge"],
+                "improvements": ["Could provide more specific examples"]
+            }
     
     async def generate_final_assessment(self, session_data: Dict) -> InterviewAssessment:
         technical_evaluations = session_data.get('technical_evaluations', [])
