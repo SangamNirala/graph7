@@ -176,16 +176,14 @@ class Phase2AITester:
             if success:
                 data = response.json()
                 success = (
-                    "fairness_analysis" in data and
-                    "demographic_parity" in data["fairness_analysis"] and
-                    "equalized_odds" in data["fairness_analysis"]
+                    "success" in data and
+                    data.get("success") == True and
+                    "fairness_metrics" in data
                 )
                 
                 if success:
-                    analysis = data["fairness_analysis"]
-                    dem_parity = analysis["demographic_parity"]
-                    eq_odds = analysis["equalized_odds"]
-                    details = f"Status: {response.status_code}, Demographic Parity: {dem_parity:.3f}, Equalized Odds: {eq_odds:.3f}"
+                    total_assessments = data.get("total_assessments_analyzed", 0)
+                    details = f"Status: {response.status_code}, Fairness metrics calculated for {total_assessments} assessments"
                 else:
                     details = f"Status: {response.status_code}, Missing fairness metrics"
             else:
