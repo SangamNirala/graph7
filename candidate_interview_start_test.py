@@ -17,7 +17,7 @@ import io
 from typing import Dict, Any, Optional
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://830251f7-f1b2-4513-bd41-31754723b024.preview.emergentagent.com/api"
+BASE_URL = "https://98b3b660-7711-4fc9-b6c4-4c0ea39dcece.preview.emergentagent.com/api"
 
 class CandidateInterviewStartTester:
     def __init__(self):
@@ -434,7 +434,7 @@ University of Technology, 2017"""
         try:
             # Make a preflight request to check CORS
             headers = {
-                'Origin': 'https://830251f7-f1b2-4513-bd41-31754723b024.preview.emergentagent.com',
+                'Origin': 'https://98b3b660-7711-4fc9-b6c4-4c0ea39dcece.preview.emergentagent.com',
                 'Access-Control-Request-Method': 'POST',
                 'Access-Control-Request-Headers': 'Content-Type'
             }
