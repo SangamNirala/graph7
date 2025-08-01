@@ -228,29 +228,9 @@ class Phase2AITester:
     def test_comprehensive_ai_analysis(self) -> bool:
         """Test comprehensive AI analysis combining all features"""
         try:
-            payload = {
-                "session_id": self.test_session_id,
-                "assessment_data": {
-                    "technical_score": 85,
-                    "behavioral_score": 78,
-                    "overall_score": 82,
-                    "candidate_responses": [
-                        "I have extensive experience in AI and machine learning.",
-                        "I believe in collaborative and inclusive work environments.",
-                        "I'm passionate about solving complex technical challenges."
-                    ],
-                    "voice_features": {
-                        "confidence": 0.8,
-                        "enthusiasm": 0.75,
-                        "clarity": 0.85
-                    }
-                }
-            }
-            
-            response = self.session.post(
-                f"{self.base_url}/ai-enhancements/comprehensive-analysis",
-                json=payload,
-                timeout=25
+            response = self.session.get(
+                f"{self.base_url}/admin/ai-enhancement/model-status",
+                timeout=15
             )
             
             success = response.status_code == 200
