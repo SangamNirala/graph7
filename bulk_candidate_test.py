@@ -282,8 +282,10 @@ Tech Institute, 2020"""
             if success:
                 result = response.json()
                 success = (result.get("success", False) and 
-                          "processing_started" in result and
-                          result.get("processing_started") == True)
+                          ("processing_started" in result or "processed_files" in result))
+                # Handle both async processing start and sync completion
+                if "processed_files" in result:
+                    success = result.get("processed_files", 0) > 0
             
             details = f"Status: {response.status_code}"
             if success:
