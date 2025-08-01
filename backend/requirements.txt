@@ -51,6 +51,7 @@ lazy_loader
 safetensors>=0.4.3
 absl-py>=1.0.0
 multidict
+regex
 attrs
 google-auth
 googleapis-common-protos>=1.56.0
