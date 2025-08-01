@@ -289,9 +289,13 @@ Tech Institute, 2020"""
             
             details = f"Status: {response.status_code}"
             if success:
-                details += f", Processing started for batch {self.batch_id[:8]}..."
-                if "estimated_time" in result:
-                    details += f", Estimated time: {result['estimated_time']}s"
+                if "processed_files" in result:
+                    details += f", Processed: {result.get('processed_files', 0)}/{result.get('total_files', 0)}"
+                    details += f", Successful: {result.get('successful_files', 0)}, Failed: {result.get('failed_files', 0)}"
+                else:
+                    details += f", Processing started for batch {self.batch_id[:8]}..."
+                    if "estimated_time" in result:
+                        details += f", Estimated time: {result['estimated_time']}s"
             else:
                 details += f", Response: {response.text[:300]}"
             
