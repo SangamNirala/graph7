@@ -6761,8 +6761,11 @@ async def get_candidates_list(
         tags = await db.candidate_tags.find({"id": {"$in": unique_tag_ids}}).to_list(length=None)
         tag_names = {t["id"]: t["name"] for t in tags}
         
-        # Enrich candidates with batch and tag names
+        # Enrich candidates with batch and tag names and convert ObjectIds
         for candidate in candidates:
+            # Convert MongoDB ObjectId to string for JSON serialization
+            if '_id' in candidate:
+                candidate['_id'] = str(candidate['_id'])
             candidate["batch_name"] = batch_names.get(candidate["batch_id"], "Unknown")
             candidate["tag_names"] = [tag_names.get(tag_id, tag_id) for tag_id in candidate.get("tags", [])]
         
