@@ -438,7 +438,7 @@ class Phase2ScreeningTester:
             
             if success:
                 result = response.json()
-                extracted_skills = result.get('extracted_skills_detailed', [])
+                extracted_skills = result.get('extracted_skills', [])
                 
                 # Check for detailed skills extraction with confidence scores
                 has_confidence_scores = any(
