@@ -375,7 +375,8 @@ Tech Institute, 2020"""
             
             details = f"Status: {response.status_code}"
             if success:
-                total = result.get("total_count", 0)
+                pagination = result.get("pagination", {})
+                total = pagination.get("total_count", 0)
                 candidates_count = len(result.get("candidates", []))
                 details += f", Total candidates: {total}, Retrieved: {candidates_count}"
                 if self.candidate_ids:
