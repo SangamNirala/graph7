@@ -329,7 +329,7 @@ class Phase2AITester:
             }
             
             response = self.session.post(
-                f"{self.base_url}/admin/data-privacy/consent",
+                f"{self.base_url}/admin/data-privacy/request-consent",
                 json=payload,
                 timeout=10
             )
