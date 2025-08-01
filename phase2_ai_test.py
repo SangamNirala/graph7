@@ -136,32 +136,9 @@ class Phase2AITester:
     def test_personality_analysis(self) -> bool:
         """Test Big Five personality traits analysis"""
         try:
-            payload = {
-                "multimodal_data": {
-                    "text_responses": [
-                        "I enjoy working in teams and collaborating on complex projects.",
-                        "I'm always looking for new challenges and learning opportunities.",
-                        "I prefer structured approaches but can adapt when needed.",
-                        "I believe in maintaining high standards and attention to detail.",
-                        "I try to stay calm under pressure and help others do the same."
-                    ],
-                    "voice_features": {
-                        "pitch_mean": 180.5,
-                        "energy_mean": 0.65,
-                        "speaking_rate": 150,
-                        "pause_frequency": 0.3
-                    },
-                    "behavioral_indicators": {
-                        "response_time": 2.5,
-                        "question_asking": 3,
-                        "elaboration_tendency": 0.7
-                    }
-                }
-            }
-            
             response = self.session.post(
-                f"{self.base_url}/ai-enhancements/personality-analysis",
-                json=payload,
+                f"{self.base_url}/admin/ai-enhancement/analyze-personality",
+                params={"session_id": self.test_session_id},
                 timeout=15
             )
             
