@@ -2362,8 +2362,9 @@ class PredictiveHiringModel:
         for response in responses:
             # Readability score using Flesch Reading Ease
             try:
-                readability = flesch_reading_ease(response.get('answer', ''))
-                readability_normalized = min(1.0, max(0.0, readability / 100.0))
+                # readability = flesch_reading_ease(response.get('answer', ''))  # Temporarily disabled due to dependency issues
+                # readability_normalized = min(1.0, max(0.0, readability / 100.0))
+                readability_normalized = 0.5  # Default value when flesch_reading_ease is disabled
             except:
                 readability_normalized = 0.5
             
