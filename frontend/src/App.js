@@ -1168,6 +1168,16 @@ const AdminDashboard = ({ setCurrentPage }) => {
             >
               📊 Assessment Reports
             </button>
+            <button
+              onClick={() => setActiveTab('screening')}
+              className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-300 ${
+                activeTab === 'screening'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              🤖 AI Screening
+            </button>
             {comparisonResults.length > 0 && (
               <button
                 onClick={() => setActiveTab('comparison')}
