@@ -52,6 +52,8 @@ safetensors>=0.4.3
 absl-py>=1.0.0
 multidict
 regex
+tf-keras
+keras==2.15.0
 attrs
 google-auth
 googleapis-common-protos>=1.56.0
