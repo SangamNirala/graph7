@@ -1,0 +1,29 @@
+Jane Smith
+Senior Full-Stack Developer
+
+EXPERIENCE:
+Senior Full-Stack Developer at TechCorp (2019-2024)
+- 5+ years developing scalable web applications using Python, React, and PostgreSQL
+- Led team of 6 developers in microservices architecture implementation
+- Expertise in FastAPI, Django, Node.js, and cloud deployment with AWS
+- Implemented CI/CD pipelines using Docker, Kubernetes, and Jenkins
+
+Mid-Level Developer at InnovateInc (2017-2019)
+- Built REST APIs and worked with MongoDB, Redis databases
+- Developed machine learning models using TensorFlow and scikit-learn
+- 2 years experience with React, TypeScript, and modern frontend frameworks
+
+SKILLS:
+Programming: Python, JavaScript, TypeScript, Java, SQL
+Frameworks: React, FastAPI, Django, Express.js, Vue.js
+Databases: PostgreSQL, MongoDB, Redis, MySQL
+Cloud/DevOps: AWS, Docker, Kubernetes, Jenkins, Terraform
+AI/ML: TensorFlow, scikit-learn, pandas, numpy, OpenAI APIs
+
+EDUCATION:
+M.S. Computer Science - Stanford University (2017)
+B.S. Software Engineering - UC Berkeley (2015)
+
+CERTIFICATIONS:
+- AWS Certified Solutions Architect
+- Certified Kubernetes Administrator
