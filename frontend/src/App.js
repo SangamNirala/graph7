@@ -2490,6 +2490,20 @@ const AdminDashboard = ({ setCurrentPage }) => {
             </div>
           </div>
         )}
+
+        {/* Phase 2: AI Screening & Shortlisting Tab */}
+        {activeTab === 'screening' && (
+          <div className="space-y-8">
+            {/* Job Requirements Setup */}
+            <JobRequirementsSetup />
+            
+            {/* Bulk Screening Interface */}
+            <BulkScreeningInterface 
+              candidatePipeline={candidatePipeline} 
+              refreshPipeline={fetchCandidatePipeline}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
