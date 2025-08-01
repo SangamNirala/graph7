@@ -7289,7 +7289,7 @@ async def analyze_candidate_resume(candidate_id: str):
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @api_router.post("/admin/screening/bulk-analyze/{batch_id}")
-async def bulk_analyze_batch(batch_id: str, background_tasks):
+async def bulk_analyze_batch(batch_id: str, request: BulkScreeningRequest, background_tasks: BackgroundTasks):
     """Process all candidates in a batch for AI screening"""
     try:
         # Get batch information
