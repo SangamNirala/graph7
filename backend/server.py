@@ -733,6 +733,15 @@ class CandidateProfile(BaseModel):
     extracted_skills: List[str] = []
     experience_level: str = ""  # entry, mid, senior, executive
     
+    # Phase 2: AI Screening & Analysis Data
+    extracted_skills_detailed: List[Dict[str, Any]] = []  # Detailed skills with confidence
+    experience_analysis: Dict[str, Any] = {}  # Years, progression, level confidence
+    education_data: List[Dict[str, Any]] = []  # Parsed education information
+    screening_scores: Dict[str, Any] = {}  # AI scoring results
+    auto_tags: List[str] = []  # System-generated tags based on screening
+    last_screened: Optional[datetime] = None
+    screening_metadata: Dict[str, Any] = {}  # Analysis details, confidence levels
+    
     # Interview data (if candidate completes interview)
     interview_token: Optional[str] = None
     interview_session_id: Optional[str] = None
