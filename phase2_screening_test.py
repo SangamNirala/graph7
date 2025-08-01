@@ -312,7 +312,7 @@ class Phase2ScreeningTester:
             
             if success:
                 result = response.json()
-                self.screening_session_id = result.get('screening_session_id')
+                self.screening_session_id = result.get('session_id')  # Fixed: use 'session_id' not 'screening_session_id'
                 total_candidates = result.get('total_candidates', 0)
                 
                 details += f", Screening Session: {self.screening_session_id}, Candidates: {total_candidates}"
