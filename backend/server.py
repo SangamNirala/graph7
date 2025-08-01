@@ -45,6 +45,9 @@ from textstat import flesch_reading_ease
 # from advanced_speech_analyzer import get_speech_analyzer
 # from computer_vision_emotion_detector import get_emotion_detector
 
+# Phase 2: AI-Powered Screening & Shortlisting Engine
+from phase2_screening_engine import AIResumeAnalysisEngine, SmartScoringSystem, AutoShortlistingEngine
+
 # Phase 3: Internationalization Manager
 class I18nManager:
     def __init__(self):
