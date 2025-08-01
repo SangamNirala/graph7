@@ -1,0 +1,28 @@
+Michael Johnson
+Mid-Level Software Engineer
+
+EXPERIENCE:
+Software Engineer at StartupXYZ (2021-2024)
+- 3 years developing web applications using Python and React
+- Built REST APIs using FastAPI and worked with PostgreSQL
+- Collaborated in Agile teams, participated in code reviews
+- Experience with AWS deployment and Docker containerization
+
+Junior Developer at CodeCrafters (2019-2021)
+- 2 years working with JavaScript, HTML, CSS, and basic Python
+- Learned React framework and state management with Redux
+- Worked on database design and SQL query optimization
+
+SKILLS:
+Programming: Python, JavaScript, HTML, CSS, SQL
+Frameworks: React, FastAPI, Redux
+Databases: PostgreSQL, MySQL
+Tools: Git, Docker, AWS basics
+Learning: Machine Learning, Kubernetes, advanced cloud technologies
+
+EDUCATION:
+B.S. Information Technology - State University (2019)
+
+PROJECTS:
+- Built e-commerce web app using React and Python backend
+- Created REST API for inventory management system
