@@ -168,7 +168,8 @@ Tech University, {2018+i}"""
                 result = response.json()
                 success = (result.get("success", False) and 
                           "candidates" in result and 
-                          "total_count" in result)
+                          "pagination" in result and
+                          "total_count" in result.get("pagination", {}))
                 
                 # Store candidate IDs for later tests
                 if success and result.get("candidates"):
@@ -176,7 +177,8 @@ Tech University, {2018+i}"""
             
             details = f"Status: {response.status_code}"
             if success:
-                details += f", Found {result.get('total_count', 0)} candidates, Page {result.get('page', 1)}"
+                pagination = result.get("pagination", {})
+                details += f", Found {pagination.get('total_count', 0)} candidates, Page {pagination.get('current_page', 1)}"
                 if self.candidate_ids:
                     details += f", Stored {len(self.candidate_ids)} candidate IDs"
             else:
