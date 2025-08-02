@@ -138,7 +138,7 @@ Tech University, {2018+i}"""
             if success:
                 result = response.json()
                 success = (result.get("success", False) and 
-                          "processed_count" in result)
+                          "processed_files" in result)
             
             details = f"Status: {response.status_code}, Response: {response.text[:300]}"
             self.log_test("Bulk Process API (POST /api/admin/bulk-process/{batch_id})", success, details)
