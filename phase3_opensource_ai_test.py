@@ -30,7 +30,7 @@ import io
 from typing import Dict, Any, Optional
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://01b5d04f-7f60-4bed-835a-83f1069e2978.preview.emergentagent.com/api"
+BASE_URL = "https://80fe7e9f-c56c-470d-9e0f-eb87207e7060.preview.emergentagent.com/api"
 
 class Phase3OpenSourceAITester:
     def __init__(self):
