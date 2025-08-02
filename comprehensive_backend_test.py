@@ -218,7 +218,9 @@ Tech University, {2018+i}"""
             get_success = get_response.status_code == 200
             if get_success:
                 get_result = get_response.json()
-                get_success = "tags" in get_result and isinstance(get_result["tags"], list)
+                get_success = (get_result.get("success", False) and 
+                              "tags" in get_result and 
+                              isinstance(get_result["tags"], list))
             
             overall_success = create_success and get_success
             
