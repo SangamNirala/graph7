@@ -7228,7 +7228,7 @@ def determine_experience_level(resume_text: str) -> str:
 # Initialize AI screening engines
 ai_resume_engine = AIResumeAnalysisEngine()
 smart_scoring_system = SmartScoringSystem()
-auto_shortlisting_engine = AutoShortlistingEngine(smart_scoring_system)
+auto_shortlisting_engine = AutoShortlistingEngine()
 
 @api_router.post("/admin/screening/analyze-resume/{candidate_id}")
 async def analyze_candidate_resume(candidate_id: str):
