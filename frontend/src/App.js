@@ -2494,6 +2494,9 @@ const AdminDashboard = ({ setCurrentPage }) => {
         {/* Phase 2: AI Screening & Shortlisting Tab */}
         {activeTab === 'screening' && (
           <div className="space-y-8">
+            {/* Direct Resume Upload & Screening */}
+            <DirectResumeScreening />
+            
             {/* Job Requirements Setup */}
             <JobRequirementsSetup />
             
