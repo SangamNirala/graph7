@@ -7781,10 +7781,13 @@ async def upload_resumes_and_analyze(
                 # Create candidate profile
                 candidate_profile = CandidateProfile(
                     name=file.filename.rsplit('.', 1)[0],  # Use filename without extension as name
+                    filename=file.filename,
+                    file_size=len(content),
+                    file_type=file.filename.lower().split('.')[-1],
                     resume_content=resume_content,
+                    resume_preview=resume_content[:200] + "..." if len(resume_content) > 200 else resume_content,
                     batch_id=bulk_upload.id,
-                    status="pending_screening",
-                    uploaded_at=datetime.utcnow()
+                    status="pending_screening"
                 )
                 
                 # Run immediate AI analysis
