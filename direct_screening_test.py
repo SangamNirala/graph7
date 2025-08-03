@@ -223,6 +223,7 @@ ACHIEVEMENTS:
                         # Validate processing summary
                         processing = result["processing_summary"]
                         screening = result["screening_results"]
+                        failed_files = result.get("failed_files", [])
                         
                         details = f"""Status: {response.status_code}
    Batch ID: {result['batch_id'][:8]}...
@@ -230,6 +231,12 @@ ACHIEVEMENTS:
    Screening: {screening['candidates_screened']} candidates, avg score: {screening['average_score']}
    High quality matches: {screening['high_quality_matches']}
    Top candidates: {len(result['top_candidates'])}"""
+                        
+                        # Show failed files for debugging
+                        if failed_files:
+                            details += f"\n   Failed files: {len(failed_files)}"
+                            for failed_file in failed_files[:2]:  # Show first 2 failed files
+                                details += f"\n     - {failed_file['filename']}: {failed_file['error']}"
                         
                         # Additional validation
                         if processing['successfully_processed'] == 0:
