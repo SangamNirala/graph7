@@ -965,7 +965,7 @@ export const DirectResumeScreening = () => {
                 </div>
                 <div className="text-center p-3 bg-red-600/20 rounded">
                   <div className="text-lg font-bold text-red-400">{screeningResults.screening_results.score_distribution.poor}</div>
-                  <div className="text-xs text-gray-300">Poor (<70%)</div>
+                  <div className="text-xs text-gray-300">Poor (&lt;70%)</div>
                 </div>
               </div>
             </div>
