@@ -11,7 +11,7 @@ import { I18nProvider, useI18n, LanguageSelector } from './I18nProvider';
 import { PWAProvider, InstallBanner, UpdateBanner, OfflineBanner } from './PWAProvider';
 
 // Phase 2 imports - AI Screening Components
-import { JobRequirementsSetup, BulkScreeningInterface } from './ScreeningComponents';
+import { JobRequirementsSetup, BulkScreeningInterface, DirectResumeScreening } from './ScreeningComponents';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
