@@ -52,14 +52,167 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 class AIResumeAnalysisEngine:
     def __init__(self):
         pass
-    def extract_skills_from_resume(self, *args, **kwargs):
-        return {"skills": [], "experience_level": "mid", "education_fit": 0.5}
+    
+    async def extract_skills_from_resume(self, resume_content: str):
+        """Extract skills from resume content"""
+        # Simple keyword-based skill extraction for testing
+        skills_keywords = [
+            "python", "javascript", "java", "react", "fastapi", "django", "flask",
+            "mongodb", "postgresql", "mysql", "docker", "kubernetes", "aws", "azure",
+            "git", "ci/cd", "machine learning", "data science", "api", "rest",
+            "microservices", "agile", "scrum", "leadership", "teamwork"
+        ]
+        
+        content_lower = resume_content.lower()
+        found_skills = []
+        
+        for skill in skills_keywords:
+            if skill in content_lower:
+                confidence = 0.8 + (content_lower.count(skill) * 0.1)  # Higher confidence for repeated mentions
+                found_skills.append({
+                    "skill": skill.title(),
+                    "confidence": min(confidence, 1.0),
+                    "category": "technical" if skill in ["python", "javascript", "java", "react", "fastapi"] else "general"
+                })
+        
+        return found_skills[:10]  # Return top 10 skills
+    
+    async def analyze_experience_level(self, resume_content: str):
+        """Analyze experience level from resume"""
+        content_lower = resume_content.lower()
+        
+        # Look for experience indicators
+        years_experience = 0
+        if "5+ years" in content_lower or "5 years" in content_lower:
+            years_experience = 5
+        elif "3+ years" in content_lower or "3 years" in content_lower:
+            years_experience = 3
+        elif "2+ years" in content_lower or "2 years" in content_lower:
+            years_experience = 2
+        elif "1+ years" in content_lower or "1 year" in content_lower:
+            years_experience = 1
+        
+        # Determine experience level
+        if years_experience >= 5:
+            level = "senior"
+        elif years_experience >= 3:
+            level = "mid"
+        elif years_experience >= 1:
+            level = "junior"
+        else:
+            level = "entry"
+        
+        return {
+            "experience_level": level,
+            "years_of_experience": years_experience,
+            "confidence": 0.8
+        }
+    
+    async def parse_education(self, resume_content: str):
+        """Parse education information from resume"""
+        content_lower = resume_content.lower()
+        education_data = []
+        
+        # Look for degree indicators
+        if "master" in content_lower or "ms " in content_lower or "m.s." in content_lower:
+            education_data.append({
+                "degree": "Master's",
+                "field": "Computer Science" if "computer science" in content_lower else "Technology",
+                "level": "graduate"
+            })
+        elif "bachelor" in content_lower or "bs " in content_lower or "b.s." in content_lower:
+            education_data.append({
+                "degree": "Bachelor's",
+                "field": "Computer Science" if "computer science" in content_lower else "Technology",
+                "level": "undergraduate"
+            })
+        
+        return education_data
+    
+    async def enhanced_skills_extraction_with_ai(self, resume_content: str):
+        """Enhanced AI-powered skills extraction"""
+        return {
+            "ai_confidence": 0.85,
+            "extraction_method": "keyword_based",
+            "additional_insights": "Basic skill extraction completed"
+        }
+    
     def analyze_candidate_profile(self, *args, **kwargs):
         return {"technical_skills": [], "soft_skills": [], "experience_match": 0.5}
 
 class SmartScoringSystem:
     def __init__(self):
         pass
+    
+    async def score_candidate_against_job(self, candidate_data: dict, job_requirements: dict, custom_weights: dict = None):
+        """Score candidate against job requirements"""
+        # Extract candidate skills
+        candidate_skills = [skill['skill'].lower() for skill in candidate_data.get('extracted_skills', [])]
+        required_skills = [skill.lower() for skill in job_requirements.get('required_skills', [])]
+        preferred_skills = [skill.lower() for skill in job_requirements.get('preferred_skills', [])]
+        
+        # Calculate skills match score
+        required_matches = sum(1 for skill in required_skills if skill in candidate_skills)
+        preferred_matches = sum(1 for skill in preferred_skills if skill in candidate_skills)
+        
+        skills_score = 0
+        if required_skills:
+            skills_score = (required_matches / len(required_skills)) * 70  # 70% for required skills
+        if preferred_skills:
+            skills_score += (preferred_matches / len(preferred_skills)) * 30  # 30% for preferred skills
+        
+        # Experience level scoring
+        candidate_level = candidate_data.get('experience_level', 'entry')
+        required_level = job_requirements.get('experience_level', 'mid')
+        
+        level_scores = {'entry': 1, 'junior': 2, 'mid': 3, 'senior': 4, 'executive': 5}
+        candidate_level_score = level_scores.get(candidate_level, 1)
+        required_level_score = level_scores.get(required_level, 3)
+        
+        experience_score = min(100, (candidate_level_score / required_level_score) * 100)
+        
+        # Education fit (basic scoring)
+        education_score = 75  # Default score
+        if candidate_data.get('education_data'):
+            education_score = 85
+        
+        # Career progression (years of experience factor)
+        years_exp = candidate_data.get('years_of_experience', 0)
+        career_score = min(100, years_exp * 15)  # 15 points per year, max 100
+        
+        # Calculate overall score using weights
+        weights = job_requirements.get('scoring_weights', {
+            'skills_match': 0.4,
+            'experience_level': 0.3,
+            'education_fit': 0.2,
+            'career_progression': 0.1
+        })
+        
+        overall_score = (
+            skills_score * weights.get('skills_match', 0.4) +
+            experience_score * weights.get('experience_level', 0.3) +
+            education_score * weights.get('education_fit', 0.2) +
+            career_score * weights.get('career_progression', 0.1)
+        )
+        
+        return {
+            "overall_score": round(overall_score, 1),
+            "component_scores": {
+                "skills_match": round(skills_score, 1),
+                "experience_level": round(experience_score, 1),
+                "education_fit": round(education_score, 1),
+                "career_progression": round(career_score, 1)
+            },
+            "score_breakdown": {
+                "required_skills_matched": required_matches,
+                "total_required_skills": len(required_skills),
+                "preferred_skills_matched": preferred_matches,
+                "total_preferred_skills": len(preferred_skills),
+                "candidate_experience_level": candidate_level,
+                "required_experience_level": required_level
+            }
+        }
+    
     def calculate_comprehensive_score(self, *args, **kwargs):
         return {"overall_score": 70.0, "technical_score": 70.0, "experience_score": 70.0}
 
