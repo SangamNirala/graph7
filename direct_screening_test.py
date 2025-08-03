@@ -312,6 +312,7 @@ EDUCATION: BS Information Technology"""
                 if success:
                     processing = result["processing_summary"]
                     screening = result["screening_results"]
+                    failed_files = result.get("failed_files", [])
                     
                     details = f"""Status: {response.status_code}
    Files processed: {processing['successfully_processed']}/{processing['total_files']}
@@ -319,6 +320,12 @@ EDUCATION: BS Information Technology"""
    Candidates screened: {screening['candidates_screened']}
    Average score: {screening['average_score']}
    Score distribution: {screening['score_distribution']}"""
+                    
+                    # Show failed files for debugging
+                    if failed_files:
+                        details += f"\n   Failed files: {len(failed_files)}"
+                        for failed_file in failed_files[:3]:  # Show first 3 failed files
+                            details += f"\n     - {failed_file['filename']}: {failed_file['error']}"
                     
                     # Validate that multiple candidates were processed
                     if screening['candidates_screened'] < 2:
