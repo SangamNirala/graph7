@@ -624,3 +624,431 @@ export const BulkScreeningInterface = ({ candidatePipeline, refreshPipeline }) =
     </div>
   );
 };
+
+// Direct Resume Upload and Screening Component
+export const DirectResumeScreening = () => {
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [selectedJobRequirements, setSelectedJobRequirements] = useState('');
+  const [jobRequirements, setJobRequirements] = useState([]);
+  const [batchName, setBatchName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const [screeningResults, setScreeningResults] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  useEffect(() => {
+    fetchJobRequirements();
+  }, []);
+
+  const fetchJobRequirements = async () => {
+    try {
+      const response = await fetch(`${API}/admin/screening/job-requirements`);
+      const data = await response.json();
+      if (data.success) {
+        setJobRequirements(data.job_requirements);
+      }
+    } catch (error) {
+      console.error('Error fetching job requirements:', error);
+    }
+  };
+
+  const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files);
+    handleFiles(files);
+  };
+
+  const handleFiles = (files) => {
+    const validFiles = files.filter(file => {
+      const validTypes = ['.pdf', '.doc', '.docx', '.txt'];
+      const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+      return validTypes.includes(fileExtension) && file.size <= 10 * 1024 * 1024; // 10MB limit
+    });
+
+    if (validFiles.length !== files.length) {
+      alert(`${files.length - validFiles.length} files were rejected. Only PDF, DOC, DOCX, and TXT files under 10MB are allowed.`);
+    }
+
+    if (validFiles.length + selectedFiles.length > 50) {
+      alert('Maximum 50 files allowed for direct screening');
+      return;
+    }
+
+    setSelectedFiles([...selectedFiles, ...validFiles]);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    handleFiles(files);
+  };
+
+  const removeFile = (index) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(newFiles);
+  };
+
+  const startDirectScreening = async () => {
+    if (!selectedJobRequirements) {
+      alert('Please select job requirements first');
+      return;
+    }
+
+    if (selectedFiles.length === 0) {
+      alert('Please upload at least one resume file');
+      return;
+    }
+
+    setLoading(true);
+    setUploadProgress({ status: 'uploading', processed: 0, total: selectedFiles.length });
+    
+    try {
+      const formData = new FormData();
+      selectedFiles.forEach(file => {
+        formData.append('files', file);
+      });
+      formData.append('job_requirements_id', selectedJobRequirements);
+      formData.append('batch_name', batchName || `Direct Screening ${new Date().toLocaleString()}`);
+
+      const response = await fetch(`${API}/admin/screening/upload-and-analyze`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setScreeningResults(data);
+        setUploadProgress({ 
+          status: 'completed', 
+          processed: data.processing_summary.successfully_processed,
+          total: data.processing_summary.total_files 
+        });
+        
+        // Clear form for next batch
+        setSelectedFiles([]);
+        setBatchName('');
+      } else {
+        throw new Error('Screening failed');
+      }
+    } catch (error) {
+      console.error('Error in direct screening:', error);
+      setUploadProgress({ status: 'error', error: error.message });
+    }
+    setLoading(false);
+  };
+
+  const getScoreColor = (score) => {
+    if (score >= 90) return 'text-green-400';
+    if (score >= 80) return 'text-blue-400';
+    if (score >= 70) return 'text-yellow-400';
+    if (score >= 60) return 'text-orange-400';
+    return 'text-red-400';
+  };
+
+  const getScoreTag = (score) => {
+    if (score >= 90) return { text: 'Top Candidate', color: 'bg-green-600' };
+    if (score >= 80) return { text: 'Strong Match', color: 'bg-blue-600' };
+    if (score >= 70) return { text: 'Good Fit', color: 'bg-yellow-600' };
+    if (score >= 60) return { text: 'Needs Review', color: 'bg-orange-600' };
+    return { text: 'Below Threshold', color: 'bg-red-600' };
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  return (
+    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+      <h2 className="text-2xl font-bold text-white mb-6">📎 Upload & Screen Resumes Instantly</h2>
+      
+      {/* Job Requirements Selection */}
+      <div className="mb-6 p-4 bg-white/5 rounded-lg">
+        <label className="block text-white font-medium mb-2">Select Job Requirements for Screening</label>
+        <div className="grid lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <select
+              value={selectedJobRequirements}
+              onChange={(e) => setSelectedJobRequirements(e.target.value)}
+              className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white"
+            >
+              <option value="">-- Select Job Requirements --</option>
+              {jobRequirements.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.job_title} ({job.required_skills?.length || 0} required skills)
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <input
+              type="text"
+              placeholder="Batch Name (Optional)"
+              value={batchName}
+              onChange={(e) => setBatchName(e.target.value)}
+              className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* File Upload Area */}
+      <div className="mb-6">
+        <div
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${
+            dragOver
+              ? 'border-blue-400 bg-blue-400/10'
+              : 'border-white/30 hover:border-white/50'
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-4xl text-white/70">📁</div>
+            <div>
+              <p className="text-white text-lg mb-2">
+                Drop resume files here or click to browse
+              </p>
+              <p className="text-gray-400 text-sm">
+                Supports PDF, DOC, DOCX, TXT files (max 10MB each, up to 50 files)
+              </p>
+            </div>
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.txt"
+              onChange={handleFileSelect}
+              className="hidden"
+              id="resume-upload"
+            />
+            <label
+              htmlFor="resume-upload"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors"
+            >
+              Browse Files
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Selected Files Display */}
+      {selectedFiles.length > 0 && (
+        <div className="mb-6 p-4 bg-white/5 rounded-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="text-white font-medium">Selected Files ({selectedFiles.length})</h4>
+            <button
+              onClick={() => setSelectedFiles([])}
+              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+            >
+              Clear All
+            </button>
+          </div>
+          <div className="max-h-40 overflow-y-auto space-y-2">
+            {selectedFiles.map((file, index) => (
+              <div key={index} className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                <div className="flex-1">
+                  <div className="text-white font-medium truncate">{file.name}</div>
+                  <div className="text-sm text-gray-300">
+                    {formatFileSize(file.size)} • {file.name.split('.').pop().toUpperCase()}
+                  </div>
+                </div>
+                <button
+                  onClick={() => removeFile(index)}
+                  className="ml-2 px-2 py-1 bg-red-600/50 text-white rounded hover:bg-red-600 text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Action Button */}
+      <div className="mb-6">
+        <button
+          onClick={startDirectScreening}
+          disabled={loading || !selectedJobRequirements || selectedFiles.length === 0}
+          className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          {loading ? (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <span>Analyzing & Scoring Resumes...</span>
+            </div>
+          ) : (
+            `🚀 Upload & Screen ${selectedFiles.length} Resume${selectedFiles.length !== 1 ? 's' : ''} Instantly`
+          )}
+        </button>
+      </div>
+
+      {/* Upload Progress */}
+      {uploadProgress && (
+        <div className="mb-6 p-4 bg-white/5 rounded-lg">
+          <h4 className="text-white font-medium mb-2">Processing Status</h4>
+          {uploadProgress.status === 'uploading' && (
+            <div className="text-blue-400 flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+              <span>Uploading and analyzing resumes...</span>
+            </div>
+          )}
+          {uploadProgress.status === 'completed' && (
+            <div className="text-green-400">
+              ✅ Screening completed! Processed {uploadProgress.processed} out of {uploadProgress.total} resumes successfully.
+            </div>
+          )}
+          {uploadProgress.status === 'error' && (
+            <div className="text-red-400">
+              ❌ Screening failed: {uploadProgress.error}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Screening Results */}
+      {screeningResults && (
+        <div className="space-y-6">
+          {/* Summary Statistics */}
+          <div className="p-6 bg-white/5 rounded-lg">
+            <h4 className="text-white font-bold text-xl mb-4">📊 Screening Results Summary</h4>
+            
+            {/* Key Metrics */}
+            <div className="grid md:grid-cols-4 gap-4 mb-6">
+              <div className="text-center p-4 bg-blue-600/20 rounded-lg">
+                <div className="text-3xl font-bold text-blue-400">{screeningResults.screening_results.candidates_screened}</div>
+                <div className="text-sm text-gray-300">Candidates Screened</div>
+              </div>
+              <div className="text-center p-4 bg-green-600/20 rounded-lg">
+                <div className="text-3xl font-bold text-green-400">{screeningResults.screening_results.average_score}%</div>
+                <div className="text-sm text-gray-300">Average Score</div>
+              </div>
+              <div className="text-center p-4 bg-purple-600/20 rounded-lg">
+                <div className="text-3xl font-bold text-purple-400">{screeningResults.screening_results.high_quality_matches}</div>
+                <div className="text-sm text-gray-300">High-Quality Matches</div>
+              </div>
+              <div className="text-center p-4 bg-orange-600/20 rounded-lg">
+                <div className="text-3xl font-bold text-orange-400">{screeningResults.processing_summary.processing_rate}</div>
+                <div className="text-sm text-gray-300">Success Rate</div>
+              </div>
+            </div>
+
+            {/* Score Distribution */}
+            <div className="mb-6">
+              <h5 className="text-white font-medium mb-3">Score Distribution</h5>
+              <div className="grid grid-cols-4 gap-2">
+                <div className="text-center p-3 bg-green-600/20 rounded">
+                  <div className="text-lg font-bold text-green-400">{screeningResults.screening_results.score_distribution.excellent}</div>
+                  <div className="text-xs text-gray-300">Excellent (90%+)</div>
+                </div>
+                <div className="text-center p-3 bg-blue-600/20 rounded">
+                  <div className="text-lg font-bold text-blue-400">{screeningResults.screening_results.score_distribution.good}</div>
+                  <div className="text-xs text-gray-300">Good (80-89%)</div>
+                </div>
+                <div className="text-center p-3 bg-yellow-600/20 rounded">
+                  <div className="text-lg font-bold text-yellow-400">{screeningResults.screening_results.score_distribution.fair}</div>
+                  <div className="text-xs text-gray-300">Fair (70-79%)</div>
+                </div>
+                <div className="text-center p-3 bg-red-600/20 rounded">
+                  <div className="text-lg font-bold text-red-400">{screeningResults.screening_results.score_distribution.poor}</div>
+                  <div className="text-xs text-gray-300">Poor (<70%)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Top Candidates */}
+          {screeningResults.top_candidates.length > 0 && (
+            <div className="p-6 bg-white/5 rounded-lg">
+              <h5 className="text-white font-bold text-lg mb-4">🏆 Top Candidates</h5>
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {screeningResults.top_candidates.map((candidate, index) => (
+                  <div key={candidate.candidate_id} className="p-4 bg-white/5 rounded-lg border border-white/10">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-white font-medium">#{index + 1}</span>
+                          <span className="text-white font-bold">{candidate.name}</span>
+                          <span className="text-xs text-gray-400">({candidate.filename})</span>
+                        </div>
+                        <div className="text-sm text-gray-300 mb-2">
+                          {candidate.experience_level} Level • {candidate.years_experience} years experience
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-2xl font-bold ${getScoreColor(candidate.overall_score)}`}>
+                          {candidate.overall_score.toFixed(1)}%
+                        </div>
+                        <div className={`px-3 py-1 rounded-lg text-sm font-medium text-white ${getScoreTag(candidate.overall_score).color}`}>
+                          {getScoreTag(candidate.overall_score).text}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Score Breakdown */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                      {Object.entries(candidate.component_scores || {}).map(([key, value]) => (
+                        <div key={key} className="text-center p-2 bg-white/5 rounded">
+                          <div className="font-medium text-white">{value.toFixed(1)}%</div>
+                          <div className="text-gray-400 capitalize">{key.replace('_', ' ')}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Skills */}
+                    {candidate.extracted_skills && candidate.extracted_skills.length > 0 && (
+                      <div className="mt-3">
+                        <div className="text-xs text-gray-400 mb-1">Key Skills:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {candidate.extracted_skills.slice(0, 8).map((skill, skillIndex) => (
+                            <span key={skillIndex} className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs">
+                              {skill}
+                            </span>
+                          ))}
+                          {candidate.extracted_skills.length > 8 && (
+                            <span className="px-2 py-1 bg-gray-600 text-gray-400 rounded text-xs">
+                              +{candidate.extracted_skills.length - 8} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Failed Files */}
+          {screeningResults.failed_files && screeningResults.failed_files.length > 0 && (
+            <div className="p-6 bg-red-600/10 border border-red-600/20 rounded-lg">
+              <h5 className="text-red-400 font-bold text-lg mb-4">⚠️ Failed Files ({screeningResults.failed_files.length})</h5>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {screeningResults.failed_files.map((failed, index) => (
+                  <div key={index} className="flex justify-between items-center p-3 bg-red-600/5 rounded">
+                    <div className="text-white font-medium">{failed.filename}</div>
+                    <div className="text-red-400 text-sm">{failed.error}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
