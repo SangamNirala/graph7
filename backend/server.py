@@ -7720,6 +7720,205 @@ async def update_threshold_configuration(request: ThresholdConfigRequest):
         logging.error(f"Update thresholds error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to update thresholds: {str(e)}")
 
+@api_router.post("/admin/screening/upload-and-analyze")
+async def upload_resumes_and_analyze(
+    files: List[UploadFile] = File(...),
+    job_requirements_id: str = Form(...),
+    batch_name: str = Form("")
+):
+    """Upload multiple resumes, analyze them, and score against job requirements - all in one step for direct screening"""
+    try:
+        # Validate file count
+        if len(files) > 50:  # Limit to 50 for screening tab for better performance
+            raise HTTPException(status_code=400, detail="Maximum 50 files allowed for direct screening")
+        
+        # Get job requirements first to validate
+        job_requirements = await db.job_requirements.find_one({"id": job_requirements_id})
+        if not job_requirements:
+            raise HTTPException(status_code=404, detail="Job requirements not found")
+        
+        # Create batch upload record
+        bulk_upload = BulkUpload(
+            batch_name=batch_name or f"Direct Screening {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}",
+            total_files=len(files),
+            status="processing"
+        )
+        
+        # Process files and create candidates immediately
+        file_list = []
+        processed_candidates = []
+        failed_files = []
+        
+        for file in files:
+            try:
+                # Validate file type
+                filename = file.filename.lower()
+                if not filename.endswith(('.pdf', '.doc', '.docx', '.txt')):
+                    failed_files.append({
+                        "filename": file.filename,
+                        "error": "Unsupported file type. Only PDF, DOC, DOCX, and TXT files are allowed."
+                    })
+                    continue
+                
+                # Read and validate file size
+                content = await file.read()
+                if len(content) > 10 * 1024 * 1024:  # 10MB
+                    failed_files.append({
+                        "filename": file.filename,
+                        "error": "File too large. Maximum size is 10MB per file."
+                    })
+                    continue
+                
+                # Parse resume content
+                resume_content = parse_resume(file, content)
+                if not resume_content.strip():
+                    failed_files.append({
+                        "filename": file.filename,
+                        "error": "Could not extract text from resume file."
+                    })
+                    continue
+                
+                # Create candidate profile
+                candidate_profile = CandidateProfile(
+                    name=file.filename.rsplit('.', 1)[0],  # Use filename without extension as name
+                    resume_content=resume_content,
+                    batch_id=bulk_upload.id,
+                    status="pending_screening",
+                    uploaded_at=datetime.utcnow()
+                )
+                
+                # Run immediate AI analysis
+                try:
+                    extracted_skills = await ai_resume_engine.extract_skills_from_resume(resume_content)
+                    experience_analysis = await ai_resume_engine.analyze_experience_level(resume_content)
+                    education_data = await ai_resume_engine.parse_education(resume_content)
+                    ai_enhanced_data = await ai_resume_engine.enhanced_skills_extraction_with_ai(resume_content)
+                    
+                    # Update candidate with analysis results
+                    candidate_profile.extracted_skills_detailed = extracted_skills
+                    candidate_profile.experience_analysis = experience_analysis
+                    candidate_profile.education_data = education_data
+                    candidate_profile.extracted_skills = [skill['skill'] for skill in extracted_skills]
+                    candidate_profile.experience_level = experience_analysis['experience_level']
+                    candidate_profile.last_screened = datetime.utcnow()
+                    candidate_profile.screening_metadata = {
+                        "analysis_method": "direct_screening",
+                        "skills_confidence_avg": sum(s['confidence'] for s in extracted_skills) / len(extracted_skills) if extracted_skills else 0,
+                        "ai_enhanced_data": ai_enhanced_data,
+                        "batch_analysis": True,
+                        "job_requirements_id": job_requirements_id
+                    }
+                    
+                    # Calculate score against job requirements
+                    candidate_data_for_scoring = {
+                        'extracted_skills': extracted_skills,
+                        'experience_level': experience_analysis['experience_level'],
+                        'years_of_experience': experience_analysis.get('years_of_experience', 0),
+                        'education_data': education_data
+                    }
+                    
+                    scoring_result = await smart_scoring_system.score_candidate_against_job(
+                        candidate_data_for_scoring, job_requirements, {}
+                    )
+                    
+                    # Add scoring results to candidate profile
+                    candidate_profile.screening_scores = scoring_result
+                    candidate_profile.score = scoring_result['overall_score']
+                    candidate_profile.status = "screened"
+                    
+                    # Save candidate to database
+                    await db.candidate_profiles.insert_one(candidate_profile.dict())
+                    
+                    processed_candidates.append({
+                        'candidate_id': candidate_profile.id,
+                        'filename': file.filename,
+                        'name': candidate_profile.name,
+                        'overall_score': scoring_result['overall_score'],
+                        'component_scores': scoring_result['component_scores'],
+                        'score_breakdown': scoring_result['score_breakdown'],
+                        'extracted_skills': [skill['skill'] for skill in extracted_skills],
+                        'experience_level': experience_analysis['experience_level'],
+                        'years_experience': experience_analysis.get('years_of_experience', 0)
+                    })
+                    
+                    file_list.append({
+                        "filename": file.filename,
+                        "size": len(content),
+                        "status": "processed",
+                        "candidate_id": candidate_profile.id,
+                        "score": scoring_result['overall_score']
+                    })
+                    
+                except Exception as analysis_error:
+                    logging.error(f"Analysis error for {file.filename}: {str(analysis_error)}")
+                    failed_files.append({
+                        "filename": file.filename,
+                        "error": f"Analysis failed: {str(analysis_error)}"
+                    })
+                    continue
+                    
+            except Exception as file_error:
+                logging.error(f"File processing error for {file.filename}: {str(file_error)}")
+                failed_files.append({
+                    "filename": file.filename,
+                    "error": f"File processing failed: {str(file_error)}"
+                })
+                continue
+        
+        # Update bulk upload record
+        bulk_upload.file_list = file_list
+        bulk_upload.processed_files = len(processed_candidates)
+        bulk_upload.failed_files = len(failed_files)
+        bulk_upload.status = "completed"
+        
+        await db.bulk_uploads.insert_one(bulk_upload.dict())
+        
+        # Calculate summary statistics
+        if processed_candidates:
+            scores = [c['overall_score'] for c in processed_candidates]
+            average_score = sum(scores) / len(scores)
+            high_quality_matches = len([s for s in scores if s >= 80])
+            top_candidates = sorted(processed_candidates, key=lambda x: x['overall_score'], reverse=True)[:5]
+        else:
+            average_score = 0
+            high_quality_matches = 0
+            top_candidates = []
+        
+        return {
+            "success": True,
+            "batch_id": bulk_upload.id,
+            "batch_name": bulk_upload.batch_name,
+            "job_requirements": {
+                "id": job_requirements_id,
+                "job_title": job_requirements['job_title']
+            },
+            "processing_summary": {
+                "total_files": len(files),
+                "successfully_processed": len(processed_candidates),
+                "failed_files": len(failed_files),
+                "processing_rate": f"{(len(processed_candidates) / len(files) * 100):.1f}%" if files else "0%"
+            },
+            "screening_results": {
+                "candidates_screened": len(processed_candidates),
+                "average_score": round(average_score, 1),
+                "high_quality_matches": high_quality_matches,
+                "score_distribution": {
+                    "excellent": len([s for s in scores if s >= 90]) if processed_candidates else 0,
+                    "good": len([s for s in scores if 80 <= s < 90]) if processed_candidates else 0,
+                    "fair": len([s for s in scores if 70 <= s < 80]) if processed_candidates else 0,
+                    "poor": len([s for s in scores if s < 70]) if processed_candidates else 0
+                }
+            },
+            "processed_candidates": processed_candidates,
+            "failed_files": failed_files,
+            "top_candidates": top_candidates,
+            "message": f"Direct screening completed. Processed {len(processed_candidates)} out of {len(files)} files successfully."
+        }
+        
+    except Exception as e:
+        logging.error(f"Direct screening upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Direct screening failed: {str(e)}")
+
 # Health check
 @api_router.get("/health")
 async def health_check():
