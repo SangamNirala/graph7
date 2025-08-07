@@ -2515,15 +2515,52 @@ const AdminDashboard = ({ setCurrentPage }) => {
         {/* Phase 2: AI Screening & Shortlisting Tab */}
         {activeTab === 'screening' && (
           <div className="space-y-8">
-            {/* Job Requirements Setup */}
-            <JobRequirementsSetup />
-            
-            {/* Bulk Screening Interface */}
-            <BulkScreeningInterface 
-              candidatePipeline={candidatePipeline} 
-              refreshPipeline={fetchCandidatePipeline}
+            {/* Resume Upload Section */}
+            <ResumeUploadSection 
+              onUploadComplete={(resumes) => {
+                setUploadedResumes(resumes);
+                setSavedJobRequirements(null); // Reset job requirements when new resumes uploaded
+                setScreeningComplete(false);
+              }}
+              disabled={false}
             />
+            
+            {/* Job Requirements Setup - Enabled after resume upload */}
+            <JobRequirementsSetup 
+              disabled={uploadedResumes.length === 0}
+              uploadedResumes={uploadedResumes}
+              onJobRequirementsSaved={(jobReq) => {
+                setSavedJobRequirements(jobReq);
+                setScreeningComplete(false);
+              }}
+            />
+            
+            {/* Screen Candidates Section - Enabled after job requirements saved */}
+            <ScreenCandidatesSection 
+              uploadedResumes={uploadedResumes}
+              savedJobRequirements={savedJobRequirements}
+              onScreeningComplete={(results) => {
+                setScreeningResults(results);
+                setScreeningComplete(true);
+              }}
+            />
+
+            {/* Optional: Keep the existing bulk screening interface for advanced users */}
+            {savedJobRequirements && uploadedResumes.length > 0 && (
+              <div className="mt-8 p-4 bg-white/5 backdrop-blur-lg rounded-xl border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4">🔧 Advanced Bulk Operations</h3>
+                <BulkScreeningInterface 
+                  candidatePipeline={candidatePipeline} 
+                  refreshPipeline={fetchCandidatePipeline}
+                />
+              </div>
+            )}
           </div>
+        )}
+
+        {/* Results Tab */}
+        {activeTab === 'results' && (
+          <ResultsComponent />
         )}
       </div>
     </div>
