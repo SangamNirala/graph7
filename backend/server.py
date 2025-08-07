@@ -5753,8 +5753,21 @@ async def start_interview(request: InterviewStartRequest):
         session_metadata.update({
             "include_coding_challenge": token_data.get('include_coding_challenge', False),
             "role_archetype": token_data.get('role_archetype', 'General'),
-            "interview_focus": token_data.get('interview_focus', 'Balanced')
+            "interview_focus": token_data.get('interview_focus', 'Balanced'),
+            # Personalized interview fields
+            "interview_mode": token_data.get('interview_mode', 'standard'),
+            "dynamic_question_generation": token_data.get('dynamic_question_generation', False),
+            "real_time_insights": token_data.get('real_time_insights', False),
+            "ai_difficulty_adjustment": token_data.get('ai_difficulty_adjustment', 'static')
         })
+        
+        # If personalized mode, modify the session behavior
+        if token_data.get('interview_mode') == 'personalized':
+            # For personalized interviews, start with fewer pre-generated questions
+            # as we'll generate more dynamically based on responses
+            if len(questions) > 3:
+                questions = questions[:3]  # Start with first 3 questions for personalized mode
+                total_questions = len(questions)  # Update total count
     
     await db.session_metadata.insert_one(session_metadata)
     
