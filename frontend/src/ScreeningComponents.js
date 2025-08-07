@@ -798,3 +798,421 @@ export const BulkScreeningInterface = ({ candidatePipeline, refreshPipeline }) =
     </div>
   );
 };
+
+// Screen Candidates Component
+export const ScreenCandidatesSection = ({ 
+  uploadedResumes = [], 
+  savedJobRequirements = null, 
+  onScreeningComplete 
+}) => {
+  const [selectedResumes, setSelectedResumes] = useState([]);
+  const [screening, setScreening] = useState(false);
+  const [screeningResults, setScreeningResults] = useState(null);
+  const [message, setMessage] = useState('');
+
+  const canScreen = uploadedResumes.length > 0 && savedJobRequirements;
+
+  const handleResumeSelection = (resumeId) => {
+    setSelectedResumes(prev => 
+      prev.includes(resumeId) 
+        ? prev.filter(id => id !== resumeId)
+        : [...prev, resumeId]
+    );
+  };
+
+  const selectAllResumes = () => {
+    if (selectedResumes.length === uploadedResumes.length) {
+      setSelectedResumes([]);
+    } else {
+      setSelectedResumes(uploadedResumes.map(r => r.id));
+    }
+  };
+
+  const handleScreenCandidates = async () => {
+    if (!savedJobRequirements || selectedResumes.length === 0) {
+      setMessage('Please select candidates and ensure job requirements are saved');
+      return;
+    }
+
+    setScreening(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`${API}/admin/screening/screen-candidates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resume_ids: selectedResumes,
+          job_requirements_id: savedJobRequirements.job_requirements_id
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setScreeningResults(result);
+        setMessage(`Successfully screened ${result.analysis_results.length} candidate(s)`);
+        onScreeningComplete && onScreeningComplete(result);
+      } else {
+        setMessage('Screening failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Screening error:', error);
+      setMessage('Screening failed. Please try again.');
+    }
+
+    setScreening(false);
+  };
+
+  if (!canScreen) {
+    return (
+      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 opacity-50">
+        <h2 className="text-2xl font-bold text-white mb-6">🤖 Screen Candidates</h2>
+        <div className="text-center p-8">
+          <div className="text-4xl mb-4">⏳</div>
+          <p className="text-gray-400">
+            {uploadedResumes.length === 0 
+              ? 'Upload resumes and save job requirements to enable candidate screening'
+              : 'Save job requirements to enable candidate screening'
+            }
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+      <h2 className="text-2xl font-bold text-white mb-6">🤖 Screen Candidates</h2>
+      
+      {/* Resume Selection */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-white">Select Resumes to Screen</h3>
+          <button
+            onClick={selectAllResumes}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+          >
+            {selectedResumes.length === uploadedResumes.length ? 'Deselect All' : 'Select All'} 
+            ({uploadedResumes.length} resumes)
+          </button>
+        </div>
+
+        <div className="max-h-80 overflow-y-auto space-y-2">
+          {uploadedResumes.map((resume) => (
+            <div
+              key={resume.id}
+              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                selectedResumes.includes(resume.id)
+                  ? 'bg-blue-600/20 border-blue-400'
+                  : 'bg-white/5 border-white/20 hover:border-white/40'
+              }`}
+              onClick={() => handleResumeSelection(resume.id)}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-white font-medium">
+                    {resume.candidate_name || 'Unknown Candidate'}
+                  </h4>
+                  <p className="text-gray-300 text-sm">{resume.filename}</p>
+                  {resume.extracted_skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {resume.extracted_skills.slice(0, 5).map((skill, index) => (
+                        <span key={index} className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs">
+                          {skill}
+                        </span>
+                      ))}
+                      {resume.extracted_skills.length > 5 && (
+                        <span className="px-2 py-1 bg-gray-600 text-gray-400 rounded text-xs">
+                          +{resume.extracted_skills.length - 5} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <input
+                    type="checkbox"
+                    checked={selectedResumes.includes(resume.id)}
+                    onChange={() => handleResumeSelection(resume.id)}
+                    className="w-4 h-4"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Screen Button */}
+      <button
+        onClick={handleScreenCandidates}
+        disabled={screening || selectedResumes.length === 0}
+        className="w-full py-4 px-6 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold rounded-lg hover:from-green-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+      >
+        {screening 
+          ? `Screening ${selectedResumes.length} Candidate(s)...` 
+          : `Screen ${selectedResumes.length} Selected Candidate(s)`
+        }
+      </button>
+
+      {/* Message */}
+      {message && (
+        <div className={`mt-4 p-4 rounded-lg ${
+          message.includes('Successfully') 
+            ? 'bg-green-500/20 text-green-400' 
+            : 'bg-red-500/20 text-red-400'
+        }`}>
+          {message}
+        </div>
+      )}
+
+      {/* Quick Results Preview */}
+      {screeningResults && (
+        <div className="mt-6 p-4 bg-white/5 rounded-lg">
+          <h4 className="text-white font-medium mb-4">📊 Screening Summary</h4>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="text-center p-3 bg-blue-600/20 rounded-lg">
+              <div className="text-2xl font-bold text-blue-400">{screeningResults.analysis_results.length}</div>
+              <div className="text-sm text-gray-300">Candidates Screened</div>
+            </div>
+            <div className="text-center p-3 bg-green-600/20 rounded-lg">
+              <div className="text-2xl font-bold text-green-400">{screeningResults.average_score.toFixed(1)}%</div>
+              <div className="text-sm text-gray-300">Average ATS Score</div>
+            </div>
+            <div className="text-center p-3 bg-purple-600/20 rounded-lg">
+              <div className="text-2xl font-bold text-purple-400">{screeningResults.top_candidates.length}</div>
+              <div className="text-sm text-gray-300">Top Candidates (80%+)</div>
+            </div>
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-gray-300 text-sm">Check the Results tab for detailed analysis</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Results Component for displaying ATS scores
+export const ResultsComponent = () => {
+  const [results, setResults] = useState([]);
+  const [statistics, setStatistics] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all'); // all, high, medium, low
+
+  useEffect(() => {
+    fetchResults();
+  }, []);
+
+  const fetchResults = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API}/admin/screening/results`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setResults(data.results);
+        setStatistics(data.statistics);
+      }
+    } catch (error) {
+      console.error('Error fetching results:', error);
+    }
+    setLoading(false);
+  };
+
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'text-green-400';
+    if (score >= 70) return 'text-blue-400';
+    if (score >= 60) return 'text-yellow-400';
+    if (score >= 50) return 'text-orange-400';
+    return 'text-red-400';
+  };
+
+  const getScoreLabel = (score) => {
+    if (score >= 80) return { text: 'Excellent Match', color: 'bg-green-600' };
+    if (score >= 70) return { text: 'Good Match', color: 'bg-blue-600' };
+    if (score >= 60) return { text: 'Fair Match', color: 'bg-yellow-600' };
+    if (score >= 50) return { text: 'Poor Match', color: 'bg-orange-600' };
+    return { text: 'No Match', color: 'bg-red-600' };
+  };
+
+  const filteredResults = results.filter(result => {
+    if (filter === 'high') return result.overall_score >= 80;
+    if (filter === 'medium') return result.overall_score >= 60 && result.overall_score < 80;
+    if (filter === 'low') return result.overall_score < 60;
+    return true;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 p-8">
+        <div className="container mx-auto">
+          <h1 className="text-4xl font-bold text-white mb-8">📊 ATS Screening Results</h1>
+          <div className="text-center p-8">
+            <div className="text-4xl mb-4">⏳</div>
+            <p className="text-gray-400">Loading screening results...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 p-8">
+      <div className="container mx-auto">
+        <h1 className="text-4xl font-bold text-white mb-8">📊 ATS Screening Results</h1>
+
+        {/* Statistics Cards */}
+        {statistics.total_candidates > 0 && (
+          <div className="grid lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+              <h3 className="text-xl font-bold text-white mb-2">Total Candidates</h3>
+              <div className="text-3xl font-bold text-blue-400">{statistics.total_candidates}</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+              <h3 className="text-xl font-bold text-white mb-2">Average Score</h3>
+              <div className="text-3xl font-bold text-green-400">{statistics.average_score.toFixed(1)}%</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+              <h3 className="text-xl font-bold text-white mb-2">Top Performers</h3>
+              <div className="text-3xl font-bold text-purple-400">{statistics.candidates_above_80}</div>
+              <div className="text-sm text-gray-300">80%+ Score</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+              <h3 className="text-xl font-bold text-white mb-2">Score Range</h3>
+              <div className="text-lg font-bold text-yellow-400">
+                {statistics.lowest_score.toFixed(1)}% - {statistics.highest_score.toFixed(1)}%
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filter Buttons */}
+        <div className="mb-6 flex gap-4">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === 'all' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-white/10 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            All Candidates ({results.length})
+          </button>
+          <button
+            onClick={() => setFilter('high')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === 'high' 
+                ? 'bg-green-600 text-white' 
+                : 'bg-white/10 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            High Scores ({results.filter(r => r.overall_score >= 80).length})
+          </button>
+          <button
+            onClick={() => setFilter('medium')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === 'medium' 
+                ? 'bg-yellow-600 text-white' 
+                : 'bg-white/10 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            Medium Scores ({results.filter(r => r.overall_score >= 60 && r.overall_score < 80).length})
+          </button>
+          <button
+            onClick={() => setFilter('low')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === 'low' 
+                ? 'bg-red-600 text-white' 
+                : 'bg-white/10 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            Low Scores ({results.filter(r => r.overall_score < 60).length})
+          </button>
+        </div>
+
+        {/* Results List */}
+        {filteredResults.length === 0 ? (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 text-center">
+            <div className="text-4xl mb-4">📝</div>
+            <p className="text-gray-400">No screening results available. Screen candidates first.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredResults.map((result, index) => (
+              <div key={result.candidate_id} className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                <div className="grid lg:grid-cols-4 gap-6">
+                  {/* Candidate Info */}
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">
+                      #{index + 1} {result.candidate_name}
+                    </h3>
+                    <p className="text-gray-300 text-sm mb-2">{result.resume_filename}</p>
+                    <div className={`inline-flex px-3 py-1 rounded-full text-xs text-white ${getScoreLabel(result.overall_score).color}`}>
+                      {getScoreLabel(result.overall_score).text}
+                    </div>
+                  </div>
+
+                  {/* Overall Score */}
+                  <div className="text-center">
+                    <div className="text-sm text-gray-300 mb-1">Overall ATS Score</div>
+                    <div className={`text-3xl font-bold ${getScoreColor(result.overall_score)}`}>
+                      {result.overall_score.toFixed(1)}%
+                    </div>
+                  </div>
+
+                  {/* Component Scores */}
+                  <div>
+                    <div className="text-sm text-gray-300 mb-2">Component Scores</div>
+                    {Object.entries(result.component_scores || {}).map(([key, value]) => (
+                      <div key={key} className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-300 capitalize">{key.replace('_', ' ')}</span>
+                        <span className={`font-semibold ${getScoreColor(value)}`}>{value.toFixed(1)}%</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Skills & Recommendations */}
+                  <div>
+                    <div className="text-sm text-gray-300 mb-2">Analysis</div>
+                    {result.missing_skills.length > 0 && (
+                      <div className="mb-2">
+                        <div className="text-xs text-red-400 mb-1">Missing Skills:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {result.missing_skills.slice(0, 3).map((skill, i) => (
+                            <span key={i} className="px-2 py-1 bg-red-600/20 text-red-400 rounded text-xs">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {result.recommendations.length > 0 && (
+                      <div>
+                        <div className="text-xs text-blue-400 mb-1">Key Recommendations:</div>
+                        <div className="text-xs text-gray-300">
+                          {result.recommendations[0]}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Refresh Button */}
+        <div className="mt-8 text-center">
+          <button
+            onClick={fetchResults}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-purple-700"
+          >
+            🔄 Refresh Results
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
