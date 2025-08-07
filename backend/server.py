@@ -889,7 +889,42 @@ class ThresholdConfigRequest(BaseModel):
     top_candidate: float = 90.0
     strong_match: float = 80.0
     good_fit: float = 70.0
-    auto_tagging_rules: Dict[str, List[str]] = {}
+    auto_tagging_rules: List[str] = []
+
+# Enhanced AI Screening Models
+class ResumeUploadRequest(BaseModel):
+    file_names: List[str]
+    job_requirements_id: Optional[str] = None
+
+class ResumeFile(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    filename: str
+    file_type: str  # pdf, docx
+    file_size: int
+    content: str  # extracted text content
+    upload_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    candidate_name: Optional[str] = None
+    candidate_email: Optional[str] = None
+    extracted_skills: List[str] = []
+    experience_years: Optional[int] = None
+    education_level: Optional[str] = None
+
+class ATSAnalysisResult(BaseModel):
+    candidate_id: str
+    candidate_name: str
+    resume_filename: str
+    overall_score: float
+    component_scores: Dict[str, float] = {}
+    skill_matches: Dict[str, float] = {}
+    missing_skills: List[str] = []
+    recommendations: List[str] = []
+    experience_match: str = ""
+    education_match: str = ""
+    analysis_timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+class ScreenCandidatesRequest(BaseModel):
+    resume_ids: List[str]
+    job_requirements_id: str
 
 # Document parsing utilities
 def extract_text_from_pdf(file_content: bytes) -> str:
