@@ -618,6 +618,11 @@ class EnhancedCandidateToken(BaseModel):
     max_questions: int = 12  # Maximum questions that can be asked
     # Custom questions configuration
     custom_questions_config: Dict[str, Any] = {}
+    # Personalized interview fields
+    interview_mode: str = "standard"  # "standard" or "personalized"
+    dynamic_question_generation: bool = False
+    real_time_insights: bool = False
+    ai_difficulty_adjustment: str = "static"  # "static", "adaptive", "progressive"
 
 # Practice Round model
 class PracticeRound(BaseModel):
