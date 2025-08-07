@@ -3939,6 +3939,11 @@ async def upload_job_enhanced(
     min_questions: int = Form(8),
     max_questions: int = Form(12),
     custom_questions_config: str = Form("{}"),
+    # Personalized interview parameters
+    interview_mode: str = Form("standard"),  # "standard" or "personalized"
+    dynamic_question_generation: bool = Form(False),
+    real_time_insights: bool = Form(False),
+    ai_difficulty_adjustment: str = Form("static"),  # "static", "adaptive", "progressive"
     resume_file: UploadFile = File(...)
 ):
     # Validate admin authentication (same as before)
