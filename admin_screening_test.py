@@ -106,10 +106,124 @@ EDUCATION:
 Bachelor of Science in Software Engineering
 UC Berkeley, 2019"""
 
-            # Test uploading multiple resume files
+            # Create simple PDF content for testing
+            # This is a minimal PDF structure that should be parseable
+            pdf_content_1 = b"""%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 200
+>>
+stream
+BT
+/F1 12 Tf
+72 720 Td
+(Sarah Johnson - Senior Software Engineer) Tj
+0 -20 Td
+(6+ years Python/JavaScript, FastAPI, React, MongoDB) Tj
+0 -20 Td
+(Team leadership, microservices, cloud platforms) Tj
+0 -20 Td
+(Master of Science in Computer Science) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000206 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+456
+%%EOF"""
+
+            pdf_content_2 = b"""%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 180
+>>
+stream
+BT
+/F1 12 Tf
+72 720 Td
+(Michael Chen - Full Stack Developer) Tj
+0 -20 Td
+(4+ years web development, React, Node.js) Tj
+0 -20 Td
+(Database design, API development, Agile) Tj
+0 -20 Td
+(Bachelor of Science in Software Engineering) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000206 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+436
+%%EOF"""
+
+            # Test uploading multiple resume files as PDF
             files = [
-                ('files', ('sarah_resume.txt', io.StringIO(resume_content_1), 'text/plain')),
-                ('files', ('michael_resume.txt', io.StringIO(resume_content_2), 'text/plain'))
+                ('files', ('sarah_resume.pdf', io.BytesIO(pdf_content_1), 'application/pdf')),
+                ('files', ('michael_resume.pdf', io.BytesIO(pdf_content_2), 'application/pdf'))
             ]
             
             response = self.session.post(
