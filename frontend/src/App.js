@@ -844,6 +844,21 @@ const AdminDashboard = ({ setCurrentPage }) => {
   const [savedJobRequirements, setSavedJobRequirements] = useState(null);
   const [screeningComplete, setScreeningComplete] = useState(false);
 
+  // Personalized Interview State
+  const [personalizedJobTitle, setPersonalizedJobTitle] = useState('');
+  const [personalizedJobDescription, setPersonalizedJobDescription] = useState('');
+  const [personalizedJobRequirements, setPersonalizedJobRequirements] = useState('');
+  const [personalizedResumeFile, setPersonalizedResumeFile] = useState(null);
+  const [personalizedResumePreview, setPersonalizedResumePreview] = useState('');
+  const [personalizedGeneratedToken, setPersonalizedGeneratedToken] = useState('');
+  const [personalizedLoading, setPersonalizedLoading] = useState(false);
+  const [personalizedRoleArchetype, setPersonalizedRoleArchetype] = useState('General');
+  const [personalizedInterviewFocus, setPersonalizedInterviewFocus] = useState('Balanced');
+  const [personalizedIncludeCodingChallenge, setPersonalizedIncludeCodingChallenge] = useState(false);
+  const [aiDifficultyAdjustment, setAiDifficultyAdjustment] = useState('adaptive'); // 'adaptive', 'progressive', 'static'
+  const [realTimeInsights, setRealTimeInsights] = useState(true);
+  const [dynamicQuestionGeneration, setDynamicQuestionGeneration] = useState(true);
+
   const roleArchetypes = [
     'General',
     'Software Engineer',
