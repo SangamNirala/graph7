@@ -301,7 +301,8 @@ export const JobRequirementsSetup = ({ disabled = false, onJobRequirementsSaved,
               type="text"
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
-              className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400"
+              disabled={disabled}
+              className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="e.g., Senior Frontend Developer"
             />
           </div>
@@ -311,8 +312,9 @@ export const JobRequirementsSetup = ({ disabled = false, onJobRequirementsSaved,
             <textarea
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
+              disabled={disabled}
               rows="4"
-              className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400"
+              className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Describe the role, responsibilities, and company culture..."
             />
           </div>
@@ -322,7 +324,8 @@ export const JobRequirementsSetup = ({ disabled = false, onJobRequirementsSaved,
             <select
               value={experienceLevel}
               onChange={(e) => setExperienceLevel(e.target.value)}
-              className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white"
+              disabled={disabled}
+              className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="entry">Entry Level (0-2 years)</option>
               <option value="mid">Mid Level (3-5 years)</option>
