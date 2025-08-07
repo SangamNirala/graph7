@@ -33,6 +33,7 @@ lxml
 google-api-core
 google-generativeai>=0.8.5
 google-ai-generativelanguage
+tqdm>=4.64.0
 httpx
 aiohttp
 openai
