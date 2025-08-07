@@ -1091,6 +1091,8 @@ const AdminDashboard = ({ setCurrentPage }) => {
     formData.append('dynamic_question_generation', dynamicQuestionGeneration);
     formData.append('real_time_insights', realTimeInsights);
     formData.append('ai_difficulty_adjustment', aiDifficultyAdjustment);
+    formData.append('min_questions', personalizedMinQuestions);
+    formData.append('max_questions', personalizedMaxQuestions);
 
     try {
       // Use enhanced endpoint with personalized mode flag
