@@ -2290,6 +2290,9 @@ const AdminDashboard = ({ setCurrentPage }) => {
                       <div className="text-sm text-purple-300">🎯 Role: {personalizedRoleArchetype}</div>
                       <div className="text-sm text-purple-300">📊 Focus: {personalizedInterviewFocus}</div>
                       <div className="text-sm text-purple-300">
+                        📋 Questions: {personalizedMinQuestions}-{personalizedMaxQuestions} questions
+                      </div>
+                      <div className="text-sm text-purple-300">
                         💻 Coding: {personalizedIncludeCodingChallenge ? 'Enabled' : 'Disabled'}
                       </div>
                       <div className="text-sm text-purple-300">
