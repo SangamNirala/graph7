@@ -1160,6 +1160,16 @@ const AdminDashboard = ({ setCurrentPage }) => {
               🚀 Create Interview
             </button>
             <button
+              onClick={() => setActiveTab('personalized')}
+              className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-300 ${
+                activeTab === 'personalized'
+                  ? 'bg-purple-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              🧠 Create Personalised Interview
+            </button>
+            <button
               onClick={() => setActiveTab('pipeline')}
               className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-300 ${
                 activeTab === 'pipeline'
