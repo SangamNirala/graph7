@@ -109,3 +109,4 @@ blis>=0.7.0
 PyYAML
 cachetools
 proto-plus
+joblib
