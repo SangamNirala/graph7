@@ -24,6 +24,7 @@ class PersonalizedInterviewTester:
     def __init__(self):
         self.base_url = BASE_URL
         self.session = requests.Session()
+        self.session.verify = False  # Disable SSL verification for testing
         self.personalized_token = None
         self.session_id = None
         self.assessment_id = None
