@@ -1055,6 +1055,85 @@ const AdminDashboard = ({ setCurrentPage }) => {
     }
   };
 
+  // Personalized Interview Handler Functions
+  const handlePersonalizedFileUpload = (e) => {
+    const file = e.target.files[0];
+    setPersonalizedResumeFile(file);
+    
+    if (file) {
+      const fileType = file.name.split('.').pop().toLowerCase();
+      const supportedTypes = ['pdf', 'doc', 'docx', 'txt'];
+      if (!supportedTypes.includes(fileType)) {
+        alert('Please upload PDF, DOC, DOCX, or TXT files only');
+        e.target.value = '';
+        setPersonalizedResumeFile(null);
+      }
+    }
+  };
+
+  const handlePersonalizedSubmit = async (e) => {
+    e.preventDefault();
+    setPersonalizedLoading(true);
+
+    const formData = new FormData();
+    formData.append('job_title', personalizedJobTitle);
+    formData.append('job_description', personalizedJobDescription);
+    formData.append('job_requirements', personalizedJobRequirements);
+    formData.append('include_coding_challenge', personalizedIncludeCodingChallenge);
+    formData.append('role_archetype', personalizedRoleArchetype);
+    formData.append('interview_focus', personalizedInterviewFocus);
+    formData.append('resume_file', personalizedResumeFile);
+    
+    // Add personalized interview configuration
+    formData.append('interview_mode', 'personalized');
+    formData.append('dynamic_question_generation', dynamicQuestionGeneration);
+    formData.append('real_time_insights', realTimeInsights);
+    formData.append('ai_difficulty_adjustment', aiDifficultyAdjustment);
+
+    try {
+      // Use enhanced endpoint with personalized mode flag
+      const response = await fetch(`${API}/admin/upload-job-enhanced`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPersonalizedGeneratedToken(data.token);
+        setPersonalizedResumePreview(data.resume_preview || '');
+        
+        // Reset form
+        setPersonalizedJobTitle('');
+        setPersonalizedJobDescription('');
+        setPersonalizedJobRequirements('');
+        setPersonalizedIncludeCodingChallenge(false);
+        setPersonalizedRoleArchetype('General');
+        setPersonalizedInterviewFocus('Balanced');
+        setPersonalizedResumeFile(null);
+        setDynamicQuestionGeneration(true);
+        setRealTimeInsights(true);
+        setAiDifficultyAdjustment('adaptive');
+        
+        // Clear file input
+        const fileInput = document.querySelector('input[type="file"][accept*="pdf"]');
+        if (fileInput) fileInput.value = '';
+        
+        // Refresh pipeline if on pipeline tab
+        if (activeTab === 'pipeline') {
+          fetchCandidatePipeline();
+        }
+      } else {
+        const errorData = await response.json();
+        alert(`Upload failed: ${errorData.detail}`);
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('Upload failed. Please try again.');
+    } finally {
+      setPersonalizedLoading(false);
+    }
+  };
+
   const fetchReports = async () => {
     try {
       const response = await fetch(`${API}/admin/reports`);
