@@ -3,8 +3,170 @@ import React, { useState, useEffect } from 'react';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Job Requirements Configuration Component
-export const JobRequirementsSetup = () => {
+// Resume Upload Component
+export const ResumeUploadSection = ({ onUploadComplete, disabled = false }) => {
+  const [dragActive, setDragActive] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadMessage, setUploadMessage] = useState('');
+
+  const handleFiles = async (files) => {
+    if (disabled) return;
+    
+    setUploading(true);
+    setUploadMessage('');
+
+    const formData = new FormData();
+    Array.from(files).forEach(file => {
+      formData.append('files', file);
+    });
+
+    try {
+      const response = await fetch(`${API}/admin/screening/upload-resumes`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setUploadedFiles(result.uploaded_resumes);
+        setUploadMessage(`Successfully uploaded ${result.total_files} resume(s)`);
+        onUploadComplete(result.uploaded_resumes);
+      } else {
+        setUploadMessage('Upload failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadMessage('Upload failed. Please try again.');
+    }
+
+    setUploading(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFiles(files);
+    }
+  };
+
+  const handleChange = (e) => {
+    const files = e.target.files;
+    if (files.length > 0) {
+      handleFiles(files);
+    }
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  return (
+    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-8">
+      <h2 className="text-2xl font-bold text-white mb-6">📁 Resume Upload</h2>
+      <p className="text-gray-300 mb-4">
+        Upload candidate resumes (PDF/DOCX format) to enable AI-powered screening and ATS scoring.
+      </p>
+      
+      {/* Upload Area */}
+      <div
+        className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
+          disabled 
+            ? 'border-gray-600 bg-gray-800/20 cursor-not-allowed opacity-50' 
+            : dragActive
+              ? 'border-blue-400 bg-blue-600/20'
+              : 'border-gray-400 bg-white/5 hover:border-blue-400 hover:bg-blue-600/10'
+        }`}
+        onDragEnter={!disabled ? handleDrag : undefined}
+        onDragLeave={!disabled ? handleDrag : undefined}
+        onDragOver={!disabled ? handleDrag : undefined}
+        onDrop={!disabled ? handleDrop : undefined}
+      >
+        <input
+          type="file"
+          multiple
+          accept=".pdf,.docx"
+          onChange={handleChange}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          disabled={disabled || uploading}
+        />
+        
+        <div className="pointer-events-none">
+          <div className="text-4xl mb-4">
+            {uploading ? '⏳' : '📤'}
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            {uploading ? 'Uploading Resumes...' : 'Drop resume files here or click to browse'}
+          </h3>
+          <p className="text-gray-400 text-sm">
+            {disabled 
+              ? 'Complete job requirements setup first' 
+              : 'Supports PDF and DOCX files (max 10MB each)'
+            }
+          </p>
+        </div>
+      </div>
+
+      {/* Upload Message */}
+      {uploadMessage && (
+        <div className={`mt-4 p-4 rounded-lg ${
+          uploadMessage.includes('Successfully') 
+            ? 'bg-green-500/20 text-green-400' 
+            : 'bg-red-500/20 text-red-400'
+        }`}>
+          {uploadMessage}
+        </div>
+      )}
+
+      {/* Uploaded Files */}
+      {uploadedFiles.length > 0 && (
+        <div className="mt-6">
+          <h4 className="text-white font-medium mb-3">Uploaded Resumes ({uploadedFiles.length})</h4>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {uploadedFiles.map((file, index) => (
+              <div key={index} className="bg-white/5 rounded-lg p-3 flex justify-between items-center">
+                <div>
+                  <div className="text-white font-medium">{file.candidate_name || 'Unknown Candidate'}</div>
+                  <div className="text-gray-300 text-sm">{file.filename}</div>
+                  {file.extracted_skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {file.extracted_skills.slice(0, 3).map((skill, skillIndex) => (
+                        <span key={skillIndex} className="px-2 py-1 bg-blue-600/20 text-blue-400 rounded text-xs">
+                          {skill}
+                        </span>
+                      ))}
+                      {file.extracted_skills.length > 3 && (
+                        <span className="px-2 py-1 bg-gray-600/20 text-gray-400 rounded text-xs">
+                          +{file.extracted_skills.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-gray-400 text-xs">{(file.file_size / 1024).toFixed(1)} KB</div>
+                  <div className="text-green-400 text-sm">✓ Processed</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Enhanced Job Requirements Setup Component
+export const JobRequirementsSetup = ({ disabled = false, onJobRequirementsSaved, uploadedResumes = [] }) => {
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [requiredSkills, setRequiredSkills] = useState([]);
