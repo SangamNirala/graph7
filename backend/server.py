@@ -21,6 +21,11 @@ import base64
 # Google Generative AI import
 import google.generativeai as genai
 
+# Configure Gemini API
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
 # Document parsing imports
 import PyPDF2
 from docx import Document
