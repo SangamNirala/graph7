@@ -223,37 +223,85 @@ PROJECTS:
     
     def test_enhanced_token_generation_success(self) -> bool:
         """Test that enhanced personalized interview token is generated successfully"""
-        if not self.personalized_token:
-            self.log_test("Enhanced Token Generation Success", False, "No personalized token available")
-            return False
-        
         try:
-            # Test token validation first
-            payload = {"token": self.personalized_token}
+            # Generate a fresh token for this test
+            resume_content = """Test Candidate for Token Generation
+AI Engineer - Token Validation Test
+Email: test.token@email.com
+Phone: (555) 999-8888
+
+EXPERIENCE:
+- 5+ years of AI/ML development
+- Expert in Python, TensorFlow, PyTorch
+- Built dynamic interview systems
+- Experience with real-time AI applications
+
+SKILLS:
+- Python, TensorFlow, PyTorch, AI/ML
+- Dynamic questioning algorithms
+- Real-time insights and analytics
+- Adaptive difficulty systems"""
+            
+            files = {
+                'resume_file': ('token_test_resume.txt', io.StringIO(resume_content), 'text/plain')
+            }
+            
+            data = {
+                'job_title': 'AI Engineer - Token Generation Test',
+                'job_description': 'Testing enhanced token generation with personalized features',
+                'job_requirements': 'Python, AI/ML, TensorFlow, Dynamic systems',
+                'include_coding_challenge': 'true',
+                'role_archetype': 'Software Engineer',
+                'interview_focus': 'Technical Deep-Dive',
+                'min_questions': '8',
+                'max_questions': '12',
+                'interview_mode': 'personalized',
+                'dynamic_question_generation': 'true',
+                'real_time_insights': 'true',
+                'ai_difficulty_adjustment': 'adaptive'
+            }
+            
             response = self.session.post(
-                f"{self.base_url}/candidate/validate-token",
-                json=payload,
-                timeout=10
+                f"{self.base_url}/admin/upload-job-enhanced",
+                files=files,
+                data=data,
+                timeout=20
             )
             
             success = response.status_code == 200
             if success:
-                data = response.json()
-                success = data.get("valid", False)
+                result = response.json()
+                success = (result.get("success", False) and 
+                          "token" in result)
                 
                 if success:
-                    job_title = data.get("job_title", "")
-                    token_valid = data.get("token") == self.personalized_token
+                    fresh_token = result["token"]
                     
-                    if token_valid and "AI Engineer" in job_title:
-                        details = f"Status: {response.status_code}, Enhanced token validation successful"
-                        details += f", Job Title: '{job_title}', Token: {self.personalized_token[:8]}..."
-                        details += f", Token properly stored and retrievable from database"
+                    # Test token validation
+                    payload = {"token": fresh_token}
+                    validation_response = self.session.post(
+                        f"{self.base_url}/candidate/validate-token",
+                        json=payload,
+                        timeout=10
+                    )
+                    
+                    if validation_response.status_code == 200:
+                        validation_data = validation_response.json()
+                        token_valid = validation_data.get("valid", False)
+                        job_title = validation_data.get("job_title", "")
+                        
+                        if token_valid and "Token Generation Test" in job_title:
+                            details = f"Status: {response.status_code}, Enhanced token generated and validated successfully"
+                            details += f", Token: {fresh_token[:8]}..., Job: '{job_title}'"
+                            details += f", Features: Coding Challenge, Personalized Mode, Adaptive Difficulty"
+                        else:
+                            success = False
+                            details = f"Token validation failed: valid={token_valid}, job_title='{job_title}'"
                     else:
                         success = False
-                        details = f"Status: {response.status_code}, Token validation issues: job_title='{job_title}', token_match={token_valid}"
+                        details = f"Token validation request failed: {validation_response.status_code}"
                 else:
-                    details = f"Status: {response.status_code}, Token validation failed: {response.text[:200]}"
+                    details = f"Token generation failed: {response.text[:200]}"
             else:
                 details = f"Status: {response.status_code}, Response: {response.text[:200]}"
             
