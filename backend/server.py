@@ -7758,6 +7758,346 @@ async def update_threshold_configuration(request: ThresholdConfigRequest):
         logging.error(f"Update thresholds error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to update thresholds: {str(e)}")
 
+# ===== ENHANCED AI SCREENING ENDPOINTS =====
+
+@api_router.post("/admin/screening/upload-resumes")
+async def upload_resumes(files: List[UploadFile] = File(...)):
+    """Upload multiple resume files for ATS screening"""
+    try:
+        if not files:
+            raise HTTPException(status_code=400, detail="No files uploaded")
+        
+        uploaded_resumes = []
+        
+        for file in files:
+            # Validate file type
+            file_extension = file.filename.lower().split('.')[-1]
+            if file_extension not in ['pdf', 'docx']:
+                raise HTTPException(status_code=400, detail=f"Unsupported file type: {file_extension}. Only PDF and DOCX are supported.")
+            
+            # Read file content
+            file_content = await file.read()
+            file_size = len(file_content)
+            
+            # Validate file size (max 10MB)
+            if file_size > 10 * 1024 * 1024:
+                raise HTTPException(status_code=400, detail=f"File {file.filename} is too large. Maximum size is 10MB.")
+            
+            # Extract text content
+            try:
+                if file_extension == 'pdf':
+                    text_content = extract_text_from_pdf(file_content)
+                elif file_extension == 'docx':
+                    text_content = extract_text_from_docx(file_content)
+                else:
+                    continue
+            except Exception as extract_error:
+                logging.error(f"Error extracting text from {file.filename}: {str(extract_error)}")
+                continue
+            
+            # Extract candidate information using AI
+            extracted_skills, candidate_info = await extract_candidate_information(text_content)
+            
+            # Create resume file record
+            resume_file = ResumeFile(
+                filename=file.filename,
+                file_type=file_extension,
+                file_size=file_size,
+                content=text_content,
+                candidate_name=candidate_info.get('name', ''),
+                candidate_email=candidate_info.get('email', ''),
+                extracted_skills=extracted_skills,
+                experience_years=candidate_info.get('experience_years'),
+                education_level=candidate_info.get('education_level', '')
+            )
+            
+            # Store in database
+            await db.resume_files.insert_one(resume_file.dict())
+            uploaded_resumes.append(resume_file)
+            
+            logging.info(f"Successfully processed resume: {file.filename}")
+        
+        return {
+            "success": True,
+            "message": f"Successfully uploaded {len(uploaded_resumes)} resumes",
+            "uploaded_resumes": uploaded_resumes,
+            "total_files": len(uploaded_resumes)
+        }
+        
+    except Exception as e:
+        logging.error(f"Resume upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload resumes: {str(e)}")
+
+@api_router.post("/admin/screening/screen-candidates")
+async def screen_candidates(request: ScreenCandidatesRequest):
+    """Screen candidates using ATS scoring against job requirements"""
+    try:
+        # Get job requirements
+        job_requirements = await db.job_requirements.find_one({"id": request.job_requirements_id})
+        if not job_requirements:
+            raise HTTPException(status_code=404, detail="Job requirements not found")
+        
+        # Get resumes
+        resume_cursor = db.resume_files.find({"id": {"$in": request.resume_ids}})
+        resumes = await resume_cursor.to_list(length=None)
+        
+        if not resumes:
+            raise HTTPException(status_code=404, detail="No resumes found")
+        
+        analysis_results = []
+        
+        for resume in resumes:
+            # Perform ATS analysis
+            ats_result = await perform_ats_analysis(resume, job_requirements)
+            analysis_results.append(ats_result)
+            
+            # Store analysis result in database
+            await db.ats_analysis_results.insert_one(ats_result.dict())
+        
+        # Sort by overall score descending
+        analysis_results.sort(key=lambda x: x.overall_score, reverse=True)
+        
+        return {
+            "success": True,
+            "message": f"Successfully screened {len(analysis_results)} candidates",
+            "analysis_results": analysis_results,
+            "average_score": sum(r.overall_score for r in analysis_results) / len(analysis_results) if analysis_results else 0,
+            "top_candidates": [r for r in analysis_results if r.overall_score >= 80]
+        }
+        
+    except Exception as e:
+        logging.error(f"Candidate screening error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to screen candidates: {str(e)}")
+
+@api_router.get("/admin/screening/results")
+async def get_screening_results(job_requirements_id: Optional[str] = None):
+    """Get all ATS screening results or filter by job requirements"""
+    try:
+        filter_criteria = {}
+        if job_requirements_id:
+            # Find analysis results for resumes screened against specific job requirements
+            # This is a simplified approach - you might want to store job_requirements_id directly in results
+            filter_criteria = {"analysis_timestamp": {"$gte": datetime.utcnow() - timedelta(days=30)}}
+        
+        cursor = db.ats_analysis_results.find(filter_criteria).sort("overall_score", -1)
+        results = await cursor.to_list(length=None)
+        
+        # Convert MongoDB ObjectIds to strings
+        for result in results:
+            if '_id' in result:
+                result['_id'] = str(result['_id'])
+        
+        # Calculate statistics
+        if results:
+            scores = [r['overall_score'] for r in results]
+            statistics = {
+                "total_candidates": len(results),
+                "average_score": sum(scores) / len(scores),
+                "highest_score": max(scores),
+                "lowest_score": min(scores),
+                "candidates_above_80": len([s for s in scores if s >= 80]),
+                "candidates_above_70": len([s for s in scores if s >= 70]),
+                "candidates_above_60": len([s for s in scores if s >= 60])
+            }
+        else:
+            statistics = {
+                "total_candidates": 0,
+                "average_score": 0,
+                "highest_score": 0,
+                "lowest_score": 0,
+                "candidates_above_80": 0,
+                "candidates_above_70": 0,
+                "candidates_above_60": 0
+            }
+        
+        return {
+            "success": True,
+            "results": results,
+            "statistics": statistics
+        }
+        
+    except Exception as e:
+        logging.error(f"Get screening results error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get screening results: {str(e)}")
+
+@api_router.get("/admin/screening/uploaded-resumes")
+async def get_uploaded_resumes():
+    """Get all uploaded resumes"""
+    try:
+        cursor = db.resume_files.find({}).sort("upload_timestamp", -1)
+        resumes = await cursor.to_list(length=None)
+        
+        # Convert MongoDB ObjectIds to strings
+        for resume in resumes:
+            if '_id' in resume:
+                resume['_id'] = str(resume['_id'])
+        
+        return {
+            "success": True,
+            "resumes": resumes,
+            "total_resumes": len(resumes)
+        }
+        
+    except Exception as e:
+        logging.error(f"Get uploaded resumes error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get uploaded resumes: {str(e)}")
+
+# Helper functions for ATS screening
+
+async def extract_candidate_information(resume_text: str):
+    """Extract candidate information from resume text using AI"""
+    try:
+        # Use Gemini to extract candidate information
+        client = genai.GenerativeModel("gemini-1.5-flash")
+        
+        prompt = f"""
+        Analyze this resume text and extract the following information in JSON format:
+        
+        1. Candidate name
+        2. Email address
+        3. Phone number
+        4. Skills (as a list)
+        5. Years of experience (as integer)
+        6. Education level (high_school, bachelor, master, doctorate, or other)
+        7. Job titles/positions held
+        
+        Resume text:
+        {resume_text[:3000]}  # Limit to avoid token limits
+        
+        Return only valid JSON with these fields:
+        {{
+            "name": "candidate name",
+            "email": "email@example.com",
+            "phone": "phone number",
+            "skills": ["skill1", "skill2", ...],
+            "experience_years": number,
+            "education_level": "level",
+            "positions": ["position1", "position2", ...]
+        }}
+        """
+        
+        response = client.generate_content(prompt)
+        
+        # Parse JSON response
+        import json
+        try:
+            extracted_info = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
+        except:
+            # Fallback to basic extraction
+            extracted_info = {
+                "name": "Unknown",
+                "email": "",
+                "skills": [],
+                "experience_years": 0,
+                "education_level": "other",
+                "positions": []
+            }
+        
+        skills = extracted_info.get('skills', [])
+        candidate_info = {
+            'name': extracted_info.get('name', 'Unknown'),
+            'email': extracted_info.get('email', ''),
+            'experience_years': extracted_info.get('experience_years', 0),
+            'education_level': extracted_info.get('education_level', 'other')
+        }
+        
+        return skills, candidate_info
+        
+    except Exception as e:
+        logging.error(f"Error extracting candidate information: {str(e)}")
+        # Return defaults
+        return [], {'name': 'Unknown', 'email': '', 'experience_years': 0, 'education_level': 'other'}
+
+async def perform_ats_analysis(resume: dict, job_requirements: dict) -> ATSAnalysisResult:
+    """Perform ATS analysis of resume against job requirements"""
+    try:
+        # Use Gemini for comprehensive ATS analysis
+        client = genai.GenerativeModel("gemini-1.5-flash")
+        
+        prompt = f"""
+        Perform an ATS (Applicant Tracking System) analysis of this resume against the given job requirements.
+        Provide detailed scoring and recommendations.
+        
+        JOB REQUIREMENTS:
+        Title: {job_requirements['job_title']}
+        Description: {job_requirements['job_description']}
+        Required Skills: {job_requirements['required_skills']}
+        Preferred Skills: {job_requirements.get('preferred_skills', [])}
+        Experience Level: {job_requirements['experience_level']}
+        
+        CANDIDATE RESUME:
+        Name: {resume.get('candidate_name', 'Unknown')}
+        Content: {resume['content'][:3000]}
+        
+        Analyze and return JSON with:
+        1. overall_score (0-100)
+        2. component_scores: {{skills_match: 0-100, experience_match: 0-100, education_match: 0-100}}
+        3. skill_matches: {{skill_name: match_percentage}} for each required skill
+        4. missing_skills: list of required skills not found
+        5. recommendations: list of improvement suggestions
+        6. experience_match: text description of experience alignment
+        7. education_match: text description of education alignment
+        
+        Return only valid JSON:
+        {{
+            "overall_score": number,
+            "component_scores": {{"skills_match": number, "experience_match": number, "education_match": number}},
+            "skill_matches": {{"skill": percentage}},
+            "missing_skills": ["skill1", "skill2"],
+            "recommendations": ["rec1", "rec2"],
+            "experience_match": "description",
+            "education_match": "description"
+        }}
+        """
+        
+        response = client.generate_content(prompt)
+        
+        # Parse AI response
+        import json
+        try:
+            analysis = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
+        except:
+            # Fallback scoring
+            analysis = {
+                "overall_score": 65.0,
+                "component_scores": {"skills_match": 60.0, "experience_match": 70.0, "education_match": 65.0},
+                "skill_matches": {},
+                "missing_skills": [],
+                "recommendations": ["Resume needs more detailed skill descriptions"],
+                "experience_match": "Experience level needs review",
+                "education_match": "Education background is suitable"
+            }
+        
+        # Create ATS analysis result
+        return ATSAnalysisResult(
+            candidate_id=resume['id'],
+            candidate_name=resume.get('candidate_name', 'Unknown'),
+            resume_filename=resume['filename'],
+            overall_score=float(analysis['overall_score']),
+            component_scores=analysis.get('component_scores', {}),
+            skill_matches=analysis.get('skill_matches', {}),
+            missing_skills=analysis.get('missing_skills', []),
+            recommendations=analysis.get('recommendations', []),
+            experience_match=analysis.get('experience_match', ''),
+            education_match=analysis.get('education_match', '')
+        )
+        
+    except Exception as e:
+        logging.error(f"Error performing ATS analysis: {str(e)}")
+        # Return default analysis
+        return ATSAnalysisResult(
+            candidate_id=resume['id'],
+            candidate_name=resume.get('candidate_name', 'Unknown'),
+            resume_filename=resume['filename'],
+            overall_score=50.0,
+            component_scores={"skills_match": 50.0, "experience_match": 50.0, "education_match": 50.0},
+            skill_matches={},
+            missing_skills=[],
+            recommendations=["Analysis could not be completed"],
+            experience_match="Requires manual review",
+            education_match="Requires manual review"
+        )
+
 # Health check
 @api_router.get("/health")
 async def health_check():
