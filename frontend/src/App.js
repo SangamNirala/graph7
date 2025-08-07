@@ -839,6 +839,11 @@ const AdminDashboard = ({ setCurrentPage }) => {
   const [bulkCandidates, setBulkCandidates] = useState([]);
   const [screeningProgress, setScreeningProgress] = useState(null);
 
+  // New Screening Workflow State
+  const [uploadedResumes, setUploadedResumes] = useState([]);
+  const [savedJobRequirements, setSavedJobRequirements] = useState(null);
+  const [screeningComplete, setScreeningComplete] = useState(false);
+
   const roleArchetypes = [
     'General',
     'Software Engineer',
