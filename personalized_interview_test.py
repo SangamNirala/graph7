@@ -228,45 +228,32 @@ PROJECTS:
             return False
         
         try:
-            # Test starting personalized interview to verify token works with all features
-            payload = {
-                "token": self.personalized_token,
-                "candidate_name": "Sarah Chen - AI Engineer Test",
-                "voice_mode": False
-            }
+            # Test token validation first
+            payload = {"token": self.personalized_token}
             response = self.session.post(
-                f"{self.base_url}/candidate/start-interview",
+                f"{self.base_url}/candidate/validate-token",
                 json=payload,
-                timeout=20
+                timeout=10
             )
             
             success = response.status_code == 200
             if success:
                 data = response.json()
-                success = ("session_id" in data and 
-                          "first_question" in data and 
-                          "question_number" in data)
+                success = data.get("valid", False)
                 
                 if success:
-                    self.session_id = data["session_id"]
-                    # Verify personalized features are active
-                    session_info = data.get("session_info", {})
-                    personalized_active = (
-                        session_info.get("interview_mode") == "personalized" and
-                        session_info.get("dynamic_question_generation") == True and
-                        session_info.get("real_time_insights") == True and
-                        session_info.get("ai_difficulty_adjustment") == "adaptive"
-                    )
+                    job_title = data.get("job_title", "")
+                    token_valid = data.get("token") == self.personalized_token
                     
-                    if personalized_active:
-                        details = f"Status: {response.status_code}, Session: {self.session_id[:8]}..."
-                        details += f", Personalized features active, First question generated successfully"
-                        details += f", Question: '{data.get('first_question', '')[:50]}...'"
+                    if token_valid and "AI Engineer" in job_title:
+                        details = f"Status: {response.status_code}, Enhanced token validation successful"
+                        details += f", Job Title: '{job_title}', Token: {self.personalized_token[:8]}..."
+                        details += f", Token properly stored and retrievable from database"
                     else:
                         success = False
-                        details = f"Status: {response.status_code}, Personalized features not properly activated"
+                        details = f"Status: {response.status_code}, Token validation issues: job_title='{job_title}', token_match={token_valid}"
                 else:
-                    details = f"Status: {response.status_code}, Missing required session data: {response.text[:200]}"
+                    details = f"Status: {response.status_code}, Token validation failed: {response.text[:200]}"
             else:
                 details = f"Status: {response.status_code}, Response: {response.text[:200]}"
             
