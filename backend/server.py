@@ -5790,12 +5790,25 @@ async def start_interview(request: InterviewStartRequest):
     
     # Add enhanced features to response
     if is_enhanced:
+        enhanced_features = {
+            "coding_challenge": token_data.get('include_coding_challenge', False),
+            "role_archetype": token_data.get('role_archetype', 'General'),
+            "interview_focus": token_data.get('interview_focus', 'Balanced')
+        }
+        
+        # Add personalized interview features
+        if token_data.get('interview_mode') == 'personalized':
+            enhanced_features.update({
+                "interview_mode": "personalized",
+                "dynamic_question_generation": token_data.get('dynamic_question_generation', False),
+                "real_time_insights": token_data.get('real_time_insights', False),
+                "ai_difficulty_adjustment": token_data.get('ai_difficulty_adjustment', 'static'),
+                "adaptive_questioning": True,
+                "performance_based_difficulty": True
+            })
+        
         response_data.update({
-            "features": {
-                "coding_challenge": token_data.get('include_coding_challenge', False),
-                "role_archetype": token_data.get('role_archetype', 'General'),
-                "interview_focus": token_data.get('interview_focus', 'Balanced')
-            },
+            "features": enhanced_features,
             "estimated_duration": token_data.get('estimated_duration', 30)
         })
     
