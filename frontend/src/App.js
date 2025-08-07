@@ -2018,6 +2018,99 @@ const AdminDashboard = ({ setCurrentPage }) => {
                 />
               </div>
 
+              {/* Interview Questions Configuration */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-lg p-6 border border-white/20">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  📋 Interview Questions Configuration
+                </h3>
+                <p className="text-gray-300 text-sm mb-6">
+                  Set the range of questions to be asked during the interview. The system will dynamically adjust based on candidate responses.
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-white font-medium mb-2">
+                      Minimum Questions <span className="text-purple-300">(Must be asked)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="6"
+                      max="15"
+                      value={personalizedMinQuestions}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        setPersonalizedMinQuestions(value);
+                        // Ensure max is at least equal to min
+                        if (personalizedMaxQuestions < value) {
+                          setPersonalizedMaxQuestions(value);
+                        }
+                      }}
+                      className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <p className="text-purple-300 text-xs mt-2">Recommended: 6-10 questions</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-white font-medium mb-2">
+                      Maximum Questions <span className="text-purple-300">(If needed for assessment)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={personalizedMinQuestions}
+                      max="20"
+                      value={personalizedMaxQuestions}
+                      onChange={(e) => setPersonalizedMaxQuestions(parseInt(e.target.value))}
+                      className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <p className="text-purple-300 text-xs mt-2">Recommended: 10-15 questions</p>
+                  </div>
+                </div>
+                
+                {/* Expected Question Distribution */}
+                <div className="mt-6 bg-white/5 p-4 rounded-lg border border-white/10">
+                  <h4 className="text-white font-medium mb-3 flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4" />
+                    </svg>
+                    📊 Expected Question Distribution
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Technical Questions:</span>
+                      <span className="text-purple-300 font-medium">
+                        {Math.floor(personalizedMinQuestions * 0.5)}-{Math.ceil(personalizedMaxQuestions * 0.5)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Behavioral Questions:</span>
+                      <span className="text-purple-300 font-medium">
+                        {Math.floor(personalizedMinQuestions * 0.5)}-{Math.ceil(personalizedMaxQuestions * 0.5)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-400/20">
+                    <p className="text-yellow-300 text-xs flex items-center">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      💡 The AI will adaptively adjust the number of questions based on candidate performance and responses
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Estimated Duration */}
+                <div className="mt-4 text-right">
+                  <span className="text-gray-300 text-sm">Estimated Interview Duration: </span>
+                  <span className="text-purple-300 font-semibold text-lg">
+                    {Math.ceil(personalizedMinQuestions * 2.5)}-{Math.ceil(personalizedMaxQuestions * 3)} minutes
+                  </span>
+                </div>
+              </div>
+
               {/* AI-Powered Question Generation Configuration */}
               <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 p-6 rounded-lg border border-purple-400/20">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
