@@ -3748,6 +3748,193 @@ class VoiceProcessor:
             # Fallback message
             return "Speech-to-text is handled by Web Speech API on the frontend"
 
+# Personalized Interview Functions
+async def analyze_candidate_performance(session_metadata: dict, session: dict) -> dict:
+    """Analyze candidate performance to determine if more questions are needed"""
+    try:
+        # Get all messages from the session
+        messages = session.get('messages', [])
+        candidate_messages = [msg for msg in messages if msg.get('type') == 'candidate']
+        
+        if not candidate_messages:
+            return {
+                'overall_performance': 0.5,
+                'technical_strength': 0.5,
+                'behavioral_strength': 0.5,
+                'communication_quality': 0.5,
+                'knowledge_gaps': [],
+                'strong_areas': []
+            }
+        
+        # Analyze emotional intelligence metrics
+        ei_scores = []
+        sentiment_scores = []
+        
+        for msg in candidate_messages:
+            ei_data = msg.get('emotional_intelligence', {})
+            if ei_data:
+                confidence = ei_data.get('confidence', 0.5)
+                enthusiasm = ei_data.get('enthusiasm', 0.5)
+                stress_level = ei_data.get('stress_level', 0.5)
+                
+                # Calculate composite EI score
+                ei_score = (confidence * 0.4 + enthusiasm * 0.4 + (1 - stress_level) * 0.2)
+                ei_scores.append(ei_score)
+            
+            sentiment = msg.get('sentiment', 0)
+            sentiment_scores.append(sentiment)
+        
+        # Calculate performance metrics
+        avg_ei_score = sum(ei_scores) / len(ei_scores) if ei_scores else 0.5
+        avg_sentiment = sum(sentiment_scores) / len(sentiment_scores) if sentiment_scores else 0
+        
+        # Normalize sentiment to 0-1 scale
+        normalized_sentiment = (avg_sentiment + 1) / 2
+        
+        # Overall performance calculation
+        overall_performance = (avg_ei_score * 0.6 + normalized_sentiment * 0.4)
+        
+        # Determine strengths and gaps based on performance
+        strong_areas = []
+        knowledge_gaps = []
+        
+        if avg_ei_score > 0.7:
+            strong_areas.append("emotional_intelligence")
+        elif avg_ei_score < 0.4:
+            knowledge_gaps.append("confidence_communication")
+            
+        if normalized_sentiment > 0.6:
+            strong_areas.append("positive_attitude")
+        elif normalized_sentiment < 0.4:
+            knowledge_gaps.append("engagement_enthusiasm")
+        
+        return {
+            'overall_performance': overall_performance,
+            'technical_strength': 0.5,  # Would need technical question analysis
+            'behavioral_strength': avg_ei_score,
+            'communication_quality': normalized_sentiment,
+            'knowledge_gaps': knowledge_gaps,
+            'strong_areas': strong_areas,
+            'question_count': len(candidate_messages)
+        }
+        
+    except Exception as e:
+        logging.error(f"Error analyzing candidate performance: {str(e)}")
+        return {
+            'overall_performance': 0.5,
+            'technical_strength': 0.5,
+            'behavioral_strength': 0.5,
+            'communication_quality': 0.5,
+            'knowledge_gaps': [],
+            'strong_areas': []
+        }
+
+def should_continue_interview(performance: dict, current_question_count: int) -> bool:
+    """Determine if interview should continue based on performance analysis"""
+    try:
+        overall_performance = performance.get('overall_performance', 0.5)
+        knowledge_gaps = performance.get('knowledge_gaps', [])
+        strong_areas = performance.get('strong_areas', [])
+        
+        # Don't continue if we've asked too many questions
+        if current_question_count >= 15:
+            return False
+            
+        # Continue if performance is very low (need more data)
+        if overall_performance < 0.3 and current_question_count < 12:
+            return True
+            
+        # Continue if there are significant knowledge gaps to explore
+        if len(knowledge_gaps) > len(strong_areas) and current_question_count < 12:
+            return True
+            
+        # Continue if performance is moderate and we haven't asked many questions
+        if 0.4 <= overall_performance <= 0.7 and current_question_count < 10:
+            return True
+            
+        # Don't continue if performance is consistently high
+        if overall_performance > 0.8 and current_question_count >= 8:
+            return False
+            
+        return False
+        
+    except Exception as e:
+        logging.error(f"Error in should_continue_interview: {str(e)}")
+        return False
+
+async def generate_personalized_follow_up(session_metadata: dict, session: dict, performance: dict, token_data: dict = None) -> dict:
+    """Generate a personalized follow-up question based on candidate performance"""
+    try:
+        knowledge_gaps = performance.get('knowledge_gaps', [])
+        strong_areas = performance.get('strong_areas', [])
+        overall_performance = performance.get('overall_performance', 0.5)
+        
+        # Get job context
+        job_title = session_metadata.get('job_title', 'Software Engineer')
+        
+        # Determine question focus based on gaps
+        question_focus = "technical"
+        if "confidence_communication" in knowledge_gaps:
+            question_focus = "behavioral"
+        elif "engagement_enthusiasm" in knowledge_gaps:
+            question_focus = "motivational"
+        elif overall_performance < 0.4:
+            question_focus = "basic_competency"
+        
+        # Generate question based on focus
+        questions_by_focus = {
+            "technical": [
+                f"Can you walk me through how you would approach solving a complex problem in {job_title.lower()} work?",
+                "Describe a technical challenge you've faced and how you overcame it.",
+                "What tools or technologies are you most comfortable working with?",
+                "How do you stay updated with the latest developments in your field?"
+            ],
+            "behavioral": [
+                "Tell me about a time when you had to work under pressure. How did you handle it?",
+                "Describe a situation where you had to collaborate with a difficult team member.",
+                "Can you give me an example of when you took initiative on a project?",
+                "How do you handle feedback and criticism?"
+            ],
+            "motivational": [
+                "What excites you most about this role and our company?",
+                "Where do you see yourself in the next few years?",
+                "What motivates you to do your best work?",
+                "Why are you looking to make a change from your current situation?"
+            ],
+            "basic_competency": [
+                "Can you tell me about your background and experience?",
+                "What are your key strengths?",
+                "Describe your ideal work environment.",
+                "What interests you about this field?"
+            ]
+        }
+        
+        import random
+        question_text = random.choice(questions_by_focus.get(question_focus, questions_by_focus["technical"]))
+        
+        # Create question object
+        new_question = {
+            "question": question_text,
+            "type": question_focus,
+            "generated_dynamically": True,
+            "based_on_performance": {
+                "overall_score": overall_performance,
+                "knowledge_gaps": knowledge_gaps,
+                "strong_areas": strong_areas
+            }
+        }
+        
+        return new_question
+        
+    except Exception as e:
+        logging.error(f"Error generating personalized follow-up: {str(e)}")
+        return {
+            "question": "Can you tell me more about your experience and what interests you about this role?",
+            "type": "general",
+            "generated_dynamically": True,
+            "error": str(e)
+        }
+
 # Individual Question Scoring Function
 async def generate_individual_question_score(question: str, answer: str, is_technical: bool = True) -> Dict[str, Any]:
     """Generate individual question score with detailed analysis"""
