@@ -267,6 +267,7 @@ export const JobRequirementsSetup = ({ disabled = false, onJobRequirementsSaved,
       if (data.success) {
         setMessage('Job requirements saved successfully!');
         fetchJobRequirements();
+        onJobRequirementsSaved && onJobRequirementsSaved(data);
         // Reset form
         setJobTitle('');
         setJobDescription('');
@@ -283,8 +284,13 @@ export const JobRequirementsSetup = ({ disabled = false, onJobRequirementsSaved,
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+    <div className={`bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 ${disabled ? 'opacity-50' : ''}`}>
       <h2 className="text-2xl font-bold text-white mb-6">🎯 Job Requirements & Screening Setup</h2>
+      {disabled && (
+        <div className="mb-4 p-4 bg-yellow-500/20 text-yellow-400 rounded-lg border border-yellow-500/30">
+          ⚠️ Please upload resumes first to enable job requirements setup
+        </div>
+      )}
       
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Job Definition Section */}
