@@ -342,19 +342,22 @@ export const JobRequirementsSetup = ({ disabled = false, onJobRequirementsSaved,
                 type="text"
                 value={newSkill}
                 onChange={(e) => setNewSkill(e.target.value)}
-                className="flex-1 p-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400"
+                disabled={disabled}
+                className="flex-1 p-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="e.g., React, Python, AWS..."
-                onKeyPress={(e) => e.key === 'Enter' && addSkill('required')}
+                onKeyPress={(e) => e.key === 'Enter' && !disabled && addSkill('required')}
               />
               <button
                 onClick={() => addSkill('required')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={disabled}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add Required
               </button>
               <button
                 onClick={() => addSkill('preferred')}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                disabled={disabled}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add Preferred
               </button>
