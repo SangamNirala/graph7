@@ -152,9 +152,11 @@ PROJECTS:
             details = f"Status: {response.status_code}"
             if success:
                 details += f", Token: {self.personalized_token[:8]}..., Job: 'AI Engineer - Personalized Test'"
-                details += f", Min Questions: {data['min_questions']}, Max Questions: {data['max_questions']}"
-                details += f", Interview Mode: {data['interview_mode']}, Dynamic Generation: {data['dynamic_question_generation']}"
-                details += f", Real-time Insights: {data['real_time_insights']}, AI Difficulty: {data['ai_difficulty_adjustment']}"
+                details += f", Enhanced features detected in response"
+                features = result.get("features", {})
+                details += f", Coding Challenge: {features.get('coding_challenge', False)}"
+                details += f", Role Archetype: {features.get('role_archetype', 'N/A')}"
+                details += f", Estimated Duration: {result.get('estimated_duration', 0)} minutes"
             else:
                 details += f", Response: {response.text[:300]}"
             
