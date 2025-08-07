@@ -18,6 +18,9 @@ import string
 import io
 import base64
 
+# Google Generative AI import
+import google.generativeai as genai
+
 # Document parsing imports
 import PyPDF2
 from docx import Document
