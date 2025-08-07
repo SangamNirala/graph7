@@ -6088,6 +6088,33 @@ async def send_interview_message(request: InterviewMessageRequest):
     # Move to next question
     next_q_num = current_q_num + 1
     
+    # Check if this is a personalized interview and generate dynamic questions
+    is_personalized = session_metadata.get('interview_mode') == 'personalized'
+    dynamic_generation = session_metadata.get('dynamic_question_generation', False)
+    
+    if next_q_num >= len(questions):
+        # For personalized interviews, potentially generate more questions based on performance
+        if is_personalized and dynamic_generation and next_q_num < 15:  # Max 15 questions
+            # Analyze current performance to decide if more questions are needed
+            current_performance = await analyze_candidate_performance(session_metadata, session)
+            
+            if should_continue_interview(current_performance, next_q_num):
+                # Generate next personalized question based on responses and gaps
+                new_question = await generate_personalized_follow_up(
+                    session_metadata, 
+                    session, 
+                    current_performance,
+                    None  # token_data not available in this context
+                )
+                
+                if new_question:
+                    # Add the new question to the list
+                    questions.append(new_question)
+                    await db.session_metadata.update_one(
+                        {"session_id": session['session_id']},
+                        {"$set": {"questions": questions}}
+                    )
+    
     if next_q_num >= len(questions):
         # Interview completed - Generate enhanced assessment with predictive analytics
         await db.sessions.update_one(
