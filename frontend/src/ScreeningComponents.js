@@ -469,7 +469,7 @@ export const JobRequirementsSetup = ({ disabled = false, onJobRequirementsSaved,
 
           <button
             onClick={handleSaveJobRequirements}
-            disabled={loading || Object.values(scoringWeights).reduce((sum, w) => sum + w, 0) !== 100}
+            disabled={disabled || loading || Object.values(scoringWeights).reduce((sum, w) => sum + w, 0) !== 100}
             className="w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Saving...' : 'Save Job Requirements'}
