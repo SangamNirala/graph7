@@ -3989,7 +3989,12 @@ async def upload_job_enhanced(
         interview_focus=interview_focus,
         min_questions=min_questions,
         max_questions=max_questions,
-        custom_questions_config=custom_config
+        custom_questions_config=custom_config,
+        # Personalized interview fields
+        interview_mode=interview_mode,
+        dynamic_question_generation=dynamic_question_generation,
+        real_time_insights=real_time_insights,
+        ai_difficulty_adjustment=ai_difficulty_adjustment
     )
     await db.enhanced_tokens.insert_one(token_data.dict())
     
