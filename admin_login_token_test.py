@@ -14,7 +14,7 @@ import io
 from typing import Dict, Any, Optional
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://540326a3-5fda-4ddf-a117-ac17e1bf2b91.preview.emergentagent.com/api"
+BASE_URL = "https://0607eba8-cf07-4104-a699-dfbd3a22aede.preview.emergentagent.com/api"
 
 class AdminLoginTokenTester:
     def __init__(self):
