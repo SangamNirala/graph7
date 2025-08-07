@@ -858,6 +858,8 @@ const AdminDashboard = ({ setCurrentPage }) => {
   const [aiDifficultyAdjustment, setAiDifficultyAdjustment] = useState('adaptive'); // 'adaptive', 'progressive', 'static'
   const [realTimeInsights, setRealTimeInsights] = useState(true);
   const [dynamicQuestionGeneration, setDynamicQuestionGeneration] = useState(true);
+  const [personalizedMinQuestions, setPersonalizedMinQuestions] = useState(8);
+  const [personalizedMaxQuestions, setPersonalizedMaxQuestions] = useState(12);
 
   const roleArchetypes = [
     'General',
