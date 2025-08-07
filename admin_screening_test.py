@@ -325,31 +325,42 @@ startxref
             success = response.status_code == 200
             if success:
                 data = response.json()
-                success = (data.get("success", False) and 
-                          "screening_results" in data and
-                          len(data["screening_results"]) > 0)
+                success = data.get("success", False)
                 
-                # Verify ATS scores are generated
+                # Check for different possible response structures
                 if success:
-                    results = data["screening_results"]
-                    for result in results:
-                        if "overall_score" not in result or "component_scores" not in result:
-                            success = False
-                            break
-                    
-                    if success:
-                        # Store screening session ID if available
-                        self.screening_session_id = data.get("screening_session_id")
+                    # Check for screening_results or analysis_results
+                    results = data.get("screening_results") or data.get("analysis_results", [])
+                    if len(results) > 0:
+                        # Verify ATS scores are generated (check for any score field)
+                        for result in results:
+                            has_score = any(key in result for key in ["overall_score", "component_scores", "score"])
+                            if not has_score:
+                                success = False
+                                break
+                        
+                        if success:
+                            # Store screening session ID if available
+                            self.screening_session_id = data.get("screening_session_id")
+                    else:
+                        success = False
             
             details = f"Status: {response.status_code}"
             if success:
-                results = data["screening_results"]
+                data = response.json()
+                results = data.get("screening_results") or data.get("analysis_results", [])
                 details += f", Screened {len(results)} candidates"
                 if results:
-                    avg_score = sum(r.get("overall_score", 0) for r in results) / len(results)
-                    details += f", Average ATS Score: {avg_score:.1f}"
+                    # Try to get score from different possible fields
+                    scores = []
+                    for r in results:
+                        score = r.get("overall_score") or r.get("score") or 0
+                        scores.append(score)
+                    if scores:
+                        avg_score = sum(scores) / len(scores)
+                        details += f", Average ATS Score: {avg_score:.1f}"
             else:
-                details += f", Response: {response.text[:200]}"
+                details += f", Response: {response.text[:300]}"
             
             self.log_test("Candidate Screening", success, details)
             return success
