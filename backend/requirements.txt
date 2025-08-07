@@ -108,3 +108,4 @@ preshed>=3.0.0
 blis>=0.7.0
 PyYAML
 cachetools
+proto-plus
