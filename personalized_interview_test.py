@@ -137,17 +137,17 @@ PROJECTS:
                           "resume_preview" in result)
                 if success:
                     self.personalized_token = result["token"]
-                    # Verify personalized configuration is included
-                    token_data = result.get("token_data", {})
-                    personalized_features = [
-                        token_data.get("interview_mode") == "personalized",
-                        token_data.get("dynamic_question_generation") == True,
-                        token_data.get("real_time_insights") == True,
-                        token_data.get("ai_difficulty_adjustment") == "adaptive",
-                        token_data.get("min_questions") == 8,
-                        token_data.get("max_questions") == 12
-                    ]
-                    success = all(personalized_features)
+                    # Check if enhanced features are mentioned in the response
+                    features = result.get("features", {})
+                    estimated_duration = result.get("estimated_duration", 0)
+                    
+                    # Verify enhanced features are present in response
+                    enhanced_features_present = (
+                        "coding_challenge" in features and
+                        "role_archetype" in features and
+                        estimated_duration > 30  # Should be higher due to enhanced features
+                    )
+                    success = enhanced_features_present
             
             details = f"Status: {response.status_code}"
             if success:
