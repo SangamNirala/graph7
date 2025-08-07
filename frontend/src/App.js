@@ -1117,6 +1117,8 @@ const AdminDashboard = ({ setCurrentPage }) => {
         setDynamicQuestionGeneration(true);
         setRealTimeInsights(true);
         setAiDifficultyAdjustment('adaptive');
+        setPersonalizedMinQuestions(8);
+        setPersonalizedMaxQuestions(12);
         
         // Clear file input
         const fileInput = document.querySelector('input[type="file"][accept*="pdf"]');
