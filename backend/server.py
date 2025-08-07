@@ -4014,9 +4014,14 @@ async def upload_job_enhanced(
             "interview_focus": interview_focus,
             "min_questions": min_questions,
             "max_questions": max_questions,
-            "estimated_duration": base_duration
+            "estimated_duration": base_duration,
+            # Personalized interview features
+            "interview_mode": interview_mode,
+            "dynamic_question_generation": dynamic_question_generation,
+            "real_time_insights": real_time_insights,
+            "ai_difficulty_adjustment": ai_difficulty_adjustment
         },
-        "message": f"Enhanced job and resume ({resume_file.filename}) uploaded successfully."
+        "message": f"{'AI-Powered Personalized' if interview_mode == 'personalized' else 'Enhanced'} interview and resume ({resume_file.filename}) created successfully."
     }
 
 @api_router.get("/admin/candidate-pipeline")
