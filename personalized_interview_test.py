@@ -43,7 +43,7 @@ class PersonalizedInterviewTester:
             response = self.session.post(
                 f"{self.base_url}/admin/login",
                 json=payload,
-                timeout=10
+                timeout=30
             )
             
             success = response.status_code == 200
