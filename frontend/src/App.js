@@ -1843,6 +1843,313 @@ const AdminDashboard = ({ setCurrentPage }) => {
           </div>
         )}
 
+        {/* Personalized Interview Tab */}
+        {activeTab === 'personalized' && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">🧠 Create AI-Powered Personalised Interview</h2>
+              <p className="text-gray-300 text-sm">
+                Leverage advanced AI to create dynamic interviews that adapt in real-time based on candidate responses, 
+                performance, and experience gaps with intelligent difficulty adjustment and live performance insights.
+              </p>
+            </div>
+            
+            <form onSubmit={handlePersonalizedSubmit} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-white font-medium mb-2">Job Title</label>
+                  <input
+                    type="text"
+                    value={personalizedJobTitle}
+                    onChange={(e) => setPersonalizedJobTitle(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="e.g., Senior AI Engineer"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">Role Archetype</label>
+                  <select
+                    value={personalizedRoleArchetype}
+                    onChange={(e) => setPersonalizedRoleArchetype(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    {roleArchetypes.map(role => (
+                      <option key={role} value={role} className="bg-gray-800">{role}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-white font-medium mb-2">Interview Focus</label>
+                  <select
+                    value={personalizedInterviewFocus}
+                    onChange={(e) => setPersonalizedInterviewFocus(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    {interviewFocusOptions.map(focus => (
+                      <option key={focus} value={focus} className="bg-gray-800">{focus}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center text-white">
+                    <input
+                      type="checkbox"
+                      checked={personalizedIncludeCodingChallenge}
+                      onChange={(e) => setPersonalizedIncludeCodingChallenge(e.target.checked)}
+                      className="mr-2 w-5 h-5 rounded border-white/30 bg-white/20 text-purple-600 focus:ring-purple-500 focus:ring-2"
+                    />
+                    Include Coding Challenge
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-white font-medium mb-2">Job Description</label>
+                <textarea
+                  value={personalizedJobDescription}
+                  onChange={(e) => setPersonalizedJobDescription(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Detailed job description..."
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-white font-medium mb-2">Job Requirements</label>
+                <textarea
+                  value={personalizedJobRequirements}
+                  onChange={(e) => setPersonalizedJobRequirements(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Technical skills, experience requirements..."
+                  required
+                />
+              </div>
+
+              {/* AI-Powered Question Generation Configuration */}
+              <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 p-6 rounded-lg border border-purple-400/20">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  🧠 AI-Powered Dynamic Question Generation
+                </h3>
+                <p className="text-gray-300 text-sm mb-6">
+                  Instead of pre-defined questions, our AI will analyze candidate responses in real-time and generate 
+                  personalized follow-up questions based on their background, experience gaps, and role requirements.
+                </p>
+
+                {/* AI Configuration Options */}
+                <div className="grid md:grid-cols-3 gap-4">
+                  {/* Dynamic Question Generation */}
+                  <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-white font-medium flex items-center">
+                        <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                        Dynamic Questions
+                      </h4>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={dynamicQuestionGeneration}
+                          onChange={(e) => setDynamicQuestionGeneration(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                      </label>
+                    </div>
+                    <p className="text-gray-400 text-xs">
+                      AI analyzes candidate responses and generates personalized follow-up questions
+                    </p>
+                  </div>
+
+                  {/* Real-time Performance Insights */}
+                  <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-white font-medium flex items-center">
+                        <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                        Live Insights
+                      </h4>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={realTimeInsights}
+                          onChange={(e) => setRealTimeInsights(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                      </label>
+                    </div>
+                    <p className="text-gray-400 text-xs">
+                      Real-time dashboard with confidence levels and knowledge gap analysis
+                    </p>
+                  </div>
+
+                  {/* Intelligent Difficulty Adjustment */}
+                  <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                    <div className="mb-3">
+                      <h4 className="text-white font-medium flex items-center mb-2">
+                        <span className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
+                        Difficulty Mode
+                      </h4>
+                      <select
+                        value={aiDifficultyAdjustment}
+                        onChange={(e) => setAiDifficultyAdjustment(e.target.value)}
+                        className="w-full px-3 py-2 rounded bg-white/20 border border-white/30 text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="adaptive" className="bg-gray-800">🎯 Adaptive (Recommended)</option>
+                        <option value="progressive" className="bg-gray-800">📈 Progressive</option>
+                        <option value="static" className="bg-gray-800">📊 Static</option>
+                      </select>
+                    </div>
+                    <p className="text-gray-400 text-xs">
+                      AI adjusts question difficulty based on candidate performance
+                    </p>
+                  </div>
+                </div>
+
+                {/* AI Features Preview */}
+                <div className="mt-6 grid md:grid-cols-2 gap-4">
+                  <div className="bg-white/5 p-4 rounded-lg">
+                    <h5 className="text-white font-medium mb-2 flex items-center">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Dynamic Features Enabled
+                    </h5>
+                    <ul className="text-sm text-gray-300 space-y-1">
+                      <li>• Real-time response analysis</li>
+                      <li>• Experience gap detection</li>
+                      <li>• Adaptive questioning flow</li>
+                      <li>• Performance-based adjustments</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/5 p-4 rounded-lg">
+                    <h5 className="text-white font-medium mb-2 flex items-center">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      Live Dashboard Metrics
+                    </h5>
+                    <ul className="text-sm text-gray-300 space-y-1">
+                      <li>• Confidence level tracking</li>
+                      <li>• Knowledge gap indicators</li>
+                      <li>• Behavioral pattern analysis</li>
+                      <li>• Technical depth assessment</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-white font-medium mb-2">
+                  Resume File 
+                  <span className="text-sm text-gray-300 ml-2">(PDF, DOC, DOCX, TXT - Max 10MB)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt"
+                    onChange={handlePersonalizedFileUpload}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-white file:bg-purple-600 hover:file:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required={!personalizedResumeFile}
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                </div>
+                {personalizedResumeFile && (
+                  <p className="mt-2 text-sm text-green-300">
+                    ✅ File uploaded: {personalizedResumeFile.name}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={personalizedLoading}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-bold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:scale-100 shadow-lg"
+              >
+                {personalizedLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Creating AI-Powered Interview...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    Create AI-Powered Personalized Interview
+                  </div>
+                )}
+              </button>
+            </form>
+
+            {/* Success Display */}
+            {personalizedGeneratedToken && (
+              <div className="mt-8 p-6 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-2xl">
+                <h3 className="text-xl font-bold text-purple-200 mb-4">✅ AI-Powered Personalized Interview Created Successfully!</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-purple-200 mb-2"><strong>Interview Token:</strong></p>
+                    <code className="block bg-black/30 p-3 rounded text-purple-300 font-mono break-all">
+                      {personalizedGeneratedToken}
+                    </code>
+                  </div>
+                  <div>
+                    <p className="text-purple-200 mb-2"><strong>AI Features Enabled:</strong></p>
+                    <div className="space-y-1">
+                      <div className="text-sm text-purple-300">🎯 Role: {personalizedRoleArchetype}</div>
+                      <div className="text-sm text-purple-300">📊 Focus: {personalizedInterviewFocus}</div>
+                      <div className="text-sm text-purple-300">
+                        💻 Coding: {personalizedIncludeCodingChallenge ? 'Enabled' : 'Disabled'}
+                      </div>
+                      <div className="text-sm text-purple-300">
+                        🧠 Dynamic Questions: {dynamicQuestionGeneration ? 'Enabled' : 'Disabled'}
+                      </div>
+                      <div className="text-sm text-purple-300">
+                        📈 Live Insights: {realTimeInsights ? 'Enabled' : 'Disabled'}
+                      </div>
+                      <div className="text-sm text-purple-300">
+                        🎯 Difficulty Mode: {aiDifficultyAdjustment.charAt(0).toUpperCase() + aiDifficultyAdjustment.slice(1)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {personalizedResumePreview && (
+                  <div className="mt-4">
+                    <p className="text-purple-200 mb-2"><strong>Resume Preview:</strong></p>
+                    <div className="bg-black/30 p-3 rounded text-purple-300 text-sm max-h-32 overflow-y-auto">
+                      {personalizedResumePreview}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-4 p-4 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-lg border border-green-400/20">
+                  <h4 className="text-green-200 font-medium mb-2">🚀 What Happens Next:</h4>
+                  <ul className="text-sm text-green-300 space-y-1">
+                    <li>• Candidates will experience dynamic, adaptive questioning</li>
+                    <li>• AI will analyze responses and generate personalized follow-ups</li>
+                    <li>• Real-time performance insights will be displayed</li>
+                    <li>• Question difficulty will adjust based on candidate performance</li>
+                    <li>• Comprehensive analysis will identify strengths and experience gaps</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Candidate Pipeline Tab */}
         {activeTab === 'pipeline' && (
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
