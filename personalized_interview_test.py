@@ -465,7 +465,7 @@ PROJECTS:
             }
             
             response = self.session.post(
-                f"{self.base_url}/admin/upload-job",
+                f"{self.base_url}/admin/upload-job-enhanced",
                 files=files,
                 data=data,
                 timeout=25
