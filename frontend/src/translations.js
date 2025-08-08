@@ -525,6 +525,16 @@ export const translations = {
           interactiveModules: 'Módulos Interactivos y Tareas de Codificación'
         },
         button: 'Iniciar Experiencia de Entrevista'
+      },
+      placementPreparation: {
+        title: 'Preparación para Colocación',
+        description: 'Herramientas integrales de preparación para colocación con creación de entrevistas, sesiones de práctica y evaluación de habilidades para ayudarte a prepararte para el trabajo de tus sueños.',
+        features: {
+          createInterview: 'Crear Entrevistas Personalizadas',
+          practiceRounds: 'Práctica y Sesiones Simuladas',
+          skillAssessment: 'Herramientas de Evaluación de Habilidades'
+        },
+        button: 'Comenzar Preparación'
       }
     },
     
