@@ -693,19 +693,19 @@ Task Manager - Java application with MySQL backend"""
         # Test 6: Create token endpoint (POST /api/admin/create-token)
         results["create_token_endpoint"] = self.test_create_token_endpoint()
         
-        # Test 6: Token validation workflow
+        # Test 7: Token validation workflow
         results["token_validation_workflow"] = self.test_token_validation_workflow()
         
-        # Test 7: Interview start workflow
+        # Test 8: Interview start workflow
         results["interview_start_workflow"] = self.test_interview_start_workflow()
         
-        # Test 8: Complete placement preparation flow
+        # Test 9: Complete placement preparation flow
         results["complete_placement_flow"] = self.test_complete_placement_preparation_flow()
         
-        # Test 9: Admin dashboard compatibility (backward compatibility)
+        # Test 10: Admin dashboard compatibility (backward compatibility)
         results["admin_dashboard_compatibility"] = self.test_admin_dashboard_compatibility()
         
-        # Test 10: Endpoint consistency between placement prep and admin
+        # Test 11: Endpoint consistency between placement prep and admin
         results["endpoint_consistency"] = self.test_placement_vs_admin_endpoint_consistency()
         
         # Summary
