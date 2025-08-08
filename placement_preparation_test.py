@@ -122,7 +122,7 @@ ACHIEVEMENTS:
             }
             
             response = self.session.post(
-                f"{self.base_url}/admin/upload",
+                f"{self.base_url}/admin/upload-job",
                 files=files,
                 data=data,
                 timeout=15
