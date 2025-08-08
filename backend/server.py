@@ -4119,6 +4119,136 @@ async def admin_login(request: AdminLoginRequest):
         raise HTTPException(status_code=401, detail="Invalid password")
     return {"success": True, "message": "Admin authenticated successfully"}
 
+# Placement Preparation Dedicated Endpoints
+@api_router.post("/admin/upload")
+async def placement_preparation_upload(resume: UploadFile = File(...)):
+    """
+    Dedicated endpoint for placement preparation document upload
+    Supports PDF, DOC, DOCX, and TXT files with resume parsing and preview generation
+    """
+    try:
+        # Validate file type
+        filename = resume.filename.lower()
+        supported_extensions = ['.pdf', '.doc', '.docx', '.txt']
+        
+        if not any(filename.endswith(ext) for ext in supported_extensions):
+            raise HTTPException(
+                status_code=400, 
+                detail="Unsupported file type. Please upload PDF, DOC, DOCX, or TXT files."
+            )
+        
+        # Read file content
+        resume_content = await resume.read()
+        
+        # Parse resume using existing functionality
+        try:
+            resume_text = parse_resume(resume, resume_content)
+            if not resume_text.strip():
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Could not extract text from the uploaded file. Please check the file format."
+                )
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Resume parsing failed: {str(e)}")
+        
+        # Generate preview (first 200 characters)
+        preview_text = resume_text[:200] + "..." if len(resume_text) > 200 else resume_text
+        
+        return {
+            "success": True,
+            "preview": preview_text,
+            "full_text": resume_text,
+            "filename": resume.filename,
+            "message": f"Document '{resume.filename}' uploaded and parsed successfully."
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload processing failed: {str(e)}")
+
+@api_router.post("/admin/create-token")
+async def placement_preparation_create_token(request: dict):
+    """
+    Dedicated endpoint for placement preparation interview token creation
+    Creates interview tokens with job details and resume data
+    """
+    try:
+        # Validate required fields
+        required_fields = ['job_title', 'job_description', 'job_requirements', 'resume_text']
+        missing_fields = [field for field in required_fields if not request.get(field)]
+        
+        if missing_fields:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Missing required fields: {', '.join(missing_fields)}"
+            )
+        
+        # Extract data from request
+        job_title = request.get('job_title')
+        job_description = request.get('job_description')  
+        job_requirements = request.get('job_requirements')
+        resume_text = request.get('resume_text')
+        
+        # Optional enhanced features
+        include_coding_challenge = request.get('include_coding_challenge', False)
+        role_archetype = request.get('role_archetype', 'General')
+        interview_focus = request.get('interview_focus', 'Balanced')
+        min_questions = request.get('min_questions', 8)
+        max_questions = request.get('max_questions', 12)
+        question_distribution = request.get('question_distribution', {})
+        question_types = request.get('question_types', {})
+        manual_questions = request.get('manual_questions', {})
+        
+        # Create job record
+        job_data = JobDescription(
+            title=job_title,
+            description=job_description,
+            requirements=job_requirements
+        )
+        await db.jobs.insert_one(job_data.dict())
+        
+        # Generate secure token
+        token = generate_secure_token()
+        
+        # Create enhanced token record with placement preparation features
+        token_data = EnhancedCandidateToken(
+            token=token,
+            job_id=job_data.id,
+            resume_content=resume_text,
+            job_description=f"{job_title}\n\n{job_description}\n\n{job_requirements}",
+            # Enhanced features
+            include_coding_challenge=include_coding_challenge,
+            role_archetype=role_archetype,
+            interview_focus=interview_focus,
+            min_questions=min_questions,
+            max_questions=max_questions,
+            question_distribution=question_distribution,
+            question_types=question_types,
+            manual_questions=manual_questions
+        )
+        await db.enhanced_tokens.insert_one(token_data.dict())
+        
+        return {
+            "success": True,
+            "token": token,
+            "job_title": job_title,
+            "message": "Interview token created successfully for placement preparation.",
+            "token_features": {
+                "role_archetype": role_archetype,
+                "interview_focus": interview_focus,
+                "coding_challenge": include_coding_challenge,
+                "question_range": f"{min_questions}-{max_questions}",
+                "enhanced_features": True
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Token creation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Token creation failed: {str(e)}")
+
 # Legacy Admin Route (for backward compatibility)
 @api_router.post("/admin/upload-job-enhanced")
 async def upload_job_enhanced(
