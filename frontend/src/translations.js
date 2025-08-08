@@ -994,6 +994,16 @@ export const translations = {
           interactiveModules: 'Interaktive Module & Coding-Aufgaben'
         },
         button: 'Interview-Erfahrung starten'
+      },
+      placementPreparation: {
+        title: 'Stellenvermittlungsvorbereitung',
+        description: 'Umfassende Werkzeuge zur Stellenvermittlungsvorbereitung mit Interview-Erstellung, Übungssitzungen und Fähigkeitsbewertung, um Ihnen bei der Vorbereitung auf Ihren Traumjob zu helfen.',
+        features: {
+          createInterview: 'Benutzerdefinierte Interviews erstellen',
+          practiceRounds: 'Übungs- und Simulationssitzungen',
+          skillAssessment: 'Fähigkeitsbewertungstools'
+        },
+        button: 'Vorbereitung starten'
       }
     },
     
