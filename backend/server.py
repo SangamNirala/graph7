@@ -4764,9 +4764,13 @@ async def get_all_reports():
 @api_router.get("/admin/reports/{session_id}")
 async def get_report_by_session(session_id: str):
     """Get specific assessment report by session ID for admin dashboard - legacy endpoint updated with filtering"""
+    # Include assessments without created_via field (legacy) and those explicitly marked as admin
     report = await db.assessments.find_one({
-        "session_id": session_id, 
-        "created_via": "admin"
+        "session_id": session_id,
+        "$or": [
+            {"created_via": "admin"},
+            {"created_via": {"$exists": False}}  # Legacy assessments without created_via field
+        ]
     })
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
