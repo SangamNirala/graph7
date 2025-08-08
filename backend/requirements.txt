@@ -114,3 +114,7 @@ cachetools
 proto-plus
 joblib
 threadpoolctl
+
+# PDF Generation Dependencies
+weasyprint>=60.0
+pdfkit>=1.0.0
