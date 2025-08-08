@@ -4734,7 +4734,7 @@ async def upload_job_and_resume(
     return {
         "success": True,
         "token": token,
-        "resume_preview": resume_text[:200] + "..." if len(resume_text) > 200 else resume_text,
+        "resume_preview": resume_text,  # Full text for scrollable box display
         "message": f"Job and resume ({resume_file.filename}) uploaded successfully. Token generated for candidate."
     }
 
