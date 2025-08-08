@@ -148,7 +148,7 @@ ACHIEVEMENTS:
             return False
     
     def test_create_token_endpoint(self) -> bool:
-        """Test POST /api/admin/create-token endpoint for creating interview tokens"""
+        """Test POST /api/admin/upload-job endpoint for creating interview tokens (second test with different data)"""
         try:
             # Create another resume for token creation testing
             resume_content = """Michael Chen
@@ -201,7 +201,7 @@ Data Analytics Dashboard
             }
             
             response = self.session.post(
-                f"{self.base_url}/admin/create-token",
+                f"{self.base_url}/admin/upload-job",
                 files=files,
                 data=data,
                 timeout=15
@@ -220,10 +220,10 @@ Data Analytics Dashboard
             if success and 'create_token_result' in locals():
                 details += f", Token: {create_token_result[:8]}..."
             
-            self.log_test("Create Token Endpoint (/api/admin/create-token)", success, details)
+            self.log_test("Token Creation via Upload-Job Endpoint (Second Test)", success, details)
             return success
         except Exception as e:
-            self.log_test("Create Token Endpoint (/api/admin/create-token)", False, f"Exception: {str(e)}")
+            self.log_test("Token Creation via Upload-Job Endpoint (Second Test)", False, f"Exception: {str(e)}")
             return False
     
     def test_token_validation_workflow(self) -> bool:
