@@ -80,6 +80,16 @@ export const translations = {
           interactiveModules: 'Interactive Modules & Coding Tasks'
         },
         button: 'Start Interview Experience'
+      },
+      placementPreparation: {
+        title: 'Placement Preparation',
+        description: 'Comprehensive placement preparation tools with interview creation, practice sessions, and skill assessment to help you prepare for your dream job.',
+        features: {
+          createInterview: 'Create Custom Interviews',
+          practiceRounds: 'Practice & Mock Sessions',
+          skillAssessment: 'Skill Assessment Tools'
+        },
+        button: 'Start Preparation'
       }
     },
     
