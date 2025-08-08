@@ -759,6 +759,16 @@ export const translations = {
           interactiveModules: 'Modules Interactifs et Tâches de Codage'
         },
         button: "Commencer l'Expérience d'Entretien"
+      },
+      placementPreparation: {
+        title: 'Préparation au Placement',
+        description: "Outils complets de préparation au placement avec création d'entretiens, sessions de pratique et évaluation des compétences pour vous aider à vous préparer à l'emploi de vos rêves.",
+        features: {
+          createInterview: "Créer des Entretiens Personnalisés",
+          practiceRounds: 'Pratique et Sessions Simulées',
+          skillAssessment: "Outils d'Évaluation des Compétences"
+        },
+        button: 'Commencer la Préparation'
       }
     },
     
