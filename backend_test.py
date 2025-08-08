@@ -323,7 +323,7 @@ class PlacementPreparationTester:
             
             while questions_answered < max_questions:
                 # Send answer
-                answer_response = self.session.post(f"{BASE_URL}/candidate/answer", 
+                answer_response = self.session.post(f"{BASE_URL}/candidate/send-message", 
                                                   json={
                                                       "token": self.admin_token,
                                                       "message": sample_answers[questions_answered % len(sample_answers)]
