@@ -591,7 +591,7 @@ Available upon request"""
         # Group results by category
         categories = {
             "Basic Functionality": ["backend_connectivity", "admin_login_functionality"],
-            "Core Placement Preparation Endpoints": ["resume_upload_endpoint", "create_token_endpoint"],
+            "Core Placement Preparation Endpoints": ["resume_upload_endpoint", "resume_preview_functionality", "create_token_endpoint"],
             "Interview Creation Workflow": ["token_validation_workflow", "interview_start_workflow"],
             "End-to-End Testing": ["complete_placement_flow"],
             "Compatibility & Consistency": ["admin_dashboard_compatibility", "endpoint_consistency"]
