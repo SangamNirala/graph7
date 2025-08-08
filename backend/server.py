@@ -4794,26 +4794,6 @@ async def get_placement_preparation_report_by_session(session_id: str):
         report['_id'] = str(report['_id'])
     return {"report": report}
 
-@api_router.get("/admin/reports")
-async def get_admin_reports():
-    """Get all assessment reports created via admin dashboard"""
-    reports = await db.assessments.find({"created_via": "admin"}).to_list(1000)
-    # Convert MongoDB ObjectIds to strings for JSON serialization
-    for report in reports:
-        if '_id' in report:
-            report['_id'] = str(report['_id'])
-    return {"reports": reports}
-
-@api_router.get("/admin/reports/{session_id}")
-async def get_admin_report_by_session(session_id: str):
-    """Get specific assessment report by session ID for admin dashboard"""
-    report = await db.assessments.find_one({
-        "session_id": session_id, 
-        "created_via": "admin"
-    })
-    if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
-
 # Helper functions for comprehensive AI analysis
 async def generate_personality_analysis(candidate_responses: list, full_transcript: str) -> dict:
     """Generate Big Five personality analysis from candidate responses"""
