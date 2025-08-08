@@ -1189,13 +1189,22 @@ export const ResultsComponent = () => {
                       </div>
                     )}
                     {result.recommendations.length > 0 && (
-                      <div>
+                      <div className="mb-3">
                         <div className="text-xs text-blue-400 mb-1">Key Recommendations:</div>
                         <div className="text-xs text-gray-300">
                           {result.recommendations[0]}
                         </div>
                       </div>
                     )}
+                    
+                    {/* Reason Button */}
+                    <button
+                      onClick={() => openJustificationModal(result.candidate_id)}
+                      className="w-full px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                    >
+                      <span>🔍</span>
+                      <span>View AI Justification</span>
+                    </button>
                   </div>
                 </div>
               </div>
