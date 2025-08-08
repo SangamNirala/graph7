@@ -114,6 +114,6 @@ cachetools
 proto-plus
 joblib
 threadpoolctl
+reportlab>=4.4.0
 
 # PDF Generation Dependencies
-pdfkit>=1.0.0
