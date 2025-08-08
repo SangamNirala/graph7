@@ -610,6 +610,7 @@ class EnhancedCandidateToken(BaseModel):
     job_description: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     used: bool = False
+    created_via: str = "admin"  # "admin" or "placement_preparation"
     # New fields
     include_coding_challenge: bool = False
     role_archetype: str = "General"  # Software Engineer, Sales, Graduate, etc.
