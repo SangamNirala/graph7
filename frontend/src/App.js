@@ -3393,6 +3393,16 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
             >
               🚀 Create Interview
             </button>
+            <button
+              onClick={() => setActiveTab('assessment-reports')}
+              className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-300 ${
+                activeTab === 'assessment-reports'
+                  ? 'bg-orange-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              📊 Assessment Reports
+            </button>
           </nav>
         </div>
 
