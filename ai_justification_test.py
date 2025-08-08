@@ -59,7 +59,7 @@ class AIJustificationTester:
             return False
     
     def upload_sample_resumes(self) -> bool:
-        """Upload sample resumes for screening"""
+        """Upload sample resumes using bulk upload endpoint (supports TXT)"""
         try:
             # Sample resume 1 - Strong candidate
             resume1_content = """Sarah Johnson
@@ -196,33 +196,63 @@ PROJECTS:
                 ("alex_rodriguez_resume.txt", resume3_content)
             ]
             
-            uploaded_count = 0
+            # Use bulk upload endpoint which supports TXT files
+            files = []
             for filename, content in resumes:
-                files = {
-                    'files': (filename, io.StringIO(content), 'text/plain')
-                }
-                
-                response = self.session.post(
-                    f"{self.base_url}/admin/screening/upload-resumes",
-                    files=files,
-                    timeout=15
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    if result.get("success") and result.get("resume_ids"):
-                        self.uploaded_resume_ids.extend(result["resume_ids"])
-                        uploaded_count += 1
-                else:
-                    print(f"Failed to upload {filename}: {response.status_code} - {response.text[:200]}")
+                files.append(('files', (filename, io.StringIO(content), 'text/plain')))
             
-            success = uploaded_count == len(resumes)
-            details = f"Uploaded {uploaded_count}/{len(resumes)} resumes. Resume IDs: {self.uploaded_resume_ids[:3]}"
-            self.log_test("Upload Sample Resumes", success, details)
+            data = {'batch_name': 'AI Justification Test Batch'}
+            
+            response = self.session.post(
+                f"{self.base_url}/admin/bulk-upload",
+                files=files,
+                data=data,
+                timeout=30
+            )
+            
+            success = response.status_code == 200
+            if success:
+                result = response.json()
+                success = result.get("success", False)
+                if success:
+                    # Get the batch ID for processing
+                    batch_id = result.get("batch_id")
+                    if batch_id:
+                        # Process the batch
+                        process_payload = {
+                            "job_title": "Senior Full Stack Developer",
+                            "job_description": "We are seeking an experienced Senior Full Stack Developer to join our growing team.",
+                            "job_requirements": "Requirements: 5+ years Python experience, FastAPI expertise, team leadership experience, cloud platform knowledge."
+                        }
+                        
+                        process_response = self.session.post(
+                            f"{self.base_url}/admin/bulk-process/{batch_id}",
+                            json=process_payload,
+                            timeout=30
+                        )
+                        
+                        if process_response.status_code == 200:
+                            # Get candidate profiles to extract IDs
+                            candidates_response = self.session.post(
+                                f"{self.base_url}/admin/candidates",
+                                json={"page": 1, "page_size": 10, "batch_filter": batch_id},
+                                timeout=15
+                            )
+                            
+                            if candidates_response.status_code == 200:
+                                candidates_data = candidates_response.json()
+                                if candidates_data.get("success") and candidates_data.get("candidates"):
+                                    self.uploaded_resume_ids = [c["id"] for c in candidates_data["candidates"]]
+            
+            details = f"Status: {response.status_code}, Uploaded resumes: {len(self.uploaded_resume_ids)}"
+            if not success:
+                details += f", Response: {response.text[:200]}"
+            
+            self.log_test("Upload Sample Resumes (Bulk)", success, details)
             return success
             
         except Exception as e:
-            self.log_test("Upload Sample Resumes", False, f"Exception: {str(e)}")
+            self.log_test("Upload Sample Resumes (Bulk)", False, f"Exception: {str(e)}")
             return False
     
     def create_job_requirements(self) -> bool:
