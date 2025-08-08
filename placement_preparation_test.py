@@ -687,7 +687,10 @@ Task Manager - Java application with MySQL backend"""
         # Test 4: Resume preview functionality for scrollable box display
         results["resume_preview_functionality"] = self.test_resume_preview_functionality()
         
-        # Test 5: Create token endpoint (POST /api/admin/create-token)
+        # Test 5: Multi-format resume upload (TXT/PDF/DOC)
+        results["multi_format_resume_upload"] = self.test_multi_format_resume_upload()
+        
+        # Test 6: Create token endpoint (POST /api/admin/create-token)
         results["create_token_endpoint"] = self.test_create_token_endpoint()
         
         # Test 6: Token validation workflow
