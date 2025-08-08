@@ -3343,7 +3343,7 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
       const response = await fetch(`${API}/placement-preparation/reports/${sessionId}`);
       if (response.ok) {
         const data = await response.json();
-        setDetailedReportModal({ show: true, data: loading: false });
+        setDetailedReportModal({ show: true, data: data.report, loading: false });
       } else {
         setDetailedReportModal({ show: false, data: null, loading: false });
         alert('Failed to fetch detailed report');
