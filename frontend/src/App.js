@@ -3130,6 +3130,17 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
   const [reports, setReports] = useState([]);
   const [detailedReportModal, setDetailedReportModal] = useState({ show: false, data: null, loading: false });
   
+  // Resume Analysis state
+  const [analysisJobTitle, setAnalysisJobTitle] = useState('');
+  const [analysisJobDescription, setAnalysisJobDescription] = useState('');
+  const [analysisResumeFile, setAnalysisResumeFile] = useState(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  
+  // Analysis Result state
+  const [allAnalyses, setAllAnalyses] = useState([]);
+  const [analysesLoading, setAnalysesLoading] = useState(false);
+  
   // Enhanced features state
   const [includeCodingChallenge, setIncludeCodingChallenge] = useState(false);
   const [roleArchetype, setRoleArchetype] = useState('General');
