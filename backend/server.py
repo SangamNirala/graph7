@@ -4748,7 +4748,13 @@ async def upload_job_and_resume(
 @api_router.get("/admin/reports")
 async def get_all_reports():
     """Get all assessment reports created via admin dashboard - legacy endpoint updated with filtering"""
-    reports = await db.assessments.find({"created_via": "admin"}).to_list(1000)
+    # Include assessments without created_via field (legacy) and those explicitly marked as admin
+    reports = await db.assessments.find({
+        "$or": [
+            {"created_via": "admin"},
+            {"created_via": {"$exists": False}}  # Legacy assessments without created_via field
+        ]
+    }).to_list(1000)
     # Convert MongoDB ObjectIds to strings for JSON serialization
     for report in reports:
         if '_id' in report:
