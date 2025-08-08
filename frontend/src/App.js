@@ -3660,6 +3660,241 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
             )}
           </div>
         )}
+
+        {/* Assessment Reports Tab */}
+        {activeTab === 'assessment-reports' && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <h2 className="text-2xl font-bold text-white mb-6">📊 Assessment Reports</h2>
+            
+            <div className="space-y-6">
+              {reports.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-4">📋 No assessment reports available yet</div>
+                  <p className="text-gray-300">Assessment reports from interviews created through Placement Preparation will appear here after candidates complete their interviews</p>
+                </div>
+              ) : (
+                reports.map((report) => (
+                  <div key={report.id} className="bg-white/10 rounded-lg p-6 border border-white/20">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-6">
+                      <div>
+                        <h3 className="text-xl font-bold text-white flex items-center">
+                          🎯 {report.candidate_name}
+                        </h3>
+                        <p className="text-gray-300">{report.job_title}</p>
+                        <p className="text-sm text-gray-400">
+                          {new Date(report.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-white mb-1">
+                          {report.overall_score}/100
+                        </div>
+                        <div className="text-sm text-gray-300">Overall Score</div>
+                        {/* Success Probability */}
+                        {report.predictive_analytics && (
+                          <div className="mt-2 px-3 py-1 rounded-full text-xs bg-gradient-to-r from-orange-600/20 to-red-600/20 text-orange-200 border border-orange-500/30">
+                            {Math.round(report.predictive_analytics.success_probability * 100)}% Success Probability
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Enhanced Scores Grid */}
+                    <div className="grid md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Technical</div>
+                        <div className="text-2xl font-bold text-blue-400">
+                          {report.technical_score}/100
+                        </div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Behavioral</div>
+                        <div className="text-2xl font-bold text-green-400">
+                          {report.behavioral_score}/100
+                        </div>
+                      </div>
+                      {/* Emotional Intelligence Score */}
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Emotional IQ</div>
+                        <div className="text-2xl font-bold text-purple-400">
+                          {report.emotional_intelligence_metrics ? 
+                            Math.round((
+                              report.emotional_intelligence_metrics.enthusiasm +
+                              report.emotional_intelligence_metrics.confidence +
+                              report.emotional_intelligence_metrics.emotional_stability +
+                              (1 - report.emotional_intelligence_metrics.stress_level)
+                            ) * 25) : 'N/A'}
+                        </div>
+                      </div>
+                      {/* Communication Score */}
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Communication</div>
+                        <div className="text-2xl font-bold text-orange-400">
+                          {report.communication_effectiveness ? 
+                            Math.round(report.communication_effectiveness * 100) : 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bias Analysis */}
+                    {report.bias_analysis && (
+                      <div className="bg-white/5 rounded-lg p-4 mb-4">
+                        <h4 className="font-semibold text-white mb-2 flex items-center">
+                          ⚖️ Bias Analysis
+                        </h4>
+                        <div className="grid md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-300">Evaluations Checked:</span>
+                            <span className="text-white ml-2">{report.bias_analysis.evaluations_checked}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-300">Bias Detected:</span>
+                            <span className={`ml-2 ${report.bias_analysis.bias_detected ? 'text-yellow-400' : 'text-green-400'}`}>
+                              {report.bias_analysis.bias_detected ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-300">Bias Score:</span>
+                            <span className="text-white ml-2">
+                              {Math.round(report.bias_analysis.bias_score * 100)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Traditional Feedback */}
+                    <div className="text-sm text-gray-300">
+                      <strong>Overall Feedback:</strong>
+                      <p className="mt-1 text-white">{report.overall_feedback}</p>
+                    </div>
+
+                    {/* AI Recommendation */}
+                    {report.predictive_analytics?.recommendation && (
+                      <div className="mt-4 p-4 bg-gradient-to-r from-orange-600/20 to-red-600/20 rounded-lg border border-orange-500/30">
+                        <div className="flex items-start">
+                          <span className="text-2xl mr-3">🤖</span>
+                          <div>
+                            <div className="font-semibold text-orange-200 mb-1">AI Recommendation</div>
+                            <div className="text-orange-100 text-sm">{report.predictive_analytics.recommendation}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* View Details Button */}
+                    <div className="mt-4 text-right">
+                      <button
+                        onClick={() => fetchDetailedPlacementPreparationReport(report.session_id)}
+                        className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300"
+                      >
+                        View Detailed Report
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Detailed Report Modal */}
+        {detailedReportModal.show && (
+          <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-br from-orange-900/90 to-red-900/90 backdrop-blur-lg rounded-2xl border border-white/20 max-w-6xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex justify-between items-center p-6 border-b border-white/20">
+                <h3 className="text-2xl font-bold text-white">📋 Detailed Interview Report</h3>
+                <button
+                  onClick={() => setDetailedReportModal({ show: false, data: null, loading: false })}
+                  className="text-gray-300 hover:text-white text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="overflow-y-auto max-h-[calc(90vh-100px)]">
+                {detailedReportModal.loading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="text-white text-lg">📊 Loading detailed report...</div>
+                  </div>
+                ) : detailedReportModal.data ? (
+                  <div className="p-6 space-y-6">
+                    {/* Header Info */}
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="bg-white/10 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Candidate</div>
+                        <div className="text-lg font-bold text-white">{detailedReportModal.data.candidate_name}</div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Position</div>
+                        <div className="text-lg font-bold text-white">{detailedReportModal.data.job_title}</div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-4">
+                        <div className="text-sm text-gray-300">Interview Date</div>
+                        <div className="text-lg font-bold text-white">
+                          {new Date(detailedReportModal.data.interview_date).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Interview Transcript */}
+                    <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                      <h4 className="text-xl font-bold text-white mb-4 flex items-center">
+                        💬 Interview Transcript
+                      </h4>
+                      <div className="bg-black/30 rounded-lg p-4 font-mono text-sm max-h-96 overflow-y-auto">
+                        <pre className="text-gray-100 whitespace-pre-wrap leading-relaxed">
+                          {detailedReportModal.data.transcript}
+                        </pre>
+                      </div>
+                    </div>
+
+                    {/* Enhanced Scores Summary */}
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <div className="bg-white/10 rounded-lg p-4 text-center">
+                        <div className="text-sm text-gray-300">Technical Score</div>
+                        <div className="text-3xl font-bold text-blue-400">
+                          {detailedReportModal.data.assessment_summary.technical_score}/100
+                        </div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-4 text-center">
+                        <div className="text-sm text-gray-300">Behavioral Score</div>
+                        <div className="text-3xl font-bold text-green-400">
+                          {detailedReportModal.data.assessment_summary.behavioral_score}/100
+                        </div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-4 text-center">
+                        <div className="text-sm text-gray-300">Overall Score</div>
+                        <div className="text-3xl font-bold text-orange-400">
+                          {detailedReportModal.data.assessment_summary.overall_score}/100
+                        </div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-4 text-center">
+                        <div className="text-sm text-gray-300">Average Individual Score</div>
+                        <div className="text-3xl font-bold text-red-400">
+                          {detailedReportModal.data.assessment_summary.average_individual_score}/100
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Overall Assessment */}
+                    <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                      <h4 className="text-xl font-bold text-white mb-4">🎯 Overall Assessment</h4>
+                      <p className="text-gray-100 leading-relaxed">
+                        {detailedReportModal.data.assessment_summary.overall_feedback}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="text-white text-lg">❌ Failed to load report details</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
