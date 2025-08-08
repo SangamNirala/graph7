@@ -231,6 +231,150 @@ Data Analytics Dashboard
             self.log_test("Token Creation via Upload-Job Endpoint (Second Test)", False, f"Exception: {str(e)}")
             return False
     
+    def test_resume_preview_functionality(self) -> bool:
+        """Test resume preview text extraction and formatting for scrollable box display"""
+        try:
+            # Create a comprehensive resume to test preview extraction
+            comprehensive_resume = """Emma Rodriguez
+Software Engineer - Placement Preparation Program
+Email: emma.rodriguez@university.edu
+Phone: (555) 456-7890
+LinkedIn: linkedin.com/in/emma-rodriguez
+
+PROFESSIONAL SUMMARY:
+Recent Computer Science graduate with strong academic performance and practical experience in full-stack development. Passionate about creating efficient, scalable software solutions and eager to contribute to innovative projects in a collaborative team environment.
+
+EDUCATION:
+Bachelor of Science in Computer Science
+State University, May 2024
+GPA: 3.8/4.0
+Dean's List: Fall 2022, Spring 2023, Fall 2023
+Relevant Coursework: Data Structures & Algorithms, Software Engineering, Database Systems, Web Development, Machine Learning, Computer Networks
+
+TECHNICAL SKILLS:
+Programming Languages: Python, Java, JavaScript, TypeScript, C++, SQL, HTML, CSS
+Frameworks & Libraries: React, Node.js, Express.js, Django, Flask, Spring Boot, Bootstrap, jQuery
+Databases: MySQL, PostgreSQL, MongoDB, SQLite
+Cloud & DevOps: AWS (EC2, S3, Lambda), Docker, Git, GitHub Actions, Jenkins
+Development Tools: VS Code, IntelliJ IDEA, Postman, Figma, Jira
+
+PROJECT EXPERIENCE:
+E-Commerce Platform (Capstone Project) - Team Lead
+September 2023 - May 2024
+- Led a team of 4 students to develop a full-stack e-commerce web application
+- Implemented user authentication, product catalog, shopping cart, and payment processing
+- Used React for frontend, Node.js/Express for backend, and PostgreSQL for database
+- Integrated Stripe API for secure payment processing and AWS S3 for image storage
+- Achieved 99.5% uptime during testing phase with 500+ concurrent users
+
+Personal Finance Tracker - Individual Project
+June 2023 - August 2023
+- Built a comprehensive personal finance management application using Python and Django
+- Implemented expense tracking, budget planning, and financial goal setting features
+- Created interactive charts and reports using Chart.js for data visualization
+- Deployed on Heroku with PostgreSQL database and implemented automated backup system
+
+Task Management API - Backend Development
+March 2023 - May 2023
+- Developed RESTful API using Java Spring Boot for task and project management
+- Implemented JWT authentication, role-based access control, and data validation
+- Created comprehensive API documentation using Swagger/OpenAPI
+- Achieved 95% test coverage using JUnit and Mockito for unit and integration testing
+
+WORK EXPERIENCE:
+Software Development Intern
+TechStart Solutions, Summer 2023
+- Collaborated with senior developers on client web applications using React and Node.js
+- Participated in agile development process including daily standups and sprint planning
+- Contributed to code reviews and learned industry best practices for clean code
+- Assisted in debugging production issues and implementing performance optimizations
+- Gained experience with version control workflows and continuous integration pipelines
+
+Teaching Assistant - Introduction to Programming
+State University, Fall 2022 - Spring 2023
+- Assisted professor in teaching Python programming to 80+ undergraduate students
+- Conducted weekly lab sessions and provided one-on-one tutoring for struggling students
+- Graded assignments and exams, providing detailed feedback to help students improve
+- Developed supplementary learning materials and practice problems
+
+CERTIFICATIONS & ACHIEVEMENTS:
+- AWS Certified Cloud Practitioner (2024)
+- Oracle Java SE 8 Programmer I (2023)
+- Winner - University Hackathon 2023 (Best Technical Implementation)
+- Volunteer - Local Code.org Hour of Code events (2022-2024)
+- Member - Association for Computing Machinery (ACM) Student Chapter
+
+ADDITIONAL INFORMATION:
+- Fluent in English and Spanish
+- Strong problem-solving and analytical thinking skills
+- Excellent communication and teamwork abilities
+- Passionate about continuous learning and staying updated with latest technologies
+- Available for immediate start and willing to relocate
+
+REFERENCES:
+Available upon request"""
+            
+            files = {
+                'resume_file': ('emma_comprehensive_resume.txt', io.StringIO(comprehensive_resume), 'text/plain')
+            }
+            
+            data = {
+                'job_title': 'Software Engineer - Placement Preparation Program',
+                'job_description': 'Comprehensive placement preparation program for new graduates entering the software engineering field. Focus on practical skills development, mentorship, and real-world project experience.',
+                'job_requirements': 'Requirements: Bachelor\'s degree in Computer Science or related field, strong programming fundamentals, experience with web development technologies, problem-solving skills, eagerness to learn and grow in a collaborative environment.'
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/admin/upload-job",
+                files=files,
+                data=data,
+                timeout=15
+            )
+            
+            success = response.status_code == 200
+            if success:
+                result = response.json()
+                success = (result.get("success", False) and 
+                          "resume_preview" in result and
+                          "token" in result)
+                
+                if success:
+                    preview_text = result.get("resume_preview", "")
+                    
+                    # Comprehensive validation for scrollable box display
+                    preview_checks = {
+                        "has_meaningful_content": len(preview_text) >= 100,  # At least 100 characters
+                        "not_too_long": len(preview_text) <= 800,  # Not too long for preview
+                        "contains_candidate_name": "Emma Rodriguez" in preview_text,
+                        "contains_contact_info": any(contact in preview_text for contact in ["email", "phone", "@"]),
+                        "contains_key_sections": any(section in preview_text.lower() for section in ["education", "experience", "skills", "projects"]),
+                        "proper_formatting": not preview_text.startswith(" ") and not preview_text.endswith(" "),
+                        "readable_structure": "\n" in preview_text or len(preview_text.split()) > 10,
+                        "no_excessive_whitespace": "   " not in preview_text and "\n\n\n" not in preview_text
+                    }
+                    
+                    passed_checks = sum(preview_checks.values())
+                    total_checks = len(preview_checks)
+                    
+                    success = passed_checks >= (total_checks * 0.8)  # 80% of checks must pass
+                    
+                    details = f"Status: {response.status_code}, Preview length: {len(preview_text)} chars, Quality checks: {passed_checks}/{total_checks}"
+                    if success:
+                        details += f", Preview sample: {preview_text[:150]}..."
+                    else:
+                        failed_checks = [check for check, passed in preview_checks.items() if not passed]
+                        details += f", Failed checks: {failed_checks}"
+                else:
+                    details = f"Status: {response.status_code}, Missing resume_preview or token in response"
+            else:
+                details = f"Status: {response.status_code}, Response: {response.text[:300]}"
+            
+            self.log_test("Resume Preview Functionality for Scrollable Box", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Resume Preview Functionality for Scrollable Box", False, f"Exception: {str(e)}")
+            return False
+    
     def test_token_validation_workflow(self) -> bool:
         """Test that tokens created via placement preparation work with candidate validation"""
         if not self.generated_token:
