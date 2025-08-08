@@ -4305,6 +4305,7 @@ async def upload_job_enhanced(
         job_id=job_data.id,
         resume_content=resume_text,
         job_description=f"{job_title}\n\n{job_description}\n\n{job_requirements}",
+        created_via="admin",  # Mark as admin source
         include_coding_challenge=include_coding_challenge,
         role_archetype=role_archetype,
         interview_focus=interview_focus,
