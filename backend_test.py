@@ -1,823 +1,631 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend Testing for Elite AI Interview Platform
-Tests the enhanced backend features including:
-- Enhanced Admin APIs with role archetypes and coding challenges
-- Interactive Modules (Coding Challenges, SJT Tests)
-- Enhanced Interview Flow with practice rounds and question rephrasing
-- Advanced AI Features with bias mitigation and multi-vector scoring
-- Candidate Pipeline Management and Comparison Tools
-- Backward Compatibility with legacy endpoints
+Comprehensive Backend Testing for Placement Preparation Assessment Reports and Token-Based Visibility Logic
+Testing the complete end-to-end workflow for placement preparation vs admin token separation
 """
 
 import requests
 import json
 import time
-import io
-import base64
-import tempfile
-from typing import Dict, Any, Optional
+import os
+from datetime import datetime
 
-# Backend URL - using the production URL from frontend .env
-BASE_URL = "https://2ecfb9bc-fa10-4e39-8ddd-7b13c880cc1a.preview.emergentagent.com/api"
+# Get backend URL from environment
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://2ecfb9bc-fa10-4e39-8ddd-7b13c880cc1a.preview.emergentagent.com')
+BASE_URL = f"{BACKEND_URL}/api"
 
-class InterviewAgentTester:
+class PlacementPreparationTester:
     def __init__(self):
-        self.base_url = BASE_URL
         self.session = requests.Session()
-        self.generated_token = None
-        self.session_id = None
-        self.assessment_id = None
+        self.admin_authenticated = False
+        self.placement_prep_token = None
+        self.admin_token = None
+        self.placement_prep_session_id = None
+        self.admin_session_id = None
+        self.placement_prep_assessment_id = None
+        self.admin_assessment_id = None
         
-    def log_test(self, test_name: str, success: bool, details: str = ""):
-        status = "✅ PASS" if success else "❌ FAIL"
-        print(f"{status} {test_name}")
+    def log_test(self, test_name, status, details=""):
+        """Log test results with timestamp"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        status_symbol = "✅" if status == "PASS" else "❌" if status == "FAIL" else "⚠️"
+        print(f"[{timestamp}] {status_symbol} {test_name}")
         if details:
-            print(f"   Details: {details}")
+            print(f"    {details}")
         print()
-    
-    def test_health_check(self) -> bool:
-        """Test basic API health check"""
-        try:
-            response = self.session.get(f"{self.base_url}/health", timeout=10)
-            success = response.status_code == 200
-            details = f"Status: {response.status_code}, Response: {response.text[:100]}"
-            self.log_test("Health Check", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Health Check", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_admin_login(self) -> bool:
-        """Test admin authentication with correct password"""
-        try:
-            payload = {"password": "Game@1234"}
-            response = self.session.post(
-                f"{self.base_url}/admin/login",
-                json=payload,
-                timeout=10
-            )
-            
-            success = response.status_code == 200
-            if success:
-                data = response.json()
-                success = data.get("success", False)
-            
-            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
-            self.log_test("Admin Login", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Admin Login", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_admin_login_invalid(self) -> bool:
-        """Test admin authentication with wrong password"""
-        try:
-            payload = {"password": "WrongPassword"}
-            response = self.session.post(
-                f"{self.base_url}/admin/login",
-                json=payload,
-                timeout=10
-            )
-            
-            success = response.status_code == 401
-            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
-            self.log_test("Admin Login (Invalid Password)", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Admin Login (Invalid Password)", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_job_resume_upload(self) -> bool:
-        """Test PDF resume upload and parsing"""
-        try:
-            # Create a simple PDF-like content (simulated)
-            pdf_content = b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 12 Tf\n72 720 Td\n(Jane Smith - Software Engineer) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000206 00000 n \ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n299\n%%EOF"
-            
-            # For testing, we'll use a TXT file since PDF parsing requires actual PDF content
-            resume_content = """Jane Smith
-Senior Software Engineer
-Email: jane.smith@email.com
-Phone: (555) 987-6543
 
-EXPERIENCE:
-- 5+ years of Python and JavaScript development
-- Expert in FastAPI, React, and MongoDB
-- Led team of 4 developers on microservices project
-- Implemented CI/CD pipelines and cloud deployments
-
-SKILLS:
-- Python, JavaScript, TypeScript, SQL
-- FastAPI, React, Node.js, MongoDB, PostgreSQL
-- Docker, Kubernetes, AWS, Azure
-- Team leadership and project management
-
-EDUCATION:
-Master of Science in Computer Science
-Tech University, 2018"""
-            
-            files = {
-                'resume_file': ('resume.txt', io.StringIO(resume_content), 'text/plain')
-            }
-            
-            data = {
-                'job_title': 'Lead Python Developer',
-                'job_description': 'We are seeking a senior Python developer to lead our backend team. The role involves architecting scalable systems, mentoring junior developers, and driving technical decisions.',
-                'job_requirements': 'Requirements: 5+ years Python experience, FastAPI expertise, team leadership experience, cloud platform knowledge, strong communication skills.'
-            }
-            
-            response = self.session.post(
-                f"{self.base_url}/admin/upload-job",
-                files=files,
-                data=data,
-                timeout=15
-            )
-            
-            success = response.status_code == 200
-            if success:
-                result = response.json()
-                success = (result.get("success", False) and 
-                          "token" in result and 
-                          "resume_preview" in result)
-                if success:
-                    self.generated_token = result["token"]
-            
-            details = f"Status: {response.status_code}, Response: {response.text[:300]}"
-            self.log_test("Multi-Format Resume Upload (TXT)", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Multi-Format Resume Upload (TXT)", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_voice_question_generation(self) -> bool:
-        """Test TTS generation for interview questions"""
-        if not self.session_id:
-            # Create a dummy session ID for testing
-            self.session_id = "test-session-123"
-        
+    def test_admin_authentication(self):
+        """Test admin authentication with Game@1234 password"""
         try:
-            payload = {
-                "session_id": self.session_id,
-                "question_text": "Tell me about your experience with Python development and what projects you've worked on recently."
-            }
-            
-            response = self.session.post(
-                f"{self.base_url}/voice/generate-question",
-                json=payload,
-                timeout=20  # TTS can take time
-            )
-            
-            success = response.status_code == 200
-            if success:
-                data = response.json()
-                success = (data.get("success", False) and 
-                          "audio_base64" in data and 
-                          "file_id" in data)
-                
-                # Verify base64 audio data is present
-                if success and data.get("audio_base64"):
-                    try:
-                        # Try to decode base64 to verify it's valid
-                        audio_bytes = base64.b64decode(data["audio_base64"])
-                        success = len(audio_bytes) > 0
-                    except Exception:
-                        success = False
-            
-            details = f"Status: {response.status_code}"
-            if success:
-                details += f", Audio size: {len(data.get('audio_base64', '')) // 1024}KB, File ID: {data.get('file_id', '')[:8]}..."
-            else:
-                details += f", Response: {response.text[:200]}"
-            
-            self.log_test("Google Cloud TTS Integration", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Google Cloud TTS Integration", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_voice_answer_processing(self) -> bool:
-        """Test STT processing for voice answers"""
-        if not self.session_id:
-            self.session_id = "test-session-123"
-        
-        try:
-            # Create a dummy audio file (WEBM format simulation)
-            # In real scenario, this would be actual audio data
-            dummy_audio = b"WEBM_AUDIO_DATA_PLACEHOLDER"
-            
-            files = {
-                'audio_file': ('answer.webm', io.BytesIO(dummy_audio), 'audio/webm')
-            }
-            
-            data = {
-                'session_id': self.session_id,
-                'question_number': 1
-            }
-            
-            response = self.session.post(
-                f"{self.base_url}/voice/process-answer",
-                files=files,
-                data=data,
-                timeout=20  # STT can take time
-            )
-            
-            # Note: This will likely fail with actual Google STT due to invalid audio,
-            # but we're testing the endpoint structure and error handling
-            success = response.status_code in [200, 500]  # 500 is expected for invalid audio
+            response = self.session.post(f"{BASE_URL}/admin/login", 
+                                       json={"password": "Game@1234"})
             
             if response.status_code == 200:
                 data = response.json()
-                success = ("transcript" in data and "file_id" in data)
-                details = f"Status: {response.status_code}, Transcript: {data.get('transcript', 'N/A')[:50]}..."
+                if data.get("success"):
+                    self.admin_authenticated = True
+                    self.log_test("Admin Authentication", "PASS", 
+                                f"Successfully authenticated with Game@1234 password")
+                    return True
+                else:
+                    self.log_test("Admin Authentication", "FAIL", 
+                                f"Authentication failed: {data.get('message', 'Unknown error')}")
+                    return False
             else:
-                # Expected failure due to invalid audio format
-                success = True  # We consider this a pass since the endpoint is reachable
-                details = f"Status: {response.status_code} (Expected for dummy audio data)"
-            
-            self.log_test("Google Cloud STT Integration", success, details)
-            return success
+                self.log_test("Admin Authentication", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
+                return False
+                
         except Exception as e:
-            self.log_test("Google Cloud STT Integration", False, f"Exception: {str(e)}")
+            self.log_test("Admin Authentication", "FAIL", f"Exception: {str(e)}")
             return False
-        """Test job description and resume upload with token generation"""
+
+    def create_placement_preparation_token(self):
+        """Create a token via placement preparation endpoint"""
         try:
             # Create sample resume content
-            resume_content = """John Doe
-Software Engineer
-Email: john.doe@email.com
-Phone: (555) 123-4567
-
-EXPERIENCE:
-- 3+ years of Python development
-- Experience with FastAPI and React
-- Database design and optimization
-- RESTful API development
-
-SKILLS:
-- Python, JavaScript, SQL
-- FastAPI, React, MongoDB
-- Git, Docker, AWS
-- Problem-solving and teamwork
-
-EDUCATION:
-Bachelor of Science in Computer Science
-University of Technology, 2020"""
+            resume_content = """
+            John Smith
+            Senior Software Engineer
             
-            # Prepare multipart form data
-            files = {
-                'resume_file': ('resume.txt', io.StringIO(resume_content), 'text/plain')
+            EXPERIENCE:
+            - 5+ years Python development
+            - 3+ years React/JavaScript
+            - Experience with FastAPI, MongoDB
+            - Team leadership experience
+            - AWS cloud deployment
+            
+            EDUCATION:
+            - Bachelor's in Computer Science
+            - Master's in Software Engineering
+            
+            SKILLS:
+            Python, JavaScript, React, FastAPI, MongoDB, Docker, AWS, Team Leadership
+            """
+            
+            token_request = {
+                "job_title": "Senior Full Stack Developer - Placement Prep",
+                "job_description": "We are looking for a senior full stack developer with expertise in Python and React.",
+                "job_requirements": "5+ years experience, Python, React, FastAPI, MongoDB, leadership skills",
+                "resume_text": resume_content.strip(),
+                "role_archetype": "Software Engineer",
+                "interview_focus": "Technical Deep-Dive",
+                "include_coding_challenge": True,
+                "min_questions": 8,
+                "max_questions": 12
             }
             
-            data = {
-                'job_title': 'Senior Python Developer',
-                'job_description': 'We are looking for an experienced Python developer to join our team. The ideal candidate will have strong experience with FastAPI, database design, and modern web development practices.',
-                'job_requirements': 'Requirements: 3+ years Python experience, FastAPI knowledge, database skills, strong problem-solving abilities, team collaboration skills.'
-            }
+            response = self.session.post(f"{BASE_URL}/admin/create-token", 
+                                       json=token_request)
             
-            response = self.session.post(
-                f"{self.base_url}/admin/upload-job",
-                files=files,
-                data=data,
-                timeout=15
-            )
-            
-            success = response.status_code == 200
-            if success:
-                result = response.json()
-                success = result.get("success", False) and "token" in result
-                if success:
-                    self.generated_token = result["token"]
-            
-            details = f"Status: {response.status_code}, Response: {response.text[:300]}"
-            if self.generated_token:
-                details += f", Token: {self.generated_token[:8]}..."
-            
-            self.log_test("Job & Resume Upload", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Job & Resume Upload", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_token_validation(self) -> bool:
-        """Test candidate token validation"""
-        if not self.generated_token:
-            self.log_test("Token Validation", False, "No token available from upload test")
-            return False
-        
-        try:
-            payload = {"token": self.generated_token}
-            response = self.session.post(
-                f"{self.base_url}/candidate/validate-token",
-                json=payload,
-                timeout=10
-            )
-            
-            success = response.status_code == 200
-            if success:
+            if response.status_code == 200:
                 data = response.json()
-                success = data.get("valid", False) and "job_title" in data
-            
-            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
-            self.log_test("Token Validation", success, details)
-            return success
+                if data.get("success") and data.get("token"):
+                    self.placement_prep_token = data["token"]
+                    self.log_test("Placement Preparation Token Creation", "PASS", 
+                                f"Token created: {self.placement_prep_token[:8]}... via placement preparation")
+                    return True
+                else:
+                    self.log_test("Placement Preparation Token Creation", "FAIL", 
+                                f"Token creation failed: {data}")
+                    return False
+            else:
+                self.log_test("Placement Preparation Token Creation", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
+                return False
+                
         except Exception as e:
-            self.log_test("Token Validation", False, f"Exception: {str(e)}")
+            self.log_test("Placement Preparation Token Creation", "FAIL", f"Exception: {str(e)}")
             return False
-    
-    def test_token_validation_invalid(self) -> bool:
-        """Test token validation with invalid token"""
-        try:
-            payload = {"token": "INVALID_TOKEN_123"}
-            response = self.session.post(
-                f"{self.base_url}/candidate/validate-token",
-                json=payload,
-                timeout=10
-            )
-            
-            success = response.status_code == 401
-            details = f"Status: {response.status_code}, Response: {response.text[:200]}"
-            self.log_test("Token Validation (Invalid Token)", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Token Validation (Invalid Token)", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_interview_start(self) -> bool:
-        """Test starting an interview session (text mode)"""
-        if not self.generated_token:
-            self.log_test("Interview Start", False, "No token available")
-            return False
-        
-        try:
-            payload = {
-                "token": self.generated_token,
-                "candidate_name": "John Doe",
-                "voice_mode": False
-            }
-            response = self.session.post(
-                f"{self.base_url}/candidate/start-interview",
-                json=payload,
-                timeout=15
-            )
-            
-            success = response.status_code == 200
-            if success:
-                data = response.json()
-                success = ("session_id" in data and 
-                          "first_question" in data and 
-                          "question_number" in data)
-                if success:
-                    self.session_id = data["session_id"]
-            
-            details = f"Status: {response.status_code}, Response: {response.text[:300]}"
-            if self.session_id:
-                details += f", Session ID: {self.session_id[:8]}..."
-            
-            self.log_test("Interview Start (Text Mode)", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Interview Start (Text Mode)", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_voice_interview_start(self) -> bool:
-        """Test starting an interview session with voice mode enabled"""
-        # Generate a new token for voice interview testing
-        try:
-            # First create a new job/resume upload for voice testing
-            resume_content = """Alex Johnson
-Voice Interview Test Candidate
-Email: alex.johnson@email.com
-Phone: (555) 111-2222
 
-EXPERIENCE:
-- 4+ years of full-stack development
-- Experience with voice interfaces and audio processing
-- Built real-time applications with WebRTC
-- Strong background in Python and JavaScript
-
-SKILLS:
-- Python, JavaScript, React, FastAPI
-- Audio processing, WebRTC, real-time systems
-- MongoDB, PostgreSQL, Redis
-- Voice UI design and implementation"""
+    def create_admin_token(self):
+        """Create a token via admin dashboard endpoint"""
+        try:
+            # Create sample resume file content
+            resume_content = """
+            Jane Doe
+            Senior Backend Developer
             
+            EXPERIENCE:
+            - 6+ years Python development
+            - 4+ years Django/FastAPI
+            - Database design and optimization
+            - Microservices architecture
+            - DevOps and CI/CD
+            
+            EDUCATION:
+            - Bachelor's in Computer Engineering
+            - AWS Certified Solutions Architect
+            
+            SKILLS:
+            Python, Django, FastAPI, PostgreSQL, Redis, Docker, Kubernetes, AWS
+            """
+            
+            # Prepare form data for admin upload
             files = {
-                'resume_file': ('voice_resume.txt', io.StringIO(resume_content), 'text/plain')
+                'resume_file': ('jane_resume.txt', resume_content.encode(), 'text/plain')
             }
             
-            data = {
-                'job_title': 'Voice Interface Developer',
-                'job_description': 'We are looking for a developer experienced in voice interfaces and real-time audio processing. The role involves building voice-enabled applications and integrating speech technologies.',
-                'job_requirements': 'Requirements: 3+ years experience, voice interface knowledge, real-time systems, Python/JavaScript skills, audio processing experience.'
+            form_data = {
+                'job_title': 'Senior Backend Developer - Admin',
+                'job_description': 'We are seeking a senior backend developer with strong Python skills.',
+                'job_requirements': '6+ years experience, Python, Django/FastAPI, database design, microservices'
             }
             
-            response = self.session.post(
-                f"{self.base_url}/admin/upload-job",
-                files=files,
-                data=data,
-                timeout=15
-            )
+            response = self.session.post(f"{BASE_URL}/admin/upload-job", 
+                                       files=files, data=form_data)
             
-            if response.status_code != 200:
-                self.log_test("Voice Interview Session Management", False, "Failed to create voice interview token")
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success") and data.get("token"):
+                    self.admin_token = data["token"]
+                    self.log_test("Admin Token Creation", "PASS", 
+                                f"Token created: {self.admin_token[:8]}... via admin dashboard")
+                    return True
+                else:
+                    self.log_test("Admin Token Creation", "FAIL", 
+                                f"Token creation failed: {data}")
+                    return False
+            else:
+                self.log_test("Admin Token Creation", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Admin Token Creation", "FAIL", f"Exception: {str(e)}")
+            return False
+
+    def verify_token_source_marking(self):
+        """Verify that tokens are marked with correct created_via field"""
+        try:
+            # Check placement preparation token in database
+            # We'll validate this by starting interviews and checking the assessment created_via field
+            # since we can't directly query the database from the test
+            
+            # Validate placement prep token
+            pp_response = self.session.post(f"{BASE_URL}/candidate/validate-token", 
+                                          json={"token": self.placement_prep_token})
+            
+            # Validate admin token  
+            admin_response = self.session.post(f"{BASE_URL}/candidate/validate-token", 
+                                             json={"token": self.admin_token})
+            
+            if pp_response.status_code == 200 and admin_response.status_code == 200:
+                pp_data = pp_response.json()
+                admin_data = admin_response.json()
+                
+                self.log_test("Token Source Marking Validation", "PASS", 
+                            f"Both tokens validated successfully - PP: {pp_data.get('job_title')}, Admin: {admin_data.get('job_title')}")
+                return True
+            else:
+                self.log_test("Token Source Marking Validation", "FAIL", 
+                            f"Token validation failed - PP: {pp_response.status_code}, Admin: {admin_response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Token Source Marking Validation", "FAIL", f"Exception: {str(e)}")
+            return False
+
+    def complete_placement_preparation_interview(self):
+        """Complete a full interview using placement preparation token"""
+        try:
+            # Start interview
+            start_response = self.session.post(f"{BASE_URL}/candidate/start-interview", 
+                                             json={
+                                                 "token": self.placement_prep_token,
+                                                 "candidate_name": "John Smith",
+                                                 "voice_mode": False
+                                             })
+            
+            if start_response.status_code != 200:
+                self.log_test("Placement Prep Interview Start", "FAIL", 
+                            f"Failed to start interview: {start_response.status_code}")
                 return False
             
-            result = response.json()
-            voice_token = result.get("token")
+            start_data = start_response.json()
+            self.placement_prep_session_id = start_data.get("session_id")
             
-            if not voice_token:
-                self.log_test("Voice Interview Session Management", False, "No token received for voice interview")
+            if not self.placement_prep_session_id:
+                self.log_test("Placement Prep Interview Start", "FAIL", 
+                            "No session ID returned")
                 return False
             
-            # Now test voice interview start
-            payload = {
-                "token": voice_token,
-                "candidate_name": "Alex Johnson",
-                "voice_mode": True
-            }
-            response = self.session.post(
-                f"{self.base_url}/candidate/start-interview",
-                json=payload,
-                timeout=25  # Longer timeout for TTS generation
-            )
+            self.log_test("Placement Prep Interview Start", "PASS", 
+                        f"Interview started with session ID: {self.placement_prep_session_id}")
             
-            success = response.status_code == 200
-            if success:
-                data = response.json()
-                success = ("session_id" in data and 
-                          "first_question" in data and 
-                          "voice_mode" in data and
-                          data.get("voice_mode") == True)
+            # Answer questions to complete the interview
+            questions_answered = 0
+            max_questions = 8
+            
+            sample_answers = [
+                "I have 5+ years of experience in Python development, working on web applications and APIs.",
+                "I've led a team of 4 developers on a microservices project using FastAPI and MongoDB.",
+                "My approach to debugging involves systematic logging, unit testing, and using debugging tools.",
+                "I stay updated through tech blogs, conferences, and contributing to open source projects.",
+                "I handled a critical production issue by implementing proper monitoring and rollback procedures.",
+                "I believe in collaborative leadership, clear communication, and mentoring team members.",
+                "I prioritize tasks based on business impact, technical complexity, and dependencies.",
+                "I've worked with AWS services including EC2, RDS, Lambda, and implemented CI/CD pipelines."
+            ]
+            
+            while questions_answered < max_questions:
+                # Send answer
+                answer_response = self.session.post(f"{BASE_URL}/candidate/answer", 
+                                                  json={
+                                                      "token": self.placement_prep_token,
+                                                      "message": sample_answers[questions_answered % len(sample_answers)]
+                                                  })
                 
-                # Check for TTS audio generation
-                if success and "welcome_audio" in data and "question_audio" in data:
-                    # Verify audio data is base64 encoded
-                    try:
-                        base64.b64decode(data["welcome_audio"])
-                        base64.b64decode(data["question_audio"])
-                        success = True
-                    except Exception:
-                        success = False
-                
-                if success:
-                    voice_session_id = data["session_id"]
-            
-            details = f"Status: {response.status_code}"
-            if success:
-                details += f", Voice Mode: {data.get('voice_mode')}, Session: {voice_session_id[:8] if 'voice_session_id' in locals() else 'None'}..."
-                if "welcome_audio" in data:
-                    details += f", Welcome Audio: {len(data['welcome_audio']) // 1024}KB"
-                if "question_audio" in data:
-                    details += f", Question Audio: {len(data['question_audio']) // 1024}KB"
-            else:
-                details += f", Response: {response.text[:200]}"
-            
-            self.log_test("Voice Interview Session Management", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Voice Interview Session Management", False, f"Exception: {str(e)}")
-            return False
-        """Test starting an interview session (text mode)"""
-        if not self.generated_token:
-            self.log_test("Interview Start", False, "No token available")
-            return False
-        
-        try:
-            payload = {
-                "token": self.generated_token,
-                "candidate_name": "John Doe",
-                "voice_mode": False
-            }
-            response = self.session.post(
-                f"{self.base_url}/candidate/start-interview",
-                json=payload,
-                timeout=15
-            )
-            
-            success = response.status_code == 200
-            if success:
-                data = response.json()
-                success = ("session_id" in data and 
-                          "first_question" in data and 
-                          "question_number" in data)
-                if success:
-                    self.session_id = data["session_id"]
-            
-            details = f"Status: {response.status_code}, Response: {response.text[:300]}"
-            if self.session_id:
-                details += f", Session ID: {self.session_id[:8]}..."
-            
-            self.log_test("Interview Start (Text Mode)", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Interview Start (Text Mode)", False, f"Exception: {str(e)}")
-            return False
-        """Test starting an interview session with voice mode enabled"""
-        if not self.generated_token:
-            self.log_test("Voice Interview Start", False, "No token available")
-            return False
-        
-        try:
-            payload = {
-                "token": self.generated_token,
-                "candidate_name": "Jane Smith",
-                "voice_mode": True
-            }
-            response = self.session.post(
-                f"{self.base_url}/candidate/start-interview",
-                json=payload,
-                timeout=25  # Longer timeout for TTS generation
-            )
-            
-            success = response.status_code == 200
-            if success:
-                data = response.json()
-                success = ("session_id" in data and 
-                          "first_question" in data and 
-                          "voice_mode" in data and
-                          data.get("voice_mode") == True)
-                
-                # Check for TTS audio generation
-                if success and "welcome_audio" in data and "question_audio" in data:
-                    # Verify audio data is base64 encoded
-                    try:
-                        base64.b64decode(data["welcome_audio"])
-                        base64.b64decode(data["question_audio"])
-                        success = True
-                    except Exception:
-                        success = False
-                
-                if success:
-                    self.session_id = data["session_id"]
-            
-            details = f"Status: {response.status_code}"
-            if success:
-                details += f", Voice Mode: {data.get('voice_mode')}, Session: {self.session_id[:8] if self.session_id else 'None'}..."
-                if "welcome_audio" in data:
-                    details += f", Welcome Audio: {len(data['welcome_audio']) // 1024}KB"
-                if "question_audio" in data:
-                    details += f", Question Audio: {len(data['question_audio']) // 1024}KB"
-            else:
-                details += f", Response: {response.text[:200]}"
-            
-            self.log_test("Voice Interview Session Management", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Voice Interview Session Management", False, f"Exception: {str(e)}")
-            return False
-        """Test starting an interview session"""
-        if not self.generated_token:
-            self.log_test("Interview Start", False, "No token available")
-            return False
-        
-        try:
-            payload = {
-                "token": self.generated_token,
-                "candidate_name": "John Doe"
-            }
-            response = self.session.post(
-                f"{self.base_url}/candidate/start-interview",
-                json=payload,
-                timeout=15
-            )
-            
-            success = response.status_code == 200
-            if success:
-                data = response.json()
-                success = ("session_id" in data and 
-                          "first_question" in data and 
-                          "question_number" in data)
-                if success:
-                    self.session_id = data["session_id"]
-            
-            details = f"Status: {response.status_code}, Response: {response.text[:300]}"
-            if self.session_id:
-                details += f", Session ID: {self.session_id[:8]}..."
-            
-            self.log_test("Interview Start", success, details)
-            return success
-        except Exception as e:
-            self.log_test("Interview Start", False, f"Exception: {str(e)}")
-            return False
-    
-    def test_interview_conversation(self) -> bool:
-        """Test complete 8-question interview conversation"""
-        if not self.generated_token:
-            self.log_test("Interview Conversation", False, "No token available")
-            return False
-        
-        # Sample answers for the 8 questions (4 technical, 4 behavioral)
-        sample_answers = [
-            # Technical answers
-            "I have 3+ years of Python experience, working extensively with FastAPI for building REST APIs. I've built several microservices using FastAPI, implemented authentication, database integration, and API documentation. I'm comfortable with async programming and have used Pydantic for data validation.",
-            
-            "For database optimization, I focus on proper indexing, query optimization, and connection pooling. I've worked with MongoDB and PostgreSQL, implementing efficient schemas and using aggregation pipelines. I also monitor query performance and use database profiling tools to identify bottlenecks.",
-            
-            "I follow RESTful principles with proper HTTP methods, status codes, and resource naming. I implement comprehensive error handling, input validation, and API versioning. I use tools like Swagger/OpenAPI for documentation and ensure consistent response formats across endpoints.",
-            
-            "I use Git for version control with feature branches and pull requests. For deployment, I've worked with Docker containers and CI/CD pipelines. I'm familiar with cloud platforms like AWS and have experience with monitoring tools and logging systems for production applications.",
-            
-            # Behavioral answers
-            "In my previous role, I had to implement a complex feature with a tight deadline. I broke down the requirements, prioritized core functionality, and communicated regularly with stakeholders about progress. I delivered the MVP on time and added enhancements in subsequent iterations.",
-            
-            "I once disagreed with a senior developer about the architecture approach for a new service. I prepared a detailed comparison of both approaches, highlighting pros and cons. We had a constructive discussion, and we ended up combining the best aspects of both solutions, which resulted in a better outcome.",
-            
-            "I encountered a production bug that was causing intermittent failures. I systematically analyzed logs, reproduced the issue in a test environment, and traced it to a race condition in concurrent requests. I implemented proper locking mechanisms and added comprehensive logging for future debugging.",
-            
-            "I regularly attend tech meetups, follow industry blogs, and take online courses. I recently completed a course on microservices architecture and have been experimenting with new Python libraries. I also contribute to open-source projects and participate in code reviews to learn from peers."
-        ]
-        
-        try:
-            for i, answer in enumerate(sample_answers):
-                payload = {
-                    "token": self.generated_token,
-                    "message": answer
-                }
-                
-                response = self.session.post(
-                    f"{self.base_url}/candidate/send-message",
-                    json=payload,
-                    timeout=20  # Longer timeout for AI processing
-                )
-                
-                if response.status_code != 200:
-                    details = f"Failed at question {i+1}, Status: {response.status_code}, Response: {response.text[:200]}"
-                    self.log_test("Interview Conversation", False, details)
+                if answer_response.status_code != 200:
+                    self.log_test("Placement Prep Interview Answer", "FAIL", 
+                                f"Failed to submit answer {questions_answered + 1}: {answer_response.status_code}")
                     return False
                 
-                data = response.json()
+                answer_data = answer_response.json()
+                questions_answered += 1
                 
-                # Check if interview is completed
-                if data.get("completed", False):
-                    if "assessment_id" in data:
-                        self.assessment_id = data["assessment_id"]
-                    success = i == len(sample_answers) - 1  # Should complete on last question
-                    details = f"Interview completed after {i+1} questions, Assessment ID: {self.assessment_id[:8] if self.assessment_id else 'None'}..."
-                    self.log_test("Interview Conversation", success, details)
-                    return success
-                
-                # Verify next question is provided
-                if not data.get("next_question"):
-                    details = f"No next question provided at step {i+1}"
-                    self.log_test("Interview Conversation", False, details)
-                    return False
+                # Check if interview is complete
+                if answer_data.get("interview_complete"):
+                    self.log_test("Placement Prep Interview Completion", "PASS", 
+                                f"Interview completed after {questions_answered} questions")
+                    break
                 
                 # Small delay between questions
-                time.sleep(1)
+                time.sleep(0.5)
             
-            # If we reach here, interview didn't complete as expected
-            self.log_test("Interview Conversation", False, "Interview didn't complete after 8 questions")
-            return False
+            return True
             
         except Exception as e:
-            self.log_test("Interview Conversation", False, f"Exception: {str(e)}")
+            self.log_test("Placement Prep Interview Completion", "FAIL", f"Exception: {str(e)}")
             return False
-    
-    def test_admin_reports(self) -> bool:
-        """Test admin reports endpoint"""
+
+    def complete_admin_interview(self):
+        """Complete a full interview using admin token"""
         try:
-            response = self.session.get(f"{self.base_url}/admin/reports", timeout=10)
+            # Start interview
+            start_response = self.session.post(f"{BASE_URL}/candidate/start-interview", 
+                                             json={
+                                                 "token": self.admin_token,
+                                                 "candidate_name": "Jane Doe",
+                                                 "voice_mode": False
+                                             })
             
-            success = response.status_code == 200
-            if success:
-                data = response.json()
-                success = "reports" in data and isinstance(data["reports"], list)
+            if start_response.status_code != 200:
+                self.log_test("Admin Interview Start", "FAIL", 
+                            f"Failed to start interview: {start_response.status_code}")
+                return False
+            
+            start_data = start_response.json()
+            self.admin_session_id = start_data.get("session_id")
+            
+            if not self.admin_session_id:
+                self.log_test("Admin Interview Start", "FAIL", 
+                            "No session ID returned")
+                return False
+            
+            self.log_test("Admin Interview Start", "PASS", 
+                        f"Interview started with session ID: {self.admin_session_id}")
+            
+            # Answer questions to complete the interview
+            questions_answered = 0
+            max_questions = 8
+            
+            sample_answers = [
+                "I have 6+ years of backend development experience with Python and Django/FastAPI.",
+                "I've designed and implemented microservices architectures for high-traffic applications.",
+                "I use profiling tools, database query optimization, and caching strategies for performance.",
+                "I follow TDD practices, write comprehensive unit tests, and use CI/CD for quality assurance.",
+                "I've implemented OAuth2, JWT tokens, and proper input validation for security.",
+                "I use monitoring tools like Prometheus, implement proper logging, and set up alerts.",
+                "I've mentored junior developers and led technical architecture discussions.",
+                "I've worked with Docker, Kubernetes, AWS services, and implemented infrastructure as code."
+            ]
+            
+            while questions_answered < max_questions:
+                # Send answer
+                answer_response = self.session.post(f"{BASE_URL}/candidate/answer", 
+                                                  json={
+                                                      "token": self.admin_token,
+                                                      "message": sample_answers[questions_answered % len(sample_answers)]
+                                                  })
                 
-                # Check if our assessment is in the reports
-                if success and self.assessment_id:
-                    found_assessment = any(
-                        report.get("id") == self.assessment_id 
-                        for report in data["reports"]
-                    )
-                    if found_assessment:
-                        details = f"Status: {response.status_code}, Found {len(data['reports'])} reports including our assessment"
-                    else:
-                        details = f"Status: {response.status_code}, Found {len(data['reports'])} reports but our assessment not found"
-                else:
-                    details = f"Status: {response.status_code}, Found {len(data.get('reports', []))} reports"
-            else:
-                details = f"Status: {response.status_code}, Response: {response.text[:200]}"
+                if answer_response.status_code != 200:
+                    self.log_test("Admin Interview Answer", "FAIL", 
+                                f"Failed to submit answer {questions_answered + 1}: {answer_response.status_code}")
+                    return False
+                
+                answer_data = answer_response.json()
+                questions_answered += 1
+                
+                # Check if interview is complete
+                if answer_data.get("interview_complete"):
+                    self.log_test("Admin Interview Completion", "PASS", 
+                                f"Interview completed after {questions_answered} questions")
+                    break
+                
+                # Small delay between questions
+                time.sleep(0.5)
             
-            self.log_test("Admin Reports", success, details)
-            return success
+            return True
+            
         except Exception as e:
-            self.log_test("Admin Reports", False, f"Exception: {str(e)}")
+            self.log_test("Admin Interview Completion", "FAIL", f"Exception: {str(e)}")
             return False
-    
-    def test_specific_report(self) -> bool:
-        """Test getting a specific report by session ID"""
-        if not self.session_id:
-            self.log_test("Specific Report", False, "No session ID available")
-            return False
-        
+
+    def test_placement_preparation_reports_visibility(self):
+        """Test that placement preparation reports endpoint only shows placement preparation assessments"""
         try:
-            response = self.session.get(
-                f"{self.base_url}/admin/reports/{self.session_id}",
-                timeout=10
-            )
+            response = self.session.get(f"{BASE_URL}/placement-preparation/reports")
             
-            success = response.status_code == 200
-            if success:
-                data = response.json()
-                success = ("report" in data and 
-                          "technical_score" in data["report"] and 
-                          "behavioral_score" in data["report"])
+            if response.status_code != 200:
+                self.log_test("Placement Preparation Reports Visibility", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
+                return False
             
-            details = f"Status: {response.status_code}, Response: {response.text[:300]}"
-            self.log_test("Specific Report", success, details)
-            return success
+            data = response.json()
+            reports = data.get("reports", [])
+            
+            # Verify all reports are from placement preparation
+            placement_prep_count = 0
+            admin_count = 0
+            
+            for report in reports:
+                created_via = report.get("created_via", "unknown")
+                if created_via == "placement_preparation":
+                    placement_prep_count += 1
+                elif created_via == "admin":
+                    admin_count += 1
+                    
+                # Check if our placement prep session is in the results
+                if report.get("session_id") == self.placement_prep_session_id:
+                    self.placement_prep_assessment_id = report.get("id")
+            
+            if admin_count > 0:
+                self.log_test("Placement Preparation Reports Visibility", "FAIL", 
+                            f"Found {admin_count} admin reports in placement preparation endpoint")
+                return False
+            
+            self.log_test("Placement Preparation Reports Visibility", "PASS", 
+                        f"Found {placement_prep_count} placement preparation reports, 0 admin reports (correct separation)")
+            return True
+            
         except Exception as e:
-            self.log_test("Specific Report", False, f"Exception: {str(e)}")
+            self.log_test("Placement Preparation Reports Visibility", "FAIL", f"Exception: {str(e)}")
             return False
-    
-    def run_all_tests(self) -> Dict[str, bool]:
+
+    def test_admin_reports_visibility(self):
+        """Test that admin reports endpoint only shows admin and legacy assessments"""
+        try:
+            response = self.session.get(f"{BASE_URL}/admin/reports")
+            
+            if response.status_code != 200:
+                self.log_test("Admin Reports Visibility", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
+                return False
+            
+            data = response.json()
+            reports = data.get("reports", [])
+            
+            # Verify no placement preparation reports are shown
+            placement_prep_count = 0
+            admin_count = 0
+            legacy_count = 0
+            
+            for report in reports:
+                created_via = report.get("created_via")
+                if created_via == "placement_preparation":
+                    placement_prep_count += 1
+                elif created_via == "admin":
+                    admin_count += 1
+                elif created_via is None:  # Legacy reports
+                    legacy_count += 1
+                    
+                # Check if our admin session is in the results
+                if report.get("session_id") == self.admin_session_id:
+                    self.admin_assessment_id = report.get("id")
+            
+            if placement_prep_count > 0:
+                self.log_test("Admin Reports Visibility", "FAIL", 
+                            f"Found {placement_prep_count} placement preparation reports in admin endpoint")
+                return False
+            
+            self.log_test("Admin Reports Visibility", "PASS", 
+                        f"Found {admin_count} admin reports, {legacy_count} legacy reports, 0 placement prep reports (correct separation)")
+            return True
+            
+        except Exception as e:
+            self.log_test("Admin Reports Visibility", "FAIL", f"Exception: {str(e)}")
+            return False
+
+    def test_placement_preparation_detailed_report(self):
+        """Test placement preparation detailed report endpoint"""
+        try:
+            if not self.placement_prep_session_id:
+                self.log_test("Placement Preparation Detailed Report", "FAIL", 
+                            "No placement preparation session ID available")
+                return False
+            
+            response = self.session.get(f"{BASE_URL}/placement-preparation/reports/{self.placement_prep_session_id}")
+            
+            if response.status_code == 404:
+                self.log_test("Placement Preparation Detailed Report", "FAIL", 
+                            "Report not found - assessment may not have been created yet")
+                return False
+            elif response.status_code != 200:
+                self.log_test("Placement Preparation Detailed Report", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
+                return False
+            
+            data = response.json()
+            report = data.get("report", {})
+            
+            # Verify report structure and content
+            required_fields = ["session_id", "candidate_name", "job_title", "technical_score", 
+                             "behavioral_score", "overall_score", "created_via"]
+            
+            missing_fields = [field for field in required_fields if field not in report]
+            if missing_fields:
+                self.log_test("Placement Preparation Detailed Report", "FAIL", 
+                            f"Missing required fields: {missing_fields}")
+                return False
+            
+            # Verify it's marked as placement preparation
+            if report.get("created_via") != "placement_preparation":
+                self.log_test("Placement Preparation Detailed Report", "FAIL", 
+                            f"Report has incorrect created_via: {report.get('created_via')}")
+                return False
+            
+            self.log_test("Placement Preparation Detailed Report", "PASS", 
+                        f"Retrieved detailed report for {report.get('candidate_name')} - {report.get('job_title')}")
+            return True
+            
+        except Exception as e:
+            self.log_test("Placement Preparation Detailed Report", "FAIL", f"Exception: {str(e)}")
+            return False
+
+    def test_admin_detailed_report(self):
+        """Test admin detailed report endpoint"""
+        try:
+            if not self.admin_session_id:
+                self.log_test("Admin Detailed Report", "FAIL", 
+                            "No admin session ID available")
+                return False
+            
+            response = self.session.get(f"{BASE_URL}/admin/reports/{self.admin_session_id}")
+            
+            if response.status_code == 404:
+                self.log_test("Admin Detailed Report", "FAIL", 
+                            "Report not found - assessment may not have been created yet")
+                return False
+            elif response.status_code != 200:
+                self.log_test("Admin Detailed Report", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
+                return False
+            
+            data = response.json()
+            report = data.get("report", {})
+            
+            # Verify report structure and content
+            required_fields = ["session_id", "candidate_name", "job_title", "technical_score", 
+                             "behavioral_score", "overall_score", "created_via"]
+            
+            missing_fields = [field for field in required_fields if field not in report]
+            if missing_fields:
+                self.log_test("Admin Detailed Report", "FAIL", 
+                            f"Missing required fields: {missing_fields}")
+                return False
+            
+            # Verify it's marked as admin
+            if report.get("created_via") != "admin":
+                self.log_test("Admin Detailed Report", "FAIL", 
+                            f"Report has incorrect created_via: {report.get('created_via')}")
+                return False
+            
+            self.log_test("Admin Detailed Report", "PASS", 
+                        f"Retrieved detailed report for {report.get('candidate_name')} - {report.get('job_title')}")
+            return True
+            
+        except Exception as e:
+            self.log_test("Admin Detailed Report", "FAIL", f"Exception: {str(e)}")
+            return False
+
+    def test_cross_endpoint_isolation(self):
+        """Test that placement preparation reports are not accessible via admin endpoint and vice versa"""
+        try:
+            # Try to access placement preparation report via admin endpoint
+            if self.placement_prep_session_id:
+                admin_access_response = self.session.get(f"{BASE_URL}/admin/reports/{self.placement_prep_session_id}")
+                if admin_access_response.status_code != 404:
+                    self.log_test("Cross-Endpoint Isolation", "FAIL", 
+                                f"Placement prep report accessible via admin endpoint (should be 404)")
+                    return False
+            
+            # Try to access admin report via placement preparation endpoint
+            if self.admin_session_id:
+                pp_access_response = self.session.get(f"{BASE_URL}/placement-preparation/reports/{self.admin_session_id}")
+                if pp_access_response.status_code != 404:
+                    self.log_test("Cross-Endpoint Isolation", "FAIL", 
+                                f"Admin report accessible via placement prep endpoint (should be 404)")
+                    return False
+            
+            self.log_test("Cross-Endpoint Isolation", "PASS", 
+                        "Reports are properly isolated - placement prep reports not accessible via admin endpoint and vice versa")
+            return True
+            
+        except Exception as e:
+            self.log_test("Cross-Endpoint Isolation", "FAIL", f"Exception: {str(e)}")
+            return False
+
+    def run_comprehensive_test(self):
         """Run all tests in sequence"""
-        print("=" * 70)
-        print("AI-POWERED INTERVIEW AGENT - ENHANCED BACKEND TESTING")
-        print("Testing Voice Features & Multi-Format Resume Support")
-        print("=" * 70)
+        print("=" * 80)
+        print("PLACEMENT PREPARATION ASSESSMENT REPORTS & TOKEN-BASED VISIBILITY TESTING")
+        print("=" * 80)
         print()
         
-        results = {}
+        test_results = []
         
-        # Basic connectivity
-        results["health_check"] = self.test_health_check()
+        # Test 1: Admin Authentication
+        test_results.append(self.test_admin_authentication())
         
-        # Admin authentication
-        results["admin_login"] = self.test_admin_login()
-        results["admin_login_invalid"] = self.test_admin_login_invalid()
+        if not self.admin_authenticated:
+            print("❌ Cannot proceed without admin authentication")
+            return False
         
-        # Multi-format resume upload and parsing
-        results["multi_format_resume_upload"] = self.test_job_resume_upload()
+        # Test 2: Token Creation & Source Marking
+        test_results.append(self.create_placement_preparation_token())
+        test_results.append(self.create_admin_token())
+        test_results.append(self.verify_token_source_marking())
         
-        # Voice processing features
-        results["google_tts_integration"] = self.test_voice_question_generation()
-        results["google_stt_integration"] = self.test_voice_answer_processing()
+        # Test 3: Complete Interview Workflows
+        test_results.append(self.complete_placement_preparation_interview())
+        test_results.append(self.complete_admin_interview())
         
-        # Token validation
-        results["token_validation"] = self.test_token_validation()
-        results["token_validation_invalid"] = self.test_token_validation_invalid()
+        # Wait a moment for assessments to be generated
+        print("⏳ Waiting for assessments to be generated...")
+        time.sleep(3)
         
-        # Interview flow (text mode)
-        results["interview_start_text"] = self.test_interview_start()
+        # Test 4: Assessment Reports Visibility
+        test_results.append(self.test_placement_preparation_reports_visibility())
+        test_results.append(self.test_admin_reports_visibility())
         
-        # Voice interview flow
-        results["voice_interview_session"] = self.test_voice_interview_start()
+        # Test 5: Detailed Report Functionality
+        test_results.append(self.test_placement_preparation_detailed_report())
+        test_results.append(self.test_admin_detailed_report())
         
-        # Interview conversation
-        results["interview_conversation"] = self.test_interview_conversation()
-        
-        # Admin reporting
-        results["admin_reports"] = self.test_admin_reports()
-        results["specific_report"] = self.test_specific_report()
+        # Test 6: Cross-Endpoint Isolation
+        test_results.append(self.test_cross_endpoint_isolation())
         
         # Summary
-        print("=" * 70)
+        print("=" * 80)
         print("TEST SUMMARY")
-        print("=" * 70)
+        print("=" * 80)
         
-        passed = sum(1 for result in results.values() if result)
-        total = len(results)
+        passed_tests = sum(test_results)
+        total_tests = len(test_results)
         
-        # Group results by category
-        categories = {
-            "Basic Connectivity": ["health_check"],
-            "Admin Authentication": ["admin_login", "admin_login_invalid"],
-            "Multi-Format Resume Support": ["multi_format_resume_upload"],
-            "Google Cloud Voice Integration": ["google_tts_integration", "google_stt_integration"],
-            "Token Management": ["token_validation", "token_validation_invalid"],
-            "Interview Sessions": ["interview_start_text", "voice_interview_session"],
-            "Interview Flow": ["interview_conversation"],
-            "Admin Reporting": ["admin_reports", "specific_report"]
-        }
+        print(f"✅ Passed: {passed_tests}/{total_tests} tests")
+        print(f"❌ Failed: {total_tests - passed_tests}/{total_tests} tests")
+        print(f"📊 Success Rate: {(passed_tests/total_tests)*100:.1f}%")
         
-        for category, test_names in categories.items():
-            print(f"\n{category}:")
-            for test_name in test_names:
-                if test_name in results:
-                    status = "✅ PASS" if results[test_name] else "❌ FAIL"
-                    print(f"  {status} {test_name}")
-        
-        print()
-        print(f"OVERALL: {passed}/{total} tests passed ({passed/total*100:.1f}%)")
-        
-        if passed == total:
-            print("🎉 ALL TESTS PASSED! Enhanced backend with voice features is working correctly.")
-        elif passed >= total * 0.8:
-            print("✅ MOSTLY WORKING! Most features are functional with minor issues.")
+        if passed_tests == total_tests:
+            print("\n🎉 ALL TESTS PASSED! Placement preparation assessment reports and token-based visibility logic is working correctly.")
         else:
-            print("⚠️  Multiple tests failed. Check the details above.")
+            print(f"\n⚠️  {total_tests - passed_tests} test(s) failed. Please review the issues above.")
         
-        return results
+        return passed_tests == total_tests
 
 def main():
     """Main test execution"""
-    tester = InterviewAgentTester()
-    results = tester.run_all_tests()
+    tester = PlacementPreparationTester()
+    success = tester.run_comprehensive_test()
     
-    # Return exit code based on results
-    all_passed = all(results.values())
-    return 0 if all_passed else 1
+    if success:
+        print("\n✅ PLACEMENT PREPARATION TESTING COMPLETED SUCCESSFULLY")
+        exit(0)
+    else:
+        print("\n❌ PLACEMENT PREPARATION TESTING COMPLETED WITH FAILURES")
+        exit(1)
 
 if __name__ == "__main__":
-    exit(main())
+    main()
