@@ -4757,7 +4757,11 @@ async def get_all_reports():
 
 @api_router.get("/admin/reports/{session_id}")
 async def get_report_by_session(session_id: str):
-    report = await db.assessments.find_one({"session_id": session_id})
+    """Get specific assessment report by session ID for admin dashboard - legacy endpoint updated with filtering"""
+    report = await db.assessments.find_one({
+        "session_id": session_id, 
+        "created_via": "admin"
+    })
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     # Convert MongoDB ObjectId to string for JSON serialization
