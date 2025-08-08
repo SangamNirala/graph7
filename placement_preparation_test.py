@@ -144,7 +144,7 @@ ACHIEVEMENTS:
             self.log_test("Resume Upload Endpoint (/api/admin/upload-job)", success, details)
             return success
         except Exception as e:
-            self.log_test("Resume Upload Endpoint (/api/admin/upload)", False, f"Exception: {str(e)}")
+            self.log_test("Resume Upload Endpoint (/api/admin/upload-job)", False, f"Exception: {str(e)}")
             return False
     
     def test_create_token_endpoint(self) -> bool:
