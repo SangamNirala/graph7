@@ -3425,9 +3425,11 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                     </div>
 
                     {resumePreview && (
-                      <div className="bg-white/5 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold text-white mb-2">Resume Preview</h3>
-                        <p className="text-gray-300 text-sm whitespace-pre-wrap">{resumePreview}</p>
+                      <div className="bg-white/5 rounded-lg p-4 shadow-lg border border-white/10">
+                        <h3 className="text-lg font-semibold text-white mb-3">Resume Preview</h3>
+                        <div className="bg-white/10 rounded-lg p-3 h-48 overflow-y-auto shadow-inner border border-white/20 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-orange-500/50 hover:scrollbar-thumb-orange-500/70">
+                          <p className="text-gray-200 text-sm whitespace-pre-wrap leading-relaxed">{resumePreview}</p>
+                        </div>
                       </div>
                     )}
                   </div>
