@@ -7171,7 +7171,7 @@ async def bulk_process_batch(
                     file_size=file_info["size"],
                     file_type=file_info["filename"].split('.')[-1].lower(),
                     resume_content=resume_text,
-                    resume_preview=resume_text[:200] + "..." if len(resume_text) > 200 else resume_text,
+                    resume_preview=resume_text,  # Full text for scrollable box display
                     batch_id=batch_id,
                     processing_status="completed",
                     parsing_duration=parsing_duration,
