@@ -3248,10 +3248,12 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
         const data = await response.json();
         setGeneratedToken(data.token);
       } else {
-        alert('Failed to create interview token');
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Failed to create interview token: ${errorData.detail || 'Unknown error'}`);
       }
     } catch (err) {
-      alert('Error creating interview');
+      console.error('Error creating interview:', err);
+      alert('Error creating interview: Please check your internet connection');
     } finally {
       setLoading(false);
     }
