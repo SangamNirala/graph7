@@ -4733,7 +4733,8 @@ async def upload_job_and_resume(
         token=token,
         job_id=job_data.id,
         resume_content=resume_text,
-        job_description=f"{job_title}\n\n{job_description}\n\n{job_requirements}"
+        job_description=f"{job_title}\n\n{job_description}\n\n{job_requirements}",
+        created_via="admin"  # Mark as admin source
     )
     await db.tokens.insert_one(token_data.dict())
     
