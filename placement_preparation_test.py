@@ -375,6 +375,131 @@ Available upon request"""
             self.log_test("Resume Preview Functionality for Scrollable Box", False, f"Exception: {str(e)}")
             return False
     
+    def test_multi_format_resume_upload(self) -> bool:
+        """Test resume upload with different file formats (TXT, PDF, DOC) for placement preparation"""
+        try:
+            test_results = []
+            
+            # Test 1: TXT format
+            txt_resume = """Alex Thompson
+Multi-Format Resume Test - TXT
+Email: alex.thompson@email.com
+Phone: (555) 111-2222
+
+SUMMARY:
+Software developer with experience in multiple programming languages and frameworks.
+
+SKILLS:
+- Python, JavaScript, Java
+- React, Node.js, Django
+- MySQL, MongoDB
+- Git, Docker, AWS
+
+EXPERIENCE:
+Junior Developer at StartupCorp (2023-2024)
+- Developed web applications using modern frameworks
+- Collaborated with cross-functional teams
+- Implemented automated testing procedures"""
+            
+            files = {'resume_file': ('alex_resume.txt', io.StringIO(txt_resume), 'text/plain')}
+            data = {
+                'job_title': 'Multi-Format Test - TXT Resume',
+                'job_description': 'Testing TXT format resume upload for placement preparation.',
+                'job_requirements': 'Requirements: Programming experience, web development skills.'
+            }
+            
+            response = self.session.post(f"{self.base_url}/admin/upload-job", files=files, data=data, timeout=15)
+            txt_success = (response.status_code == 200 and 
+                          response.json().get("success", False) and 
+                          "resume_preview" in response.json() and
+                          len(response.json().get("resume_preview", "")) > 50)
+            test_results.append(("TXT", txt_success, len(response.json().get("resume_preview", "")) if txt_success else 0))
+            
+            # Test 2: PDF format (simplified PDF structure)
+            pdf_content = b"""%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R>>endobj
+4 0 obj<</Length 150>>stream
+BT /F1 12 Tf 72 720 Td (Maria Garcia - PDF Resume Test) Tj
+0 -20 Td (Email: maria.garcia@email.com) Tj
+0 -20 Td (Skills: Python, React, SQL) Tj
+0 -20 Td (Experience: 2 years web development) Tj ET
+endstream endobj
+xref 0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000206 00000 n 
+trailer<</Size 5/Root 1 0 R>>startxref 406 %%EOF"""
+            
+            files = {'resume_file': ('maria_resume.pdf', io.BytesIO(pdf_content), 'application/pdf')}
+            data = {
+                'job_title': 'Multi-Format Test - PDF Resume',
+                'job_description': 'Testing PDF format resume upload for placement preparation.',
+                'job_requirements': 'Requirements: Programming experience, web development skills.'
+            }
+            
+            response = self.session.post(f"{self.base_url}/admin/upload-job", files=files, data=data, timeout=15)
+            pdf_success = (response.status_code == 200 and response.json().get("success", False))
+            # For PDF, we accept any preview length (including 0) as parsing may vary
+            pdf_preview_len = len(response.json().get("resume_preview", "")) if pdf_success else 0
+            test_results.append(("PDF", pdf_success, pdf_preview_len))
+            
+            # Test 3: DOC format simulation (using TXT with .doc extension for testing)
+            doc_resume = """Robert Kim
+Multi-Format Resume Test - DOC
+Email: robert.kim@email.com
+Phone: (555) 333-4444
+
+OBJECTIVE:
+Seeking software development position to utilize programming skills.
+
+EDUCATION:
+BS Computer Science, Tech University, 2024
+
+TECHNICAL SKILLS:
+Programming: Java, Python, C++
+Web: HTML, CSS, JavaScript, React
+Database: MySQL, PostgreSQL
+Tools: Git, Docker, VS Code
+
+PROJECTS:
+Web Portfolio - Personal website built with React
+Task Manager - Java application with MySQL backend"""
+            
+            files = {'resume_file': ('robert_resume.doc', io.StringIO(doc_resume), 'application/msword')}
+            data = {
+                'job_title': 'Multi-Format Test - DOC Resume',
+                'job_description': 'Testing DOC format resume upload for placement preparation.',
+                'job_requirements': 'Requirements: Programming experience, web development skills.'
+            }
+            
+            response = self.session.post(f"{self.base_url}/admin/upload-job", files=files, data=data, timeout=15)
+            doc_success = (response.status_code == 200 and response.json().get("success", False))
+            doc_preview_len = len(response.json().get("resume_preview", "")) if doc_success else 0
+            test_results.append(("DOC", doc_success, doc_preview_len))
+            
+            # Evaluate overall success
+            successful_formats = sum(1 for _, success, _ in test_results if success)
+            total_formats = len(test_results)
+            
+            overall_success = successful_formats >= 2  # At least 2 out of 3 formats should work
+            
+            details = f"Format test results: "
+            for format_name, success, preview_len in test_results:
+                status = "✅" if success else "❌"
+                details += f"{format_name}: {status} (preview: {preview_len} chars), "
+            details += f"Overall: {successful_formats}/{total_formats} formats working"
+            
+            self.log_test("Multi-Format Resume Upload (TXT/PDF/DOC)", overall_success, details)
+            return overall_success
+            
+        except Exception as e:
+            self.log_test("Multi-Format Resume Upload (TXT/PDF/DOC)", False, f"Exception: {str(e)}")
+            return False
+    
     def test_token_validation_workflow(self) -> bool:
         """Test that tokens created via placement preparation work with candidate validation"""
         if not self.generated_token:
