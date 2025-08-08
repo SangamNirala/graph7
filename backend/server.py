@@ -4220,6 +4220,7 @@ async def placement_preparation_create_token(request: dict):
             job_id=job_data.id,
             resume_content=resume_text,
             job_description=f"{job_title}\n\n{job_description}\n\n{job_requirements}",
+            created_via="placement_preparation",  # Mark as placement preparation source
             # Enhanced features
             include_coding_challenge=include_coding_challenge,
             role_archetype=role_archetype,
