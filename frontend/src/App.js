@@ -3126,6 +3126,10 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
   const [resumePreview, setResumePreview] = useState('');
   const [loading, setLoading] = useState(false);
   
+  // Assessment Reports state
+  const [reports, setReports] = useState([]);
+  const [detailedReportModal, setDetailedReportModal] = useState({ show: false, data: null, loading: false });
+  
   // Enhanced features state
   const [includeCodingChallenge, setIncludeCodingChallenge] = useState(false);
   const [roleArchetype, setRoleArchetype] = useState('General');
