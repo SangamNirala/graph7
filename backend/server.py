@@ -563,6 +563,7 @@ class CandidateToken(BaseModel):
     job_description: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     used: bool = False
+    created_via: str = "admin"  # "admin" or "placement_preparation"
 
 class InterviewSession(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
