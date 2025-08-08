@@ -8185,6 +8185,78 @@ async def get_screening_results(job_requirements_id: Optional[str] = None):
         logging.error(f"Get screening results error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get screening results: {str(e)}")
 
+@api_router.get("/admin/screening/candidate-justification/{candidate_id}")
+async def get_candidate_scoring_justification(candidate_id: str):
+    """Get detailed AI justification for a candidate's ATS score"""
+    try:
+        # Find the analysis result for this candidate
+        analysis_result = await db.ats_analysis_results.find_one({"candidate_id": candidate_id})
+        
+        if not analysis_result:
+            raise HTTPException(status_code=404, detail="Candidate analysis not found")
+        
+        # Get job requirements used for this analysis (if available)
+        job_requirements = None
+        if 'job_requirements_id' in analysis_result:
+            job_requirements = await db.job_requirements.find_one({"id": analysis_result['job_requirements_id']})
+        
+        # Generate detailed justification using AI
+        client = genai.GenerativeModel("gemini-1.5-flash")
+        
+        prompt = f"""
+        Create a detailed, professional justification report for HR explaining why this candidate received their ATS score.
+        
+        CANDIDATE: {analysis_result.get('candidate_name', 'Unknown')}
+        OVERALL SCORE: {analysis_result['overall_score']}%
+        
+        COMPONENT SCORES:
+        - Skills Match: {analysis_result.get('component_scores', {}).get('skills_match', 0)}%
+        - Experience Match: {analysis_result.get('component_scores', {}).get('experience_match', 0)}%
+        - Education Match: {analysis_result.get('component_scores', {}).get('education_match', 0)}%
+        
+        SKILL MATCHES: {analysis_result.get('skill_matches', {})}
+        MISSING SKILLS: {analysis_result.get('missing_skills', [])}
+        RECOMMENDATIONS: {analysis_result.get('recommendations', [])}
+        EXPERIENCE MATCH: {analysis_result.get('experience_match', '')}
+        EDUCATION MATCH: {analysis_result.get('education_match', '')}
+        
+        Create a comprehensive justification report that includes:
+        
+        1. **Executive Summary**: Brief overview of why this score was given
+        2. **Strengths**: What the candidate does well (be specific)
+        3. **Areas for Improvement**: What's missing or could be better
+        4. **Skills Analysis**: Detailed breakdown of technical skills match
+        5. **Experience Assessment**: How their experience aligns with requirements
+        6. **Education & Qualifications**: Relevance of educational background
+        7. **Hiring Recommendation**: Clear recommendation (Strong Hire/Hire/Consider/Pass)
+        8. **Risk Assessment**: Potential concerns or red flags
+        9. **Onboarding Notes**: What support they might need if hired
+        
+        Make it professional, actionable, and help HR understand the AI's decision-making process.
+        Write in clear, concise language that non-technical HR staff can understand.
+        """
+        
+        response = client.generate_content(prompt)
+        justification_text = response.text.strip()
+        
+        return {
+            "success": True,
+            "candidate_id": candidate_id,
+            "candidate_name": analysis_result.get('candidate_name', 'Unknown'),
+            "overall_score": analysis_result['overall_score'],
+            "component_scores": analysis_result.get('component_scores', {}),
+            "skill_matches": analysis_result.get('skill_matches', {}),
+            "missing_skills": analysis_result.get('missing_skills', []),
+            "recommendations": analysis_result.get('recommendations', []),
+            "detailed_justification": justification_text,
+            "analysis_timestamp": analysis_result.get('analysis_timestamp', ''),
+            "resume_filename": analysis_result.get('resume_filename', '')
+        }
+        
+    except Exception as e:
+        logging.error(f"Get candidate justification error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get candidate justification: {str(e)}")
+
 @api_router.get("/admin/screening/uploaded-resumes")
 async def get_uploaded_resumes():
     """Get all uploaded resumes"""
