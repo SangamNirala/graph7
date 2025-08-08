@@ -3193,10 +3193,12 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
         const data = await response.json();
         setResumePreview(data.preview);
       } else {
-        alert('Failed to upload resume');
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Failed to upload resume: ${errorData.detail || 'Unknown error'}`);
       }
     } catch (err) {
-      alert('Upload error');
+      console.error('Upload error:', err);
+      alert('Upload error: Please check your internet connection');
     } finally {
       setLoading(false);
     }
