@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """
-Placement Preparation Backend Testing
-Tests the backend functionality that supports the new placement preparation feature.
+Placement Preparation Resume Upload Testing
+Tests the placement preparation resume upload functionality to ensure:
+1. Resume files (TXT, PDF, DOC) are properly uploaded and processed
+2. Resume preview text is extracted and returned correctly  
+3. Preview text is suitable for scrollable box display format
+4. Placement preparation workflow continues to work after resume upload
 
 TESTING REQUIREMENTS:
 1. Test that existing admin endpoints still work (since we're using the same backend endpoints)
 2. Test the interview creation flow that the placement preparation page uses:
-   - POST /api/admin/upload (for resume upload) 
+   - POST /api/admin/upload-job (for resume upload with preview) 
    - POST /api/admin/create-token (for creating interview tokens)
 3. Verify that the same interview creation functionality works from the placement preparation page as it does from the admin dashboard
 4. Test with sample data to ensure the complete workflow functions properly
+5. FOCUS: Test resume preview text extraction and formatting for scrollable box display
 """
 
 import requests
