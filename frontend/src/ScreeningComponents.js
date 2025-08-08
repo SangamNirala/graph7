@@ -1000,6 +1000,11 @@ export const ResultsComponent = () => {
   const [statistics, setStatistics] = useState({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, high, medium, low
+  
+  // Modal state for AI justification
+  const [showJustificationModal, setShowJustificationModal] = useState(false);
+  const [justificationData, setJustificationData] = useState(null);
+  const [justificationLoading, setJustificationLoading] = useState(false);
 
   useEffect(() => {
     fetchResults();
