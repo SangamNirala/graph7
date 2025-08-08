@@ -592,6 +592,7 @@ class InterviewAssessment(BaseModel):
     overall_feedback: str
     recommendations: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_via: str = "admin"  # "admin" or "placement_preparation"
     # Enhanced fields for multi-vector assessment
     competency_scores: Dict[str, int] = {}
     key_strengths: List[str] = []
