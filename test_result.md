@@ -808,14 +808,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Admin Login with Game@1234 Password - VERIFIED WORKING ✅"
-    - "ATS Resume Upload Endpoint - FULLY FUNCTIONAL ✅"
-    - "Job Requirements Creation API - OPERATIONAL ✅"
-    - "Candidate Screening Engine - GENERATING ATS SCORES ✅"
-    - "Screening Results Retrieval - COMPLETE WORKFLOW ✅"
+    - "Placement Preparation Resume Upload with Scrollable Preview Testing"
   stuck_tasks: []
   test_all: false
-  test_priority: "screening_workflow_completed"
+  test_priority: "high_first"
 
 agent_communication:
     -agent: "main"
