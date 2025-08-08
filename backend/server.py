@@ -4151,8 +4151,8 @@ async def placement_preparation_upload(resume: UploadFile = File(...)):
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Resume parsing failed: {str(e)}")
         
-        # Generate preview (first 200 characters)
-        preview_text = resume_text[:200] + "..." if len(resume_text) > 200 else resume_text
+        # Return full resume text for preview (no truncation for scrollable box)
+        preview_text = resume_text
         
         return {
             "success": True,
