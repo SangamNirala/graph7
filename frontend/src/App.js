@@ -3366,6 +3366,95 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
     }
   };
 
+  // Resume Analysis functions
+  const handleResumeAnalysisSubmit = async (e) => {
+    e.preventDefault();
+    if (!analysisJobTitle.trim() || !analysisJobDescription.trim() || !analysisResumeFile) {
+      alert('Please fill all fields and select a resume file');
+      return;
+    }
+
+    setAnalysisLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('resume', analysisResumeFile);
+      formData.append('job_title', analysisJobTitle);
+      formData.append('job_description', analysisJobDescription);
+
+      const response = await fetch(`${API}/placement-preparation/resume-analysis`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAnalysisResult(data);
+        alert('Resume analysis completed successfully!');
+        // Clear form
+        setAnalysisJobTitle('');
+        setAnalysisJobDescription('');
+        setAnalysisResumeFile(null);
+        // Reset file input
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) fileInput.value = '';
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Failed to analyze resume: ${errorData.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Resume analysis error:', err);
+      alert('Error analyzing resume: Please check your internet connection');
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
+  const fetchAllAnalyses = async () => {
+    setAnalysesLoading(true);
+    try {
+      const response = await fetch(`${API}/placement-preparation/resume-analyses`);
+      if (response.ok) {
+        const data = await response.json();
+        setAllAnalyses(data.analyses || []);
+      } else {
+        console.error('Failed to fetch analyses');
+      }
+    } catch (err) {
+      console.error('Failed to fetch analyses:', err);
+    } finally {
+      setAnalysesLoading(false);
+    }
+  };
+
+  const downloadAnalysisPDF = async (analysisId, jobTitle) => {
+    try {
+      const response = await fetch(`${API}/placement-preparation/resume-analysis/${analysisId}/download`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `resume_analysis_${jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } else {
+        alert('Failed to download PDF');
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+      alert('Error downloading PDF');
+    }
+  };
+
+  // Effect to load analyses when switching to analysis result tab
+  React.useEffect(() => {
+    if (activeTab === 'analysis-result') {
+      fetchAllAnalyses();
+    }
+  }, [activeTab]);
+
   // Effect to load reports when switching to assessment reports tab
   React.useEffect(() => {
     if (activeTab === 'assessment-reports') {
