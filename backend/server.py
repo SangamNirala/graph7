@@ -6294,9 +6294,24 @@ async def send_interview_message(request: InterviewMessageRequest):
         # Add predictive analytics
         predictive_results = predictive_analytics.predict_interview_success(assessment_data)
         
+        # Get token information to inherit created_via field
+        token_data = None
+        created_via = "admin"  # Default fallback
+        
+        # Try enhanced tokens first
+        token_data = await db.enhanced_tokens.find_one({"token": request.token})
+        if token_data:
+            created_via = token_data.get("created_via", "admin")
+        else:
+            # Check regular tokens
+            token_data = await db.tokens.find_one({"token": request.token})
+            if token_data:
+                created_via = token_data.get("created_via", "admin")
+        
         # Enhanced assessment with all new features
         enhanced_assessment = {
             **base_assessment.dict(),
+            "created_via": created_via,  # Inherit source from token
             "emotional_intelligence_metrics": ei_metrics,
             "predictive_analytics": predictive_results,
             "communication_effectiveness": predictive_results["score_breakdown"]["communication"],
