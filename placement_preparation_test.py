@@ -141,7 +141,7 @@ ACHIEVEMENTS:
             if self.generated_token:
                 details += f", Token: {self.generated_token[:8]}..."
             
-            self.log_test("Resume Upload Endpoint (/api/admin/upload)", success, details)
+            self.log_test("Resume Upload Endpoint (/api/admin/upload-job)", success, details)
             return success
         except Exception as e:
             self.log_test("Resume Upload Endpoint (/api/admin/upload)", False, f"Exception: {str(e)}")
