@@ -559,22 +559,25 @@ Available upon request"""
         # Test 3: Resume upload endpoint (POST /api/admin/upload)
         results["resume_upload_endpoint"] = self.test_resume_upload_endpoint()
         
-        # Test 4: Create token endpoint (POST /api/admin/create-token)
+        # Test 4: Resume preview functionality for scrollable box display
+        results["resume_preview_functionality"] = self.test_resume_preview_functionality()
+        
+        # Test 5: Create token endpoint (POST /api/admin/create-token)
         results["create_token_endpoint"] = self.test_create_token_endpoint()
         
-        # Test 5: Token validation workflow
+        # Test 6: Token validation workflow
         results["token_validation_workflow"] = self.test_token_validation_workflow()
         
-        # Test 6: Interview start workflow
+        # Test 7: Interview start workflow
         results["interview_start_workflow"] = self.test_interview_start_workflow()
         
-        # Test 7: Complete placement preparation flow
+        # Test 8: Complete placement preparation flow
         results["complete_placement_flow"] = self.test_complete_placement_preparation_flow()
         
-        # Test 8: Admin dashboard compatibility (backward compatibility)
+        # Test 9: Admin dashboard compatibility (backward compatibility)
         results["admin_dashboard_compatibility"] = self.test_admin_dashboard_compatibility()
         
-        # Test 9: Endpoint consistency between placement prep and admin
+        # Test 10: Endpoint consistency between placement prep and admin
         results["endpoint_consistency"] = self.test_placement_vs_admin_endpoint_consistency()
         
         # Summary
