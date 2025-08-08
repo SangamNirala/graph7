@@ -3115,6 +3115,487 @@ const AdminDashboard = ({ setCurrentPage }) => {
   );
 };
 
+// Placement Preparation Dashboard Component
+const PlacementPreparationDashboard = ({ setCurrentPage }) => {
+  const [activeTab, setActiveTab] = useState('create-interview');
+  const [jobTitle, setJobTitle] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [jobRequirements, setJobRequirements] = useState('');
+  const [resumeFile, setResumeFile] = useState(null);
+  const [generatedToken, setGeneratedToken] = useState('');
+  const [resumePreview, setResumePreview] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  // Enhanced features state
+  const [includeCodingChallenge, setIncludeCodingChallenge] = useState(false);
+  const [roleArchetype, setRoleArchetype] = useState('General');
+  const [interviewFocus, setInterviewFocus] = useState('Balanced');
+  
+  // Interview question limits
+  const [minQuestions, setMinQuestions] = useState(8);
+  const [maxQuestions, setMaxQuestions] = useState(12);
+  
+  // Question Selection Controls
+  const [resumeBasedCount, setResumeBasedCount] = useState(2);
+  const [technicalCount, setTechnicalCount] = useState(4);
+  const [behavioralCount, setBehavioralCount] = useState(4);
+  
+  // Question Type Selection (auto-generate vs manual)
+  const [resumeQuestionType, setResumeQuestionType] = useState('auto');
+  const [technicalQuestionType, setTechnicalQuestionType] = useState('auto');
+  const [behavioralQuestionType, setBehavioralQuestionType] = useState('auto');
+  
+  // Manual Questions Storage
+  const [manualResumeQuestions, setManualResumeQuestions] = useState([]);
+  const [manualTechnicalQuestions, setManualTechnicalQuestions] = useState([]);
+  const [manualBehavioralQuestions, setManualBehavioralQuestions] = useState([]);
+
+  const roleArchetypes = [
+    'General',
+    'Technical Lead',
+    'Senior Developer',
+    'Junior Developer',
+    'Product Manager',
+    'Data Scientist',
+    'UI/UX Designer',
+    'DevOps Engineer',
+    'Marketing Manager',
+    'Sales Representative'
+  ];
+
+  const interviewFocusOptions = [
+    'Balanced',
+    'Technical Heavy',
+    'Behavioral Heavy',
+    'Leadership Focused',
+    'Problem Solving',
+    'Communication Skills',
+    'Industry Specific'
+  ];
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setResumeFile(file);
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+
+      const response = await fetch(`${API}/admin/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setResumePreview(data.preview);
+      } else {
+        alert('Failed to upload resume');
+      }
+    } catch (err) {
+      alert('Upload error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateInterview = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const payload = {
+        job_title: jobTitle,
+        job_description: jobDescription,
+        job_requirements: jobRequirements,
+        resume_text: resumePreview,
+        include_coding_challenge: includeCodingChallenge,
+        role_archetype: roleArchetype,
+        interview_focus: interviewFocus,
+        min_questions: minQuestions,
+        max_questions: maxQuestions,
+        question_distribution: {
+          resume_based: resumeBasedCount,
+          technical: technicalCount,
+          behavioral: behavioralCount
+        },
+        question_types: {
+          resume: resumeQuestionType,
+          technical: technicalQuestionType,
+          behavioral: behavioralQuestionType
+        },
+        manual_questions: {
+          resume: manualResumeQuestions.filter(q => q.question.trim()),
+          technical: manualTechnicalQuestions.filter(q => q.question.trim()),
+          behavioral: manualBehavioralQuestions.filter(q => q.question.trim())
+        }
+      };
+
+      const response = await fetch(`${API}/admin/create-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGeneratedToken(data.token);
+      } else {
+        alert('Failed to create interview token');
+      }
+    } catch (err) {
+      alert('Error creating interview');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addManualQuestion = (type) => {
+    const newQuestion = { question: '', expected_answer: '' };
+    
+    switch(type) {
+      case 'resume':
+        setManualResumeQuestions([...manualResumeQuestions, newQuestion]);
+        break;
+      case 'technical':
+        setManualTechnicalQuestions([...manualTechnicalQuestions, newQuestion]);
+        break;
+      case 'behavioral':
+        setManualBehavioralQuestions([...manualBehavioralQuestions, newQuestion]);
+        break;
+    }
+  };
+
+  const updateManualQuestion = (type, index, field, value) => {
+    switch(type) {
+      case 'resume':
+        const updatedResumeQuestions = [...manualResumeQuestions];
+        updatedResumeQuestions[index][field] = value;
+        setManualResumeQuestions(updatedResumeQuestions);
+        break;
+      case 'technical':
+        const updatedTechnicalQuestions = [...manualTechnicalQuestions];
+        updatedTechnicalQuestions[index][field] = value;
+        setManualTechnicalQuestions(updatedTechnicalQuestions);
+        break;
+      case 'behavioral':
+        const updatedBehavioralQuestions = [...manualBehavioralQuestions];
+        updatedBehavioralQuestions[index][field] = value;
+        setManualBehavioralQuestions(updatedBehavioralQuestions);
+        break;
+    }
+  };
+
+  const removeManualQuestion = (type, index) => {
+    switch(type) {
+      case 'resume':
+        setManualResumeQuestions(manualResumeQuestions.filter((_, i) => i !== index));
+        break;
+      case 'technical':
+        setManualTechnicalQuestions(manualTechnicalQuestions.filter((_, i) => i !== index));
+        break;
+      case 'behavioral':
+        setManualBehavioralQuestions(manualBehavioralQuestions.filter((_, i) => i !== index));
+        break;
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    alert('Token copied to clipboard!');
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-white">📚 Placement Preparation</h1>
+          <button
+            onClick={() => setCurrentPage('landing')}
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
+          >
+            Back to Home
+          </button>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <nav className="flex space-x-1 bg-white/10 backdrop-blur-lg rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('create-interview')}
+              className={`flex-1 py-3 px-4 text-sm font-medium rounded-md transition-all duration-300 ${
+                activeTab === 'create-interview'
+                  ? 'bg-orange-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              🚀 Create Interview
+            </button>
+          </nav>
+        </div>
+
+        {/* Create Interview Tab */}
+        {activeTab === 'create-interview' && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            {!generatedToken ? (
+              <form onSubmit={handleCreateInterview} className="space-y-8">
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Job Details */}
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-white mb-4">Job Details</h2>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Job Title
+                      </label>
+                      <input
+                        type="text"
+                        value={jobTitle}
+                        onChange={(e) => setJobTitle(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        placeholder="e.g., Senior Frontend Developer"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Job Description
+                      </label>
+                      <textarea
+                        value={jobDescription}
+                        onChange={(e) => setJobDescription(e.target.value)}
+                        rows={4}
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        placeholder="Describe the role and responsibilities..."
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Job Requirements
+                      </label>
+                      <textarea
+                        value={jobRequirements}
+                        onChange={(e) => setJobRequirements(e.target.value)}
+                        rows={4}
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        placeholder="List required skills, experience, qualifications..."
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Resume Upload */}
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-white mb-4">Resume Upload</h2>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Upload Resume (PDF, DOC, DOCX, TXT)
+                      </label>
+                      <input
+                        type="file"
+                        onChange={handleFileUpload}
+                        accept=".pdf,.doc,.docx,.txt"
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-700"
+                        required
+                      />
+                    </div>
+
+                    {resumePreview && (
+                      <div className="bg-white/5 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-white mb-2">Resume Preview</h3>
+                        <p className="text-gray-300 text-sm whitespace-pre-wrap">{resumePreview}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Enhanced Configuration */}
+                <div className="border-t border-white/20 pt-8">
+                  <h2 className="text-2xl font-bold text-white mb-6">Interview Configuration</h2>
+                  
+                  <div className="grid md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Role Archetype
+                      </label>
+                      <select
+                        value={roleArchetype}
+                        onChange={(e) => setRoleArchetype(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        {roleArchetypes.map(role => (
+                          <option key={role} value={role} className="bg-gray-800">{role}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Interview Focus
+                      </label>
+                      <select
+                        value={interviewFocus}
+                        onChange={(e) => setInterviewFocus(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        {interviewFocusOptions.map(focus => (
+                          <option key={focus} value={focus} className="bg-gray-800">{focus}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center">
+                      <label className="flex items-center text-white">
+                        <input
+                          type="checkbox"
+                          checked={includeCodingChallenge}
+                          onChange={(e) => setIncludeCodingChallenge(e.target.checked)}
+                          className="mr-2 w-5 h-5 text-orange-600 bg-white/20 border-white/30 rounded focus:ring-orange-500"
+                        />
+                        Include Coding Challenge
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Question Configuration */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Total Questions Range
+                      </label>
+                      <div className="flex space-x-4">
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            value={minQuestions}
+                            onChange={(e) => setMinQuestions(parseInt(e.target.value))}
+                            min="6"
+                            max="20"
+                            className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          />
+                          <label className="block text-xs text-gray-300 mt-1">Min</label>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            value={maxQuestions}
+                            onChange={(e) => setMaxQuestions(parseInt(e.target.value))}
+                            min="6"
+                            max="20"
+                            className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          />
+                          <label className="block text-xs text-gray-300 mt-1">Max</label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Question Distribution
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <input
+                            type="number"
+                            value={resumeBasedCount}
+                            onChange={(e) => setResumeBasedCount(parseInt(e.target.value))}
+                            min="0"
+                            max="8"
+                            className="w-full px-2 py-2 text-sm rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          />
+                          <label className="block text-xs text-gray-300 mt-1">Resume</label>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            value={technicalCount}
+                            onChange={(e) => setTechnicalCount(parseInt(e.target.value))}
+                            min="0"
+                            max="10"
+                            className="w-full px-2 py-2 text-sm rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          />
+                          <label className="block text-xs text-gray-300 mt-1">Technical</label>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            value={behavioralCount}
+                            onChange={(e) => setBehavioralCount(parseInt(e.target.value))}
+                            min="0"
+                            max="8"
+                            className="w-full px-2 py-2 text-sm rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          />
+                          <label className="block text-xs text-gray-300 mt-1">Behavioral</label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50"
+                >
+                  {loading ? 'Creating...' : 'Create Interview Token'}
+                </button>
+              </form>
+            ) : (
+              <div className="text-center">
+                <div className="mb-8">
+                  <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h2 className="text-3xl font-bold text-white mb-4">Interview Token Created Successfully!</h2>
+                  <div className="bg-white/10 rounded-xl p-6 mb-6">
+                    <p className="text-xl text-white mb-4">Interview Token:</p>
+                    <div className="bg-white/20 rounded-lg p-4 mb-4">
+                      <code className="text-2xl font-mono text-green-400 break-all">{generatedToken}</code>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(generatedToken)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
+                    >
+                      Copy Token
+                    </button>
+                  </div>
+                  <p className="text-gray-300 mb-8">
+                    Share this token with the candidate to begin their interview preparation session.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setGeneratedToken('');
+                      setJobTitle('');
+                      setJobDescription('');
+                      setJobRequirements('');
+                      setResumeFile(null);
+                      setResumePreview('');
+                    }}
+                    className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300"
+                  >
+                    Create Another Interview
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Candidate Login Component
 const CandidateLogin = ({ setCurrentPage, setToken, setValidatedJob }) => {
   const [inputToken, setInputToken] = useState('');
