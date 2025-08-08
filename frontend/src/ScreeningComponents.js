@@ -1049,6 +1049,33 @@ export const ResultsComponent = () => {
     return true;
   });
 
+  // Modal functions for AI justification
+  const openJustificationModal = async (candidateId) => {
+    setShowJustificationModal(true);
+    setJustificationLoading(true);
+    setJustificationData(null);
+    
+    try {
+      const response = await fetch(`${API}/admin/screening/candidate-justification/${candidateId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setJustificationData(data);
+      } else {
+        console.error('Failed to fetch justification:', data.detail);
+      }
+    } catch (error) {
+      console.error('Error fetching justification:', error);
+    }
+    
+    setJustificationLoading(false);
+  };
+
+  const closeJustificationModal = () => {
+    setShowJustificationModal(false);
+    setJustificationData(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 p-8">
