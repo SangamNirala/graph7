@@ -4015,6 +4015,196 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
             </div>
           </div>
         )}
+
+        {/* Resume Analysis Tab */}
+        {activeTab === 'resume-analysis' && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <h2 className="text-2xl font-bold text-white mb-6">📝 Resume Analysis</h2>
+            
+            {!analysisResult ? (
+              <form onSubmit={handleResumeAnalysisSubmit} className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Job Details */}
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Job Title *
+                      </label>
+                      <input
+                        type="text"
+                        value={analysisJobTitle}
+                        onChange={(e) => setAnalysisJobTitle(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        placeholder="e.g., Senior Frontend Developer"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Job Description *
+                      </label>
+                      <textarea
+                        value={analysisJobDescription}
+                        onChange={(e) => setAnalysisJobDescription(e.target.value)}
+                        rows={6}
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        placeholder="Enter detailed job requirements, skills needed, experience level, etc..."
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Resume Upload */}
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Upload Resume *
+                      </label>
+                      <input
+                        type="file"
+                        onChange={(e) => setAnalysisResumeFile(e.target.files[0])}
+                        accept=".pdf,.doc,.docx,.txt"
+                        className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-700"
+                        required
+                      />
+                      <p className="text-gray-300 text-sm mt-2">
+                        Supported formats: PDF, DOC, DOCX, TXT
+                      </p>
+                    </div>
+                    
+                    {analysisResumeFile && (
+                      <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                        <h3 className="text-lg font-semibold text-white mb-2">Selected File</h3>
+                        <div className="flex items-center text-gray-300">
+                          <span className="mr-2">📎</span>
+                          <span>{analysisResumeFile.name}</span>
+                          <span className="ml-2 text-sm">
+                            ({(analysisResumeFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="text-center pt-6 border-t border-white/20">
+                  <button
+                    type="submit"
+                    disabled={analysisLoading}
+                    className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold py-3 px-8 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {analysisLoading ? 'Analyzing...' : '🔍 Analyze Resume'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="bg-white/5 rounded-lg p-8 border border-white/10">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-white mb-2">✅ Analysis Complete!</h3>
+                  <p className="text-gray-300">Your resume analysis has been completed successfully.</p>
+                </div>
+                
+                <div className="bg-white/10 rounded-lg p-6 mb-6">
+                  <h4 className="text-lg font-bold text-white mb-4">Analysis Details</h4>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-300">Analysis ID:</span>
+                      <span className="text-white ml-2">{analysisResult.analysis_id}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-300">Status:</span>
+                      <span className="text-green-400 ml-2">✅ Completed</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-center space-x-4">
+                  <button
+                    onClick={() => setAnalysisResult(null)}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+                  >
+                    📝 Analyze Another Resume
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('analysis-result')}
+                    className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300"
+                  >
+                    📋 View All Results
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Analysis Result Tab */}
+        {activeTab === 'analysis-result' && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <h2 className="text-2xl font-bold text-white mb-6">📋 Analysis Results</h2>
+            
+            {analysesLoading ? (
+              <div className="text-center py-8">
+                <div className="text-white text-lg">🔄 Loading analyses...</div>
+              </div>
+            ) : allAnalyses.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-4">📄 No resume analyses available yet</div>
+                <p className="text-gray-300 mb-6">Start by analyzing a resume in the Resume Analysis tab</p>
+                <button
+                  onClick={() => setActiveTab('resume-analysis')}
+                  className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300"
+                >
+                  📝 Start Resume Analysis
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {allAnalyses.map((analysis) => (
+                  <div key={analysis.id} className="bg-white/10 rounded-lg p-6 border border-white/20">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-white flex items-center">
+                          🎯 {analysis.job_title}
+                        </h3>
+                        <p className="text-gray-300 text-sm">
+                          Created: {new Date(analysis.created_at).toLocaleDateString()} at{' '}
+                          {new Date(analysis.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => downloadAnalysisPDF(analysis.id, analysis.job_title)}
+                        className="bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-300 flex items-center"
+                      >
+                        📄 Download PDF
+                      </button>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-4 mb-4">
+                      <h4 className="text-lg font-semibold text-white mb-2">Job Requirements</h4>
+                      <p className="text-gray-300 text-sm">
+                        {analysis.job_description.length > 200 
+                          ? `${analysis.job_description.substring(0, 200)}...`
+                          : analysis.job_description
+                        }
+                      </p>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h4 className="text-lg font-semibold text-white mb-2">Gap Analysis Preview</h4>
+                      <div className="text-gray-300 text-sm max-h-32 overflow-y-auto">
+                        {analysis.analysis_results?.analysis_text?.length > 300 
+                          ? `${analysis.analysis_results.analysis_text.substring(0, 300)}...`
+                          : analysis.analysis_results?.analysis_text || 'Analysis details available in PDF'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
