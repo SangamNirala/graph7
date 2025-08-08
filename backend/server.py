@@ -4804,6 +4804,341 @@ async def get_placement_preparation_report_by_session(session_id: str):
         report['_id'] = str(report['_id'])
     return {"report": report}
 
+# Resume Analysis Data Models
+class ResumeAnalysisRequest(BaseModel):
+    job_title: str
+    job_description: str
+
+class ResumeAnalysis(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_title: str
+    job_description: str
+    resume_content: str
+    analysis_results: Dict[str, Any]
+    pdf_path: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# Resume Analysis Endpoints
+@api_router.post("/api/placement-preparation/resume-analysis")
+async def analyze_resume(
+    request: ResumeAnalysisRequest,
+    resume: UploadFile = File(...)
+):
+    """
+    Analyze resume against job requirements using LLM gap analysis
+    """
+    try:
+        # Validate file type
+        if not resume.filename.lower().endswith(('.pdf', '.doc', '.docx', '.txt')):
+            raise HTTPException(status_code=400, detail="Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files.")
+        
+        # Parse resume content
+        resume_content = ""
+        file_content = await resume.read()
+        
+        if resume.filename.lower().endswith('.txt'):
+            resume_content = file_content.decode('utf-8')
+        elif resume.filename.lower().endswith('.pdf'):
+            import PyPDF2
+            import io
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+            resume_content = ""
+            for page in pdf_reader.pages:
+                resume_content += page.extract_text() + "\n"
+        elif resume.filename.lower().endswith(('.doc', '.docx')):
+            import docx
+            import io
+            doc = docx.Document(io.BytesIO(file_content))
+            resume_content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+        
+        if not resume_content.strip():
+            raise HTTPException(status_code=400, detail="Could not extract text from the resume file")
+        
+        # Perform LLM gap analysis using the specific prompt
+        gap_analysis_prompt = """You are an expert Technical Recruiter and HR Business Partner with 15+ years of experience in high-volume candidate assessment. Your task is to generate ALL rejection reasons in a comprehensive bullet-point format by conducting a systematic gap analysis between candidate qualifications and job requirements.
+
+**INPUT DATA:**
+Resume Content: """ + resume_content + """
+Job Title: """ + request.job_title + """
+Job Requirements: """ + request.job_description + """
+
+**COMPREHENSIVE EVALUATION PROTOCOL:**
+
+**STEP 1: COMPLETE REQUIREMENTS AUDIT**
+Systematically extract and compare ALL aspects:
+- Technical skills (programming languages, frameworks, tools, platforms)
+- Experience years and seniority level
+- Educational background and degrees
+- Industry domain and business context
+- Certifications and professional qualifications
+- Project scale and complexity
+- Leadership and management experience
+- Soft skills and methodologies
+
+**STEP 2: EXHAUSTIVE GAP IDENTIFICATION**
+Identify EVERY gap, regardless of severity:
+- **CRITICAL**: Mandatory requirements missing (immediate disqualification)
+- **MAJOR**: Significant gaps affecting role performance
+- **MODERATE**: Important requirements not met
+- **MINOR**: Preferred qualifications absent
+
+**MANDATORY OUTPUT FORMAT:**
+Generate ALL rejection reasons as individual bullet points using this EXACT structure:
+
+**REJECTION REASONS:**
+
+• **[CATEGORY]**: [Specific rejection reason with evidence]
+  - Required: [Exact requirement from job description]
+  - Candidate Reality: [Exact content from resume or "NOT MENTIONED"]
+  - Gap Impact: [Business/performance impact]
+
+[Continue for ALL identified gaps...]
+
+**COMPREHENSIVE REJECTION CATEGORIES:**
+
+**TECHNICAL SKILL GAPS:**
+- **PROGRAMMING LANGUAGES**: Missing required coding languages
+- **FRAMEWORKS & LIBRARIES**: Absent development frameworks
+- **DATABASE TECHNOLOGIES**: Wrong or missing database skills
+- **CLOUD PLATFORMS**: Missing cloud infrastructure experience
+- **DEVELOPMENT TOOLS**: Absent required development tools
+- **ARCHITECTURE SKILLS**: Missing system design capabilities
+- **SECURITY EXPERTISE**: Absent cybersecurity knowledge
+- **API DEVELOPMENT**: Missing integration experience
+- **TESTING METHODOLOGIES**: Absent QA/testing skills
+- **VERSION CONTROL**: Missing Git/source control experience
+
+**EXPERIENCE GAPS:**
+- **YEARS OF EXPERIENCE**: Insufficient overall experience
+- **SENIORITY MISMATCH**: Wrong level (junior vs senior vs lead)
+- **INDUSTRY EXPERIENCE**: Wrong business domain background
+- **COMPANY SIZE EXPERIENCE**: Startup vs enterprise mismatch
+- **PROJECT SCALE**: Experience with wrong project sizes
+- **LEADERSHIP EXPERIENCE**: Missing management/mentoring experience
+- **CLIENT-FACING EXPERIENCE**: Missing customer interaction skills
+- **REMOTE WORK EXPERIENCE**: Missing distributed team experience
+
+**EDUCATIONAL & CERTIFICATION GAPS:**
+- **DEGREE REQUIREMENT**: Missing required educational level
+- **FIELD OF STUDY**: Wrong academic background
+- **TECHNICAL CERTIFICATIONS**: Missing required certifications
+- **PROFESSIONAL LICENSES**: Absent required licenses
+- **CONTINUING EDUCATION**: Outdated knowledge/skills
+
+**METHODOLOGY & PROCESS GAPS:**
+- **AGILE EXPERIENCE**: Missing Scrum/Kanban experience
+- **DEVOPS PRACTICES**: Missing CI/CD pipeline experience
+- **CODE REVIEW PROCESS**: Missing peer review experience
+- **DOCUMENTATION SKILLS**: Poor technical writing abilities
+
+**OTHER DISQUALIFYING FACTORS:**
+- **GEOGRAPHIC MISMATCH**: Location/timezone incompatibility
+- **OVERQUALIFICATION**: Too senior for the role
+- **CAREER PROGRESSION**: Inconsistent career trajectory
+- **COMMUNICATION SKILLS**: Poor written/verbal communication
+- **WORK AUTHORIZATION**: Visa/work permit issues
+
+**PROCESSING RULES FOR COMPREHENSIVE COVERAGE:**
+✅ MUST identify ALL gaps, not just top 3-4
+✅ Each bullet point = one specific rejection reason
+✅ Include evidence from resume or mark as "NOT MENTIONED"
+✅ Cover technical, experience, education, and soft skill gaps
+✅ Use consistent bullet-point formatting throughout
+✅ Prioritize by severity but list ALL findings
+✅ No overlapping or duplicate rejection reasons
+
+Provide a comprehensive analysis with ALL rejection reasons following the exact format specified."""
+
+        # Use Gemini API for analysis
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+            
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(gap_analysis_prompt)
+            
+            analysis_text = response.text
+        except Exception as e:
+            logging.error(f"Gemini API error: {e}")
+            # Fallback to a simple analysis if Gemini fails
+            analysis_text = f"Gap Analysis for {request.job_title}:\n\n• **TECHNICAL SKILLS**: Analysis requires manual review due to API limitations\n• **EXPERIENCE**: Detailed comparison needed between resume and job requirements\n• **QUALIFICATIONS**: Education and certification gap analysis pending"
+        
+        # Generate HTML template
+        current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Create HTML content without problematic f-strings
+        html_template = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Resume Gap Analysis Report</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
+                .header {{ background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }}
+                .job-info {{ background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; }}
+                .analysis-section {{ margin-bottom: 25px; }}
+                .rejection-reasons {{ background-color: #fff3e0; padding: 20px; border-radius: 8px; }}
+                .bullet-point {{ margin-bottom: 15px; padding: 10px; background-color: white; border-left: 4px solid #ff5722; }}
+                .category {{ font-weight: bold; color: #d32f2f; }}
+                .sub-detail {{ margin-left: 20px; color: #666; }}
+                .footer {{ text-align: center; margin-top: 40px; color: #666; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Resume Gap Analysis Report</h1>
+                <p><strong>Generated on:</strong> {current_time} UTC</p>
+            </div>
+            
+            <div class="job-info">
+                <h2>Job Details</h2>
+                <p><strong>Position:</strong> {job_title}</p>
+                <p><strong>Requirements:</strong> {job_description}</p>
+            </div>
+            
+            <div class="analysis-section">
+                <h2>Gap Analysis Results</h2>
+                <div class="rejection-reasons">
+                    {analysis_results}
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>This report was generated using AI-powered gap analysis technology.</p>
+                <p>For questions or clarifications, please consult with HR or hiring manager.</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Format the HTML content
+        formatted_analysis = analysis_text.replace('•', '<div class="bullet-point">•').replace('\n\n', '</div>\n<div class="bullet-point">')
+        html_content = html_template.format(
+            current_time=current_time,
+            job_title=request.job_title,
+            job_description=request.job_description,
+            analysis_results=formatted_analysis
+        )
+        
+        # Generate PDF using reportlab
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+        from reportlab.lib.units import inch
+        import os
+        
+        # Create unique filename
+        pdf_filename = f"resume_analysis_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
+        pdf_path = f"/tmp/{pdf_filename}"
+        
+        # Create PDF document
+        doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Title
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            spaceAfter=20,
+            textColor='darkblue'
+        )
+        story.append(Paragraph("Resume Gap Analysis Report", title_style))
+        story.append(Spacer(1, 12))
+        
+        # Job details
+        story.append(Paragraph(f"<b>Position:</b> {request.job_title}", styles['Normal']))
+        story.append(Paragraph(f"<b>Generated on:</b> {current_time} UTC", styles['Normal']))
+        story.append(Spacer(1, 20))
+        
+        # Job description
+        story.append(Paragraph("<b>Job Requirements:</b>", styles['Heading2']))
+        story.append(Paragraph(request.job_description, styles['Normal']))
+        story.append(Spacer(1, 20))
+        
+        # Analysis results
+        story.append(Paragraph("<b>Gap Analysis Results:</b>", styles['Heading2']))
+        story.append(Spacer(1, 12))
+        
+        # Format the analysis text for PDF
+        analysis_lines = analysis_text.split('\n')
+        for line in analysis_lines:
+            if line.strip():
+                if line.startswith('•'):
+                    story.append(Paragraph(line, styles['Normal']))
+                else:
+                    story.append(Paragraph(line, styles['Normal']))
+                story.append(Spacer(1, 6))
+        
+        # Build PDF
+        doc.build(story)
+        
+        # Store analysis in database
+        analysis_record = ResumeAnalysis(
+            job_title=request.job_title,
+            job_description=request.job_description,
+            resume_content=resume_content,
+            analysis_results={"analysis_text": analysis_text, "html_content": html_content},
+            pdf_path=pdf_path
+        )
+        
+        # Convert to dict for MongoDB
+        analysis_dict = analysis_record.dict()
+        await db.resume_analyses.insert_one(analysis_dict)
+        
+        return {
+            "success": True,
+            "analysis_id": analysis_record.id,
+            "analysis_text": analysis_text,
+            "pdf_path": pdf_filename,
+            "message": "Resume analysis completed successfully"
+        }
+        
+    except Exception as e:
+        logging.error(f"Resume analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze resume: {str(e)}")
+
+@api_router.get("/api/placement-preparation/resume-analyses")
+async def get_resume_analyses():
+    """Get all resume analyses"""
+    try:
+        analyses = await db.resume_analyses.find({}).to_list(1000)
+        # Convert MongoDB ObjectIds to strings for JSON serialization
+        for analysis in analyses:
+            if '_id' in analysis:
+                analysis['_id'] = str(analysis['_id'])
+        return {"analyses": analyses}
+    except Exception as e:
+        logging.error(f"Failed to fetch resume analyses: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch resume analyses")
+
+@api_router.get("/api/placement-preparation/resume-analysis/{analysis_id}/download")
+async def download_resume_analysis_pdf(analysis_id: str):
+    """Download PDF report for specific analysis"""
+    try:
+        analysis = await db.resume_analyses.find_one({"id": analysis_id})
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+        
+        pdf_path = analysis.get("pdf_path", "")
+        if not os.path.exists(pdf_path):
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            path=pdf_path,
+            media_type='application/pdf',
+            filename=f"resume_analysis_{analysis_id}.pdf"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"PDF download error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to download PDF")
+
 # Helper functions for comprehensive AI analysis
 async def generate_personality_analysis(candidate_responses: list, full_transcript: str) -> dict:
     """Generate Big Five personality analysis from candidate responses"""
