@@ -4710,6 +4710,8 @@ function App() {
         return <AdminLogin setCurrentPage={setCurrentPage} setIsAdmin={setIsAdmin} />;
       case 'admin-dashboard':
         return <AdminDashboard setCurrentPage={setCurrentPage} />;
+      case 'placement-preparation':
+        return <PlacementPreparationDashboard setCurrentPage={setCurrentPage} />;
       case 'candidate-login':
         return <CandidateLogin setCurrentPage={setCurrentPage} setToken={setToken} setValidatedJob={setValidatedJob} />;
       case 'interview-start':
