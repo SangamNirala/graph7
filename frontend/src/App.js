@@ -3324,6 +3324,44 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
     );
   };
 
+  // Assessment Reports functions
+  const fetchPlacementPreparationReports = async () => {
+    try {
+      const response = await fetch(`${API}/placement-preparation/reports`);
+      if (response.ok) {
+        const data = await response.json();
+        setReports(data.reports || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch placement preparation reports:', err);
+    }
+  };
+
+  const fetchDetailedPlacementPreparationReport = async (sessionId) => {
+    setDetailedReportModal({ show: true, data: null, loading: true });
+    try {
+      const response = await fetch(`${API}/placement-preparation/reports/${sessionId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDetailedReportModal({ show: true, data: loading: false });
+      } else {
+        setDetailedReportModal({ show: false, data: null, loading: false });
+        alert('Failed to fetch detailed report');
+      }
+    } catch (err) {
+      console.error('Failed to fetch detailed report:', err);
+      setDetailedReportModal({ show: false, data: null, loading: false });
+      alert('Error fetching detailed report');
+    }
+  };
+
+  // Effect to load reports when switching to assessment reports tab
+  React.useEffect(() => {
+    if (activeTab === 'assessment-reports') {
+      fetchPlacementPreparationReports();
+    }
+  }, [activeTab]);
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     alert('Token copied to clipboard!');
