@@ -9,7 +9,7 @@ import json
 import io
 import time
 
-BASE_URL = "https://2ecfb9bc-fa10-4e39-8ddd-7b13c880cc1a.preview.emergentagent.com/api"
+BASE_URL = "https://3b3e66ec-f27f-42ff-b407-1f9f120f4842.preview.emergentagent.com/api"
 
 class ComprehensiveProgressionTest:
     def __init__(self):
