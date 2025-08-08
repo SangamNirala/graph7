@@ -1253,6 +1253,121 @@ export const ResultsComponent = () => {
             🔄 Refresh Results
           </button>
         </div>
+
+        {/* AI Justification Modal */}
+        {showJustificationModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-white/20">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">🤖 AI Scoring Justification</h2>
+                    {justificationData && (
+                      <p className="text-orange-100 mt-1">
+                        {justificationData.candidate_name} • Score: {justificationData.overall_score.toFixed(1)}%
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={closeJustificationModal}
+                    className="text-white hover:text-orange-200 text-2xl font-bold w-8 h-8 flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                {justificationLoading ? (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-4">🤖</div>
+                    <div className="text-xl text-white mb-2">AI is analyzing...</div>
+                    <div className="text-gray-400">Generating detailed justification for this candidate's score</div>
+                  </div>
+                ) : justificationData ? (
+                  <div className="space-y-6">
+                    {/* Score Summary */}
+                    <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                      <h3 className="text-lg font-bold text-white mb-3">📊 Score Breakdown</h3>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {Object.entries(justificationData.component_scores).map(([key, value]) => (
+                          <div key={key} className="text-center">
+                            <div className="text-sm text-gray-300 capitalize mb-1">{key.replace('_', ' ')}</div>
+                            <div className={`text-2xl font-bold ${value >= 80 ? 'text-green-400' : value >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                              {value.toFixed(1)}%
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* AI Detailed Justification */}
+                    <div className="bg-white/10 rounded-xl p-6 border border-white/20">
+                      <h3 className="text-lg font-bold text-white mb-4">🧠 Detailed AI Analysis</h3>
+                      <div className="text-gray-300 whitespace-pre-line leading-relaxed">
+                        {justificationData.detailed_justification}
+                      </div>
+                    </div>
+
+                    {/* Skills Analysis */}
+                    {Object.keys(justificationData.skill_matches).length > 0 && (
+                      <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                        <h3 className="text-lg font-bold text-white mb-3">🎯 Skills Match Analysis</h3>
+                        <div className="grid md:grid-cols-2 gap-3">
+                          {Object.entries(justificationData.skill_matches).map(([skill, percentage]) => (
+                            <div key={skill} className="flex justify-between items-center p-2 bg-white/5 rounded-lg">
+                              <span className="text-gray-300">{skill}</span>
+                              <span className={`font-semibold ${percentage >= 80 ? 'text-green-400' : percentage >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                {percentage}%
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Missing Skills */}
+                    {justificationData.missing_skills.length > 0 && (
+                      <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                        <h3 className="text-lg font-bold text-white mb-3">⚠️ Missing Skills</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {justificationData.missing_skills.map((skill, index) => (
+                            <span key={index} className="px-3 py-1 bg-red-600/20 text-red-400 rounded-full text-sm">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommendations */}
+                    {justificationData.recommendations.length > 0 && (
+                      <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                        <h3 className="text-lg font-bold text-white mb-3">💡 AI Recommendations</h3>
+                        <ul className="space-y-2">
+                          {justificationData.recommendations.map((rec, index) => (
+                            <li key={index} className="text-gray-300 flex items-start">
+                              <span className="text-blue-400 mr-2">•</span>
+                              {rec}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-4">❌</div>
+                    <div className="text-xl text-white mb-2">Failed to load justification</div>
+                    <div className="text-gray-400">Please try again later</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
