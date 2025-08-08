@@ -3309,6 +3309,17 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
     }
   };
 
+  // Check if all required fields are filled
+  const isFormValid = () => {
+    return (
+      jobTitle.trim() !== '' &&
+      jobDescription.trim() !== '' &&
+      jobRequirements.trim() !== '' &&
+      resumeFile !== null &&
+      resumePreview !== ''
+    );
+  };
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     alert('Token copied to clipboard!');
