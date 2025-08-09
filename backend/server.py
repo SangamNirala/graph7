@@ -6002,26 +6002,80 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                             story.append(Paragraph(f"• {line.strip()}", normal_style))
                 story.append(Spacer(1, 15))
             
-            # Detailed Analysis (if there's remaining content)
-            story.append(Paragraph("📋 DETAILED ANALYSIS", header_style))
+            # Detailed Analysis - Enhanced to capture all analysis content
+            story.append(Paragraph("📋 COMPREHENSIVE ATS ANALYSIS", header_style))
             story.append(Spacer(1, 8))
             
-            # Process the scoring section more carefully
-            if 'scoring' in sections:
-                scoring_lines = sections['scoring'].split('\n')
-                for line in scoring_lines:
-                    if line.strip():
-                        clean_line = line.replace('**', '').replace('*', '').replace('■', '•').replace('🎯', '').replace('💼', '').replace('⚙️', '').replace('🎓', '').replace('📊', '').replace('🚀', '')
+            # Process all sections comprehensively
+            section_order = ['scoring', 'detailed_analysis', 'recommendations', 'general_analysis']
+            
+            for section_name in section_order:
+                if section_name in sections:
+                    content = sections[section_name]
+                    if content and content.strip():
+                        # Add section header based on type
+                        if section_name == 'scoring':
+                            story.append(Paragraph("🎯 SCORING BREAKDOWN", subheader_style))
+                        elif section_name == 'detailed_analysis':
+                            story.append(Paragraph("🔍 DETAILED INSIGHTS", subheader_style))
+                        elif section_name == 'recommendations':
+                            story.append(Paragraph("💡 IMPROVEMENT RECOMMENDATIONS", subheader_style))
+                        elif section_name == 'general_analysis':
+                            story.append(Paragraph("📊 ANALYSIS OVERVIEW", subheader_style))
                         
-                        if ('KEYWORD ANALYSIS:' in line or 'EXPERIENCE EVALUATION:' in line or 
-                            'TECHNICAL COMPETENCY:' in line or 'EDUCATION' in line or 
-                            'QUANTIFIED ACHIEVEMENTS:' in line or 'PROJECT INNOVATION:' in line):
-                            story.append(Paragraph(f"<b>{clean_line.strip()}</b>", subheader_style))
-                        elif line.strip().startswith('•') or line.strip().startswith('-'):
-                            story.append(Paragraph(clean_line.strip(), normal_style))
-                        elif clean_line.strip():
-                            story.append(Paragraph(clean_line.strip(), normal_style))
-                        story.append(Spacer(1, 3))
+                        story.append(Spacer(1, 5))
+                        
+                        # Process content line by line
+                        content_lines = content.split('\n')
+                        for line in content_lines:
+                            if line.strip():
+                                clean_line = line.replace('**', '').replace('*', '').replace('■', '•')
+                                clean_line = re.sub(r'[🎯💼⚙️🎓📊🚀🔍💡📈📋⭐]', '', clean_line)
+                                
+                                # Determine line formatting
+                                if any(keyword in line.upper() for keyword in [
+                                    'KEYWORD ANALYSIS', 'EXPERIENCE EVALUATION', 'TECHNICAL COMPETENCY', 
+                                    'EDUCATION', 'QUANTIFIED ACHIEVEMENTS', 'PROJECT INNOVATION',
+                                    'CONTENT ANALYSIS', 'HYBRID SCORING', 'CRITICAL IMPROVEMENT',
+                                    'SCORE ENHANCEMENT', 'IMPLEMENTATION ROADMAP', 'IMMEDIATE FIXES'
+                                ]):
+                                    story.append(Paragraph(f"<b>{clean_line.strip()}</b>", subheader_style))
+                                elif line.strip().startswith('•') or line.strip().startswith('-') or line.strip().startswith('→'):
+                                    story.append(Paragraph(f"  {clean_line.strip()}", normal_style))
+                                elif ':' in clean_line and len(clean_line.split(':')[0]) < 50:  # Likely a label
+                                    parts = clean_line.split(':', 1)
+                                    if len(parts) == 2:
+                                        story.append(Paragraph(f"<b>{parts[0].strip()}:</b> {parts[1].strip()}", normal_style))
+                                    else:
+                                        story.append(Paragraph(clean_line.strip(), normal_style))
+                                elif clean_line.strip():
+                                    story.append(Paragraph(clean_line.strip(), normal_style))
+                                story.append(Spacer(1, 3))
+                        
+                        story.append(Spacer(1, 10))
+            
+            # Fallback: If no structured sections found, include raw analysis text
+            if not any(section in sections for section in section_order):
+                story.append(Paragraph("🔍 COMPLETE ANALYSIS", subheader_style))
+                story.append(Spacer(1, 8))
+                
+                # Split analysis text and add it directly
+                analysis_lines = ats_analysis_text.split('\n')
+                for line in analysis_lines:
+                    if line.strip():
+                        clean_line = line.replace('**', '').replace('*', '').replace('■', '•')
+                        clean_line = re.sub(r'[🎯💼⚙️🎓📊🚀🔍💡📈📋⭐]', '', clean_line)
+                        
+                        if clean_line.strip():
+                            if any(keyword in line.upper() for keyword in [
+                                'COMPREHENSIVE ATS SCORE', 'KEYWORD ANALYSIS', 'EXPERIENCE EVALUATION',
+                                'TECHNICAL COMPETENCY', 'EDUCATION', 'QUANTIFIED ACHIEVEMENTS',
+                                'CRITICAL IMPROVEMENT', 'SCORE ENHANCEMENT', 'IMPLEMENTATION ROADMAP'
+                            ]):
+                                story.append(Paragraph(f"<b>{clean_line.strip()}</b>", subheader_style))
+                            else:
+                                story.append(Paragraph(clean_line.strip(), normal_style))
+                            story.append(Spacer(1, 3))
             
             # Build PDF
             doc.build(story)
