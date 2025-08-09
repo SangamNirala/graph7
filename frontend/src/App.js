@@ -3487,6 +3487,81 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
     }
   };
 
+  // ATS Score Calculator Functions
+  const handleAtsScoreCalculation = async () => {
+    // Validation
+    if (!analysisJobTitle.trim() || !analysisJobDescription.trim() || !analysisResumeFile) {
+      alert('Please fill in the job title, job description, and upload a resume before calculating ATS score.');
+      return;
+    }
+
+    setAtsLoading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('job_title', analysisJobTitle);
+      formData.append('job_description', analysisJobDescription);
+      formData.append('resume', analysisResumeFile);
+
+      const response = await fetch(`${API}/placement-preparation/ats-score-calculate`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const atsResult = await response.json();
+        
+        // Add timestamp to the result
+        const timestampedResult = {
+          ...atsResult,
+          job_title: analysisJobTitle,
+          job_description: analysisJobDescription,
+          created_at: new Date().toISOString(),
+          type: 'ats_score' // Add type to distinguish from other analyses
+        };
+        
+        // Add to ATS results
+        setAtsResults(prev => [timestampedResult, ...prev]);
+        
+        // Set current result for popup
+        setCurrentAtsResult(timestampedResult);
+        
+        // Show popup
+        setShowAtsPopup(true);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to calculate ATS score: ${errorData.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('ATS Score calculation error:', err);
+      alert('Error calculating ATS score. Please try again.');
+    } finally {
+      setAtsLoading(false);
+    }
+  };
+
+  const downloadAtsPDF = async (atsId, jobTitle) => {
+    try {
+      const response = await fetch(`${API}/placement-preparation/ats-score/${atsId}/download`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ats_score_report_${jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } else {
+        alert('Failed to download ATS PDF');
+      }
+    } catch (err) {
+      console.error('ATS PDF download error:', err);
+      alert('Error downloading ATS PDF');
+    }
+  };
+
   // Effect to load analyses when switching to analysis result tab
   React.useEffect(() => {
     if (activeTab === 'analysis-result') {
