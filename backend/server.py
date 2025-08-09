@@ -6021,7 +6021,7 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                     weight_pct = int(round((max_val / total_max) * 100)) if total_max > 0 else 0
                     score_breakdown_data.append([
                         category_name,
-                        f"{score_info['score']}/{score_info['max']}",
+                        f"{score_val}/{max_val}",
                         f"{percentage}%",
                         f"{weight_pct}%"
                     ])
