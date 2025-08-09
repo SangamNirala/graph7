@@ -4086,6 +4086,49 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                         required
                       />
                     </div>
+                    
+                    {/* Resume Analysis Tools Section */}
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-white mb-4">📊 Analysis Tools</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <button
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 text-sm"
+                          onClick={() => {/* TODO: Add functionality */}}
+                        >
+                          📈 ATS Score Calculator
+                        </button>
+                        <button
+                          className="bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-red-700 hover:to-pink-700 transition-all duration-300 text-sm"
+                          onClick={() => {/* TODO: Add functionality */}}
+                        >
+                          ❌ Rejection Reasons
+                        </button>
+                        <button
+                          className="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 text-sm"
+                          onClick={() => {/* TODO: Add functionality */}}
+                        >
+                          ✅ Acceptance Reasons
+                        </button>
+                        <button
+                          className="bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-purple-700 hover:to-violet-700 transition-all duration-300 text-sm"
+                          onClick={() => {/* TODO: Add functionality */}}
+                        >
+                          📄 ATS Optimised Resume
+                        </button>
+                        <button
+                          className="bg-gradient-to-r from-orange-600 to-yellow-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-orange-700 hover:to-yellow-700 transition-all duration-300 text-sm"
+                          onClick={() => {/* TODO: Add functionality */}}
+                        >
+                          💻 Technical Interview Questions
+                        </button>
+                        <button
+                          className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-cyan-700 hover:to-teal-700 transition-all duration-300 text-sm"
+                          onClick={() => {/* TODO: Add functionality */}}
+                        >
+                          🗣️ Behavioural Interview Questions
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Resume Upload */}
