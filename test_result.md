@@ -813,8 +813,7 @@ metadata:
   testing_agent_verification: "ADMIN_SCREENING_WORKFLOW_COMPLETED"
 
 test_plan:
-  current_focus:
-    - "Placement Preparation Resume Upload with Scrollable Preview Testing"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
