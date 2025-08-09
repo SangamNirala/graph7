@@ -5961,18 +5961,23 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
             story.append(Paragraph(f"<b>Generated:</b> {current_time} UTC", job_info_style))
             story.append(Spacer(1, 25))
             
-            # ATS Score in a prominent box
-            score_color = HexColor('#16a34a') if ats_score >= 75 else HexColor('#dc2626') if ats_score >= 50 else HexColor('#b91c1c')
+            # ATS Score in a prominent box (robust casting)
+            try:
+                ats_score_num = int(float(ats_score))
+            except Exception:
+                ats_score_num = 0
+
+            score_color = HexColor('#16a34a') if ats_score_num >= 75 else HexColor('#dc2626') if ats_score_num >= 50 else HexColor('#b91c1c')
             
             # Create score table
             score_data = [
-                ['OVERALL ATS SCORE', f'{ats_score}/100'],
+                ['OVERALL ATS SCORE', f'{ats_score_num}/100'],
                 ['COMPATIBILITY LEVEL', 
-                 'EXCEPTIONAL (95-100)' if ats_score >= 95 else
-                 'OUTSTANDING (85-94)' if ats_score >= 85 else
-                 'STRONG (75-84)' if ats_score >= 75 else
-                 'GOOD (65-74)' if ats_score >= 65 else
-                 'MODERATE (55-64)' if ats_score >= 55 else
+                 'EXCEPTIONAL (95-100)' if ats_score_num >= 95 else
+                 'OUTSTANDING (85-94)' if ats_score_num >= 85 else
+                 'STRONG (75-84)' if ats_score_num >= 75 else
+                 'GOOD (65-74)' if ats_score_num >= 65 else
+                 'MODERATE (55-64)' if ats_score_num >= 55 else
                  'NEEDS IMPROVEMENT (<55)'
                 ]
             ]
