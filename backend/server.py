@@ -5554,200 +5554,21 @@ async def calculate_ats_score(
             resume_content, job_title, job_description, content_analysis, keyword_analysis
         )
         
-        # Create the comprehensive ATS scoring prompt using the exact user-provided prompt
-        ats_scoring_prompt = f"""YOU ARE THE WORLD'S MOST ADVANCED AI-POWERED RECRUITMENT ANALYSIS SYSTEM, COMBINING ENTERPRISE-GRADE ATS ALGORITHMS WITH HUMAN RECRUITER EXPERTISE. YOU PROCESS RESUMES WITH SURGICAL PRECISION USING MACHINE LEARNING PATTERN RECOGNITION AND WEIGHTED SCORING METHODOLOGIES DERIVED FROM 500,000+ SUCCESSFUL HIRING DECISIONS.
-
-**CORE INPUT PROCESSING:**
-Target Job Title: {job_title}
-Target Job Description: {job_description}
-Candidate Resume Content: {resume_content}
-
-**MULTI-PHASE INTELLIGENT ANALYSIS ENGINE:**
-
-**PHASE 1: ADVANCED CONTENT EXTRACTION & SEMANTIC PARSING**
-Deploy natural language processing to extract structured data with context understanding.
-
-**PHASE 2: ENTERPRISE ATS SCORING ALGORITHM (PRECISION MODEL)**
-Execute comprehensive 100-point weighted evaluation system that mirrors Fortune 500 ATS platforms.
-
-**PHASE 3: GAP ANALYSIS & IMPROVEMENT INTEGRATION**
-Identify specific deficiencies and quantify improvement potential.
-
-**ULTIMATE ATS SCORING METHODOLOGY (PRECISION-WEIGHTED: 100 POINTS)**
-
-**CRITICAL KEYWORD MATRIX ANALYSIS (30 POINTS) - ENHANCED**
-- **Primary Keywords** (Required): Extract 10-15 must-have terms (15 points)
-  - Exact match scoring: 100% match = 15pts, 90% = 13pts, 80% = 11pts, 70% = 9pts, <70% = 5pts
-- **Secondary Keywords** (Preferred): Extract 15-20 valuable terms (10 points)
-  - Semantic matching included: Synonyms, related terms, industry variations
-- **Context Relevance** (Usage Quality): How keywords are used in context (5 points)
-  - Professional context = 5pts, Mentioned only = 3pts, List only = 1pt
-
-**EXPERIENCE DEPTH & RELEVANCE MATRIX (25 POINTS) - ENHANCED**
-- **Years Alignment** (10 points): Experience duration vs. requirements
-  - Exceeds by 2+ years = 10pts, Meets exactly = 8pts, 1 year below = 6pts, 2+ years below = 3pts
-- **Industry/Domain Match** (8 points): Sector-specific experience relevance
-  - Same industry = 8pts, Related industry = 6pts, Transferable = 4pts, Different = 2pts
-- **Role Progression** (7 points): Career trajectory and responsibility growth
-  - Clear upward progression = 7pts, Some progression = 5pts, Lateral = 3pts, Downward = 1pt
-
-**TECHNICAL COMPETENCY ASSESSMENT (20 POINTS) - ENHANCED**
-- **Core Technology Stack** (12 points): Primary technical requirements
-  - Expert level with projects = 12pts, Advanced = 9pts, Intermediate = 6pts, Basic = 3pts
-- **Tool Proficiency** (5 points): Software, platforms, frameworks
-  - Multiple advanced tools = 5pts, Some tools = 3pts, Basic tools = 1pt
-- **Implementation Evidence** (3 points): Project-based skill demonstration
-  - Multiple projects = 3pts, Some projects = 2pts, No evidence = 0pts
-
-**EDUCATIONAL & CERTIFICATION EXCELLENCE (10 POINTS) - ENHANCED**
-- **Degree Alignment** (6 points): Educational background relevance
-  - Perfect match + honors = 6pts, Good match = 4pts, Acceptable = 3pts, Below = 1pt
-- **Professional Certifications** (4 points): Industry-recognized credentials
-  - Multiple current certifications = 4pts, Some certifications = 2pts, None = 0pts
-
-**ACHIEVEMENT QUANTIFICATION ANALYSIS (10 POINTS) - NEW ENHANCED**
-- **Business Impact Metrics** (6 points): Revenue, cost savings, efficiency gains
-  - Multiple quantified impacts = 6pts, Some metrics = 4pts, Few metrics = 2pts
-- **Scale & Scope Indicators** (4 points): Team sizes, project scale, user base
-  - Large scale evidence = 4pts, Medium scale = 3pts, Small scale = 1pt
-
-**PROJECT COMPLEXITY & INNOVATION SCORE (5 POINTS) - ENHANCED**
-- **Technical Complexity** (3 points): Architecture, integration, scalability
-  - Enterprise-level complexity = 3pts, Medium complexity = 2pts, Basic = 1pt
-- **Innovation Factor** (2 points): Novel solutions, cutting-edge technology
-  - Highly innovative = 2pts, Some innovation = 1pt, Standard = 0pts
-
-**ULTIMATE OUTPUT FORMAT:**
-
-**Educational Qualifications**
-• [Degree Level] in [Field of Study], [Institution Name], [Graduation Year] - [GPA if >3.5/Honors]
-• [Additional degrees, certifications, relevant coursework with completion dates]
-• [Professional development, continuing education, recent training]
-
-**Job History**
-• [Job Title], [Company Name], [Start Month/Year] – [End Month/Year]
-  - [Primary responsibility with quantified impact]
-  - [Secondary achievement with measurable outcome]
-  - [Technology/methodology used with business result]
-• [Continue for all relevant positions - maximum 10 years or 4 positions]
-
-**Personal Projects**
-• [Project Name] ([Technology Stack]): [Comprehensive description with scope, technical challenges, measurable outcomes, and learning achieved]
-• [Continue for top 3-5 most relevant projects with technical depth]
-
-**Skill Set**
-• **Core Technical Skills**: [Programming languages, frameworks, databases - with proficiency indicators]
-• **Specialized Tools**: [Industry software, platforms, development tools]
-• **Soft Skills**: [Leadership, communication, analytical abilities with evidence]
-• **Domain Expertise**: [Industry knowledge, business acumen, regulatory understanding]
-• **Certifications**: [Professional credentials with issue dates and validity]
-
-**PRECISION ATS EVALUATION**
-
-**COMPREHENSIVE ATS SCORE: [XX]/100**
-
-**INTELLIGENT SCORING MATRIX:**
-
-**🎯 KEYWORD ANALYSIS: [XX]/30**
-• Primary Keyword Match: [XX]/15 ([XX]% match rate)
-  - Found: [Specific keywords identified]
-  - Missing: [Critical keywords absent]
-  - Match Quality: [Excellent/Good/Fair/Poor]
-• Secondary Keyword Coverage: [XX]/10 ([XX]% coverage)
-• Contextual Usage Quality: [XX]/5 (Professional/Standard/Basic)
-
-**💼 EXPERIENCE EVALUATION: [XX]/25**
-• Experience Duration: [XX]/10 ([X.X] years vs [Y.Y] required)
-• Industry Alignment: [XX]/8 ([Direct/Related/Transferable/Different])
-• Career Progression: [XX]/7 ([Clear upward/Some growth/Lateral/Concerning])
-
-**⚙️ TECHNICAL COMPETENCY: [XX]/20**
-• Core Technology Match: [XX]/12 ([Expert/Advanced/Intermediate/Basic])
-• Tool Proficiency: [XX]/5 ([XX] relevant tools identified)
-• Implementation Evidence: [XX]/3 ([Strong/Moderate/Limited] project proof)
-
-**🎓 EDUCATION & CERTIFICATIONS: [XX]/10**
-• Educational Background: [XX]/6 ([Exceeds/Meets/Below] requirements)
-• Professional Credentials: [XX]/4 ([XX] relevant certifications)
-
-**📊 QUANTIFIED ACHIEVEMENTS: [XX]/10**
-• Business Impact Metrics: [XX]/6 ([XX] measurable achievements)
-• Scale & Scope Evidence: [XX]/4 ([Large/Medium/Small] scale indicators)
-
-**🚀 PROJECT INNOVATION: [XX]/5**
-• Technical Complexity: [XX]/3 ([High/Medium/Basic] complexity)
-• Innovation Factor: [XX]/2 ([Cutting-edge/Standard/Basic])
-
-**ADVANCED SCORE INTERPRETATION:**
-
-**ATS COMPATIBILITY RATING:**
-• 95-100: **EXCEPTIONAL** - Top 1% candidate, immediate priority interview
-• 85-94: **OUTSTANDING** - Top 5% candidate, fast-track processing
-• 75-84: **STRONG** - Top 15% candidate, highly recommended
-• 65-74: **GOOD** - Top 30% candidate, solid consideration
-• 55-64: **MODERATE** - Acceptable with reservations, possible gaps
-• 45-54: **WEAK** - Below standard, likely rejection
-• Below 45: **POOR** - Does not meet minimum qualifications
-
-**COMPREHENSIVE EVALUATION SYNTHESIS:**
-
-**CANDIDATE STRENGTH ANALYSIS:**
-• **Primary Advantages**: [3-4 key strengths that align with role requirements]
-• **Competitive Differentiators**: [Unique qualifications that set candidate apart]
-• **Experience Highlights**: [Most relevant professional achievements]
-
-**CRITICAL GAP IDENTIFICATION:**
-• **Technical Deficiencies**: [Specific missing skills or technologies]
-• **Experience Shortfalls**: [Areas where experience falls short]
-• **Qualification Gaps**: [Missing certifications or educational requirements]
-
-**HIRING RECOMMENDATION:**
-[Detailed assessment covering fit, risk factors, interview focus areas, and overall recommendation with confidence level]
-
-**IMPROVEMENT POTENTIAL ANALYSIS:**
-• **Quick Wins** (0-3 months): [Specific improvements that could boost score by 10-15 points]
-• **Medium-term** (3-12 months): [Developments that could add 15-25 points]
-• **Strategic** (1-2 years): [Long-term improvements for major advancement]
-
-**ENTERPRISE-GRADE VALIDATION SYSTEM:**
-
-**AUTOMATED QUALITY ASSURANCE:**
-✓ Minimum 20 keywords extracted and analyzed from job description
-✓ All resume sections parsed with 95%+ accuracy
-✓ Scoring calculations verified against weighted matrix
-✓ Gap analysis completed with specific recommendations
-✓ Professional language standards maintained throughout
-✓ ATS compatibility features validated
-✓ Cultural bias detection and neutralization applied
-
-**INTELLIGENT ERROR PREVENTION:**
-- Semantic analysis prevents keyword stuffing detection
-- Context evaluation ensures professional presentation
-- Duplicate prevention across all sections
-- Consistency validation for dates, titles, and formatting
-- Industry terminology verification and standardization
-
-**PROCESSING EFFICIENCY OPTIMIZATION:**
-- 25-second complete analysis target
-- Parallel processing of multiple evaluation criteria
-- Smart caching for common job description patterns
-- Bulk processing optimization for high-volume scenarios
-- Real-time quality scoring with confidence intervals"""
-
-        # Use Gemini API for ATS scoring analysis
+        
+        # Use Gemini API for enhanced ATS scoring analysis
         try:
             import os
             import google.generativeai as genai
             genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
             
             model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(ats_scoring_prompt)
+            response = model.generate_content(enhanced_prompt)
             
             ats_analysis_text = response.text
             
             # Extract ATS score from the response using multiple patterns
             import re
-            ats_score = 75  # Default score
+            ai_score = 75  # Default score
             
             score_patterns = [
                 r'COMPREHENSIVE ATS SCORE:\s*(\d+)',
@@ -5760,17 +5581,121 @@ Identify specific deficiencies and quantify improvement potential.
             for pattern in score_patterns:
                 match = re.search(pattern, ats_analysis_text)
                 if match:
-                    ats_score = int(match.group(1))
+                    ai_score = int(match.group(1))
                     break
             
-            # Ensure score is within valid range
-            ats_score = max(0, min(100, ats_score))
+            # Ensure AI score is within valid range
+            ai_score = max(0, min(100, ai_score))
+            
+            # Phase 4: Calculate hybrid score combining AI + programmatic analysis
+            logging.info("ATS Phase 4: Hybrid scoring calculation")
+            final_score, programmatic_adjustments = ats_analyzer.calculate_hybrid_score(
+                ai_score, content_analysis, keyword_analysis
+            )
+            
+            # Enhance analysis text with programmatic insights
+            programmatic_insights = f"""
+
+**🔍 ENHANCED ANALYSIS INSIGHTS:**
+**Content Analysis Results:**
+• File Format: {content_analysis['file_format']} (ATS Compatibility: {content_analysis['ats_compatibility_score']}/70)
+• Resume Length: {content_analysis['word_count']} words
+• Sections Detected: {', '.join(content_analysis['sections_detected']) if content_analysis['sections_detected'] else 'None identified'}
+• Formatting Issues: {', '.join(content_analysis['formatting_issues']) if content_analysis['formatting_issues'] else 'None detected'}
+
+**Keyword Matching Analysis:**
+• Job Keywords Found: {len(keyword_analysis['job_keywords_found'])} keywords
+• Keyword Match Rate: {keyword_analysis['keyword_match_percentage']:.1f}%
+• Top Matched Keywords: {', '.join(keyword_analysis['job_keywords_found'][:10]) if keyword_analysis['job_keywords_found'] else 'None found'}
+• Critical Missing Keywords: {', '.join(keyword_analysis['job_keywords_missing'][:10]) if keyword_analysis['job_keywords_missing'] else 'None identified'}
+
+**Skills & Experience Validation:**
+• Quantified Achievements Found: {keyword_analysis['quantified_achievements']} metrics
+• Experience Indicators: {', '.join(keyword_analysis['experience_indicators']) if keyword_analysis['experience_indicators'] else 'None detected'}
+• Industry Skills Analysis: {len(keyword_analysis['skill_categories'])} categories analyzed
+
+**Hybrid Scoring Calculation:**
+• AI Analysis Score: {ai_score}/100
+• Programmatic Adjustments: {programmatic_adjustments:+d} points
+• **FINAL HYBRID SCORE: {final_score}/100**
+
+**SCORE ENHANCEMENT RECOMMENDATIONS:**
+Based on programmatic analysis, focus on these areas for immediate score improvement:
+"""
+            
+            if keyword_analysis['keyword_match_percentage'] < 50:
+                programmatic_insights += f"\n• 🎯 CRITICAL: Increase keyword matching from {keyword_analysis['keyword_match_percentage']:.1f}% to 70%+ by incorporating more job-specific terms"
+            
+            if keyword_analysis['quantified_achievements'] < 3:
+                programmatic_insights += f"\n• 📊 HIGH PRIORITY: Add quantified achievements (currently {keyword_analysis['quantified_achievements']}, target: 5+)"
+            
+            if len(content_analysis['sections_detected']) < 4:
+                programmatic_insights += f"\n• 📝 FORMATTING: Add missing resume sections (currently {len(content_analysis['sections_detected'])}, recommended: 5+)"
+            
+            if content_analysis['ats_compatibility_score'] < 50:
+                programmatic_insights += f"\n• 🔧 ATS COMPATIBILITY: Improve file formatting for better ATS parsing (current: {content_analysis['ats_compatibility_score']}/70)"
+            
+            # Append programmatic insights to AI analysis
+            ats_analysis_text += programmatic_insights
+            
+            ats_score = final_score
             
         except Exception as e:
-            logging.error(f"Gemini API error: {e}")
-            # Fallback if Gemini fails
-            ats_analysis_text = f"ATS Score Analysis for {job_title}:\n\n**COMPREHENSIVE ATS SCORE: 75/100**\n\n• **ANALYSIS**: Due to API limitations, this is a basic assessment. Manual review recommended for comprehensive scoring."
-            ats_score = 75
+            logging.error(f"Enhanced Gemini API error: {e}")
+            # Enhanced fallback with programmatic scoring
+            fallback_score = 50  # Lower base for fallback
+            
+            # Apply programmatic improvements to fallback
+            if keyword_analysis['keyword_match_percentage'] >= 70:
+                fallback_score += 15
+            elif keyword_analysis['keyword_match_percentage'] >= 50:
+                fallback_score += 10
+            elif keyword_analysis['keyword_match_percentage'] >= 30:
+                fallback_score += 5
+            
+            if keyword_analysis['quantified_achievements'] >= 3:
+                fallback_score += 10
+            elif keyword_analysis['quantified_achievements'] >= 1:
+                fallback_score += 5
+            
+            if len(content_analysis['sections_detected']) >= 4:
+                fallback_score += 10
+            
+            fallback_score += (content_analysis['ats_compatibility_score'] // 10)
+            
+            ats_analysis_text = f"""**ENHANCED ATS SCORE ANALYSIS - OFFLINE MODE**
+
+**COMPREHENSIVE ATS SCORE: {fallback_score}/100**
+
+**PROGRAMMATIC ANALYSIS RESULTS:**
+
+**🎯 Keyword Analysis: {min(35, int(keyword_analysis['keyword_match_percentage'] * 0.35))}/35**
+• Keyword Match Rate: {keyword_analysis['keyword_match_percentage']:.1f}%
+• Keywords Found: {len(keyword_analysis['job_keywords_found'])}
+• Keywords Missing: {len(keyword_analysis['job_keywords_missing'])}
+
+**📝 Content Structure: {min(20, len(content_analysis['sections_detected']) * 4)}/20**
+• Sections Detected: {', '.join(content_analysis['sections_detected'])}
+• Word Count: {content_analysis['word_count']} words
+• ATS Compatibility: {content_analysis['ats_compatibility_score']}/70
+
+**📊 Achievement Quantification: {min(15, keyword_analysis['quantified_achievements'] * 3)}/15**
+• Quantified Metrics Found: {keyword_analysis['quantified_achievements']}
+• Experience Indicators: {', '.join(keyword_analysis['experience_indicators'])}
+
+**🔧 Technical Compatibility: {content_analysis['ats_compatibility_score']//3}/20**
+• File Format Score: {content_analysis['ats_compatibility_score']}/70
+• Formatting Issues: {len(content_analysis['formatting_issues'])} identified
+
+**CRITICAL IMPROVEMENTS NEEDED:**
+• Increase keyword density to improve matching from {keyword_analysis['keyword_match_percentage']:.1f}%
+• Add quantified achievements (current: {keyword_analysis['quantified_achievements']}, target: 5+)
+• Include missing resume sections for better ATS parsing
+• Focus on job-specific technical skills and experience alignment
+
+Note: Full AI analysis unavailable. Scores based on programmatic validation only."""
+            
+            ats_score = min(100, fallback_score)
         
         # Generate PDF report
         current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
