@@ -877,7 +877,7 @@ test_plan:
 
 agent_communication:
     -agent: "main"
-    -message: "Enhanced AI Interview Agent with voice capabilities and multi-format resume support. Implemented Google Cloud TTS/STT integration, PDF/Word/TXT parsing, voice recording interface, and dual-mode interviews. Ready for comprehensive testing of new voice features and document parsing functionality."
+    -message: "Implemented ATS PDF scoring breakdown enhancements: added weights, per-category explanation, and improvement roadmap with potential gains and priorities. Please run backend tests to generate an ATS report and verify new sections in the PDF (Score Breakdown now shows Weight column; 'How the score was calculated' and 'Improvement roadmap by category' sections included)."
     -agent: "main"
     -message: "USER REQUEST: Verify admin login with Game@1234 password and generate new token. Need to confirm admin authentication is working and create fresh token for voice recording functionality testing. Will test admin login functionality and token generation process."
     -agent: "testing"
