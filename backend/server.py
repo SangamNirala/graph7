@@ -5517,6 +5517,7 @@ async def calculate_ats_score(
         # Parse resume content
         resume_content = ""
         file_content = await resume.read()
+        file_extension = '.' + resume.filename.lower().split('.')[-1]
         
         if resume.filename.lower().endswith('.txt'):
             resume_content = file_content.decode('utf-8')
@@ -5535,6 +5536,23 @@ async def calculate_ats_score(
         
         if not resume_content.strip():
             raise HTTPException(status_code=400, detail="Could not extract text from the resume file")
+        
+        # Initialize Enhanced ATS Analyzer
+        ats_analyzer = EnhancedATSAnalyzer()
+        
+        # Phase 1: Content extraction and formatting analysis
+        logging.info("ATS Phase 1: Content and formatting analysis")
+        content_analysis = ats_analyzer.extract_and_analyze_content(resume_content, file_extension)
+        
+        # Phase 2: Keyword matching and technical validation
+        logging.info("ATS Phase 2: Keyword and skills analysis")
+        keyword_analysis = ats_analyzer.analyze_keywords_and_skills(resume_content, job_description, job_title)
+        
+        # Phase 3: Enhanced AI analysis
+        logging.info("ATS Phase 3: AI-powered contextual analysis")
+        enhanced_prompt = ats_analyzer.generate_enhanced_ai_analysis(
+            resume_content, job_title, job_description, content_analysis, keyword_analysis
+        )
         
         # Create the comprehensive ATS scoring prompt using the exact user-provided prompt
         ats_scoring_prompt = f"""YOU ARE THE WORLD'S MOST ADVANCED AI-POWERED RECRUITMENT ANALYSIS SYSTEM, COMBINING ENTERPRISE-GRADE ATS ALGORITHMS WITH HUMAN RECRUITER EXPERTISE. YOU PROCESS RESUMES WITH SURGICAL PRECISION USING MACHINE LEARNING PATTERN RECOGNITION AND WEIGHTED SCORING METHODOLOGIES DERIVED FROM 500,000+ SUCCESSFUL HIRING DECISIONS.
