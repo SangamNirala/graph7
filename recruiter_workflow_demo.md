@@ -4,7 +4,7 @@
 
 ### 1. LOGIN TO ADMIN DASHBOARD
 ```
-URL: https://c6759078-9400-4b0a-aefa-8221ae7fbcdb.preview.emergentagent.com
+URL: https://592d9757-89f7-4d5e-b49e-895d35680775.preview.emergentagent.com
 Admin Password: Game@1234
 ```
 

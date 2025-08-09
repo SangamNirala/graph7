@@ -11,7 +11,7 @@ import tempfile
 from datetime import datetime
 
 # Get backend URL from environment
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://c6759078-9400-4b0a-aefa-8221ae7fbcdb.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://592d9757-89f7-4d5e-b49e-895d35680775.preview.emergentagent.com')
 API_BASE = f"{BACKEND_URL}/api"
 
 class ResumePreviewTester:
