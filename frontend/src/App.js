@@ -3134,6 +3134,7 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
   const [analysisJobTitle, setAnalysisJobTitle] = useState('');
   const [analysisJobDescription, setAnalysisJobDescription] = useState('');
   const [analysisResumeFile, setAnalysisResumeFile] = useState(null);
+  const [analysisResumePreview, setAnalysisResumePreview] = useState('');
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   
