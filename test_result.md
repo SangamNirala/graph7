@@ -869,7 +869,8 @@ metadata:
   testing_agent_verification: "ADMIN_SCREENING_WORKFLOW_COMPLETED"
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "ATS PDF Detailed Scoring Breakdown Enhancement"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
