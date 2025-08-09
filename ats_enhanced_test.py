@@ -14,7 +14,7 @@ import PyPDF2
 import io
 
 # Configuration
-BACKEND_URL = "https://496a63fe-af0f-4647-916e-0b7ce5ebc17e.preview.emergentagent.com/api"
+BACKEND_URL = "https://5d65efb8-ad0f-4fc8-b912-067b82ffbbaa.preview.emergentagent.com/api"
 
 class ATSScoreTestSuite:
     def __init__(self):

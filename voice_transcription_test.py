@@ -20,7 +20,7 @@ import io
 from typing import Dict, Any, Optional
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://496a63fe-af0f-4647-916e-0b7ce5ebc17e.preview.emergentagent.com/api"
+BASE_URL = "https://5d65efb8-ad0f-4fc8-b912-067b82ffbbaa.preview.emergentagent.com/api"
 
 class VoiceTranscriptionTester:
     def __init__(self):

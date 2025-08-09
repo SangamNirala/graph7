@@ -12,7 +12,7 @@ from datetime import datetime
 import tempfile
 
 # Get backend URL from environment
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://496a63fe-af0f-4647-916e-0b7ce5ebc17e.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://5d65efb8-ad0f-4fc8-b912-067b82ffbbaa.preview.emergentagent.com')
 BASE_URL = f"{BACKEND_URL}/api"
 
 class EnhancedATSTester:
