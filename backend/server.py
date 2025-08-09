@@ -6001,25 +6001,30 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                 story.append(Paragraph("📈 SCORE BREAKDOWN", header_style))
                 story.append(Spacer(1, 8))
                 
-                score_breakdown_data = [['CATEGORY', 'SCORE', 'PERCENTAGE']]
+                # Compute weights based on max points of each category (normalized if totals != 100)
+                total_max = sum(info.get('max', 0) for info in scores.values()) or 100
+
+                score_breakdown_data = [['CATEGORY', 'SCORE', 'PERCENTAGE', 'WEIGHT']]
                 for category, score_info in scores.items():
                     category_name = {
-                        'keyword': '🎯 Keyword Analysis',
-                        'experience': '💼 Experience Evaluation', 
+                        'keyword': '🎯 Keyword Optimization',
+                        'experience': '💼 Experience Relevance', 
                         'technical': '⚙️ Technical Competency',
-                        'education': '🎓 Education & Certifications',
+                        'education': '🎓 Qualifications',
                         'achievements': '📊 Quantified Achievements',
                         'projects': '🚀 Project Innovation'
-                    }.get(category, category.title())
+                    }.get(category, score_info.get('label') or category.title())
                     
-                    percentage = int((score_info['score'] / score_info['max']) * 100)
+                    percentage = int((score_info['score'] / score_info['max']) * 100) if score_info.get('max') else 0
+                    weight_pct = int(round((score_info.get('max', 0) / total_max) * 100))
                     score_breakdown_data.append([
                         category_name,
                         f"{score_info['score']}/{score_info['max']}",
-                        f"{percentage}%"
+                        f"{percentage}%",
+                        f"{weight_pct}%"
                     ])
                 
-                breakdown_table = Table(score_breakdown_data, colWidths=[2.8*inch, 1.2*inch, 1*inch])
+                breakdown_table = Table(score_breakdown_data, colWidths=[2.6*inch, 1.1*inch, 0.9*inch, 0.9*inch])
                 breakdown_table.setStyle(TableStyle([
                     ('BACKGROUND', (0, 0), (-1, 0), HexColor('#3b82f6')),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
