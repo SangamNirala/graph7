@@ -5495,7 +5495,7 @@ Identify specific deficiencies and quantify improvement potential.
         logging.error(f"ATS score calculation error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to calculate ATS score: {str(e)}")
 
-@api_router.get("/api/placement-preparation/ats-score/{ats_id}/download")
+@api_router.get("/placement-preparation/ats-score/{ats_id}/download")
 async def download_ats_score_pdf(ats_id: str):
     """Download PDF report for specific ATS score analysis"""
     try:
