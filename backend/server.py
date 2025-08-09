@@ -5155,7 +5155,7 @@ async def download_resume_analysis_pdf(analysis_id: str):
         raise HTTPException(status_code=500, detail="Failed to download PDF")
 
 # ATS Score Calculator Endpoints
-@api_router.post("/api/placement-preparation/ats-score-calculate")
+@api_router.post("/placement-preparation/ats-score-calculate")
 async def calculate_ats_score(
     request: ATSScoreRequest,
     resume: UploadFile = File(...)
