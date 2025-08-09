@@ -4360,6 +4360,58 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
           </div>
         )}
       </div>
+      
+      {/* ATS Score Calculation Success Popup */}
+      {showAtsPopup && currentAtsResult && (
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-blue-900/90 to-indigo-900/90 backdrop-blur-lg rounded-2xl border border-white/20 max-w-2xl w-full">
+            <div className="p-8 text-center">
+              <div className="text-6xl mb-4">🎯</div>
+              <h3 className="text-3xl font-bold text-white mb-4">ATS Score Calculated!</h3>
+              <p className="text-gray-300 mb-6">
+                Your ATS score has been successfully calculated and the detailed report has been generated.
+              </p>
+              
+              <div className="bg-white/10 rounded-lg p-6 mb-6">
+                <div className="text-4xl font-bold text-green-400 mb-2">
+                  {currentAtsResult.ats_score}/100
+                </div>
+                <div className="text-lg text-white">ATS Compatibility Score</div>
+                <div className="text-sm text-gray-300 mt-2">
+                  for {currentAtsResult.job_title}
+                </div>
+              </div>
+              
+              <p className="text-gray-300 mb-6">
+                The detailed analysis report with reasons and recommendations 
+                is now available in your Analysis Results.
+              </p>
+              
+              <div className="space-x-4">
+                <button
+                  onClick={() => {
+                    setShowAtsPopup(false);
+                    setCurrentAtsResult(null);
+                    setActiveTab('analysis-result');
+                  }}
+                  className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300"
+                >
+                  📋 View Results
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAtsPopup(false);
+                    setCurrentAtsResult(null);
+                  }}
+                  className="bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold py-3 px-6 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-300"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
