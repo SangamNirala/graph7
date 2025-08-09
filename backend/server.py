@@ -6002,7 +6002,7 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                 story.append(Spacer(1, 8))
                 
                 # Compute weights based on max points of each category (normalized if totals != 100)
-                total_max = sum(info.get('max', 0) for info in scores.values()) or 100
+                total_max = sum(int(info.get('max', 0)) for info in scores.values()) or 100
 
                 score_breakdown_data = [['CATEGORY', 'SCORE', 'PERCENTAGE', 'WEIGHT']]
                 for category, score_info in scores.items():
@@ -6015,8 +6015,10 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                         'projects': '🚀 Project Innovation'
                     }.get(category, score_info.get('label') or category.title())
                     
-                    percentage = int((score_info['score'] / score_info['max']) * 100) if score_info.get('max') else 0
-                    weight_pct = int(round((score_info.get('max', 0) / total_max) * 100))
+                    score_val = int(score_info.get('score', 0))
+                    max_val = int(score_info.get('max', 1))
+                    percentage = int((score_val / max_val) * 100) if max_val > 0 else 0
+                    weight_pct = int(round((max_val / total_max) * 100)) if total_max > 0 else 0
                     score_breakdown_data.append([
                         category_name,
                         f"{score_info['score']}/{score_info['max']}",
