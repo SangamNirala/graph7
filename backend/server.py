@@ -4818,6 +4818,21 @@ class ResumeAnalysis(BaseModel):
     pdf_path: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+# ATS Score Calculator Data Models
+class ATSScoreRequest(BaseModel):
+    job_title: str
+    job_description: str
+
+class ATSScoreResult(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_title: str
+    job_description: str
+    resume_content: str
+    ats_score: int
+    ats_details: Dict[str, Any]
+    pdf_path: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 # Resume Analysis Endpoints
 @api_router.post("/api/placement-preparation/resume-analysis")
 async def analyze_resume(
