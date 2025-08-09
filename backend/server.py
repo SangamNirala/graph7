@@ -6287,7 +6287,7 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                                     story.append(Paragraph(f"<b>{clean_line.strip()}</b>", subheader_style))
                                 elif line.strip().startswith('•') or line.strip().startswith('-') or line.strip().startswith('→') or line.strip().startswith('✓') or line.strip().startswith('✗'):
                                     story.append(Paragraph(f"  {clean_line.strip()}", normal_style))
-                                elif ':' in clean_line and len(clean_line.split(':')[0]) < 50:  # Likely a label
+                                elif ':' in clean_line and len(str(clean_line.split(':')[0])) < 50:  # Likely a label
                                     parts = clean_line.split(':', 1)
                                     if len(parts) == 2:
                                         story.append(Paragraph(f"<b>{parts[0].strip()}:</b> {parts[1].strip()}", normal_style))
