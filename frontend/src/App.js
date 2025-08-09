@@ -3368,6 +3368,37 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
   };
 
   // Resume Analysis functions
+  const handleAnalysisFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setAnalysisResumeFile(file);
+    setAnalysisLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+
+      const response = await fetch(`${API}/admin/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAnalysisResumePreview(data.preview);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Failed to upload resume: ${errorData.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('Upload error: Please check your internet connection');
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
   const handleResumeAnalysisSubmit = async (e) => {
     e.preventDefault();
     if (!analysisJobTitle.trim() || !analysisJobDescription.trim() || !analysisResumeFile) {
