@@ -5826,8 +5826,9 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
             # Helper to register a score if better info found later
             def set_score(key, score, max_score, label):
                 prev = scores.get(key)
-                if not prev or (prev and prev['max'] < max_score):
-                    scores[key] = {'score': int(score), 'max': int(max_score), 'label': label}
+                max_score_int = int(max_score)  # Convert to int before comparison
+                if not prev or (prev and prev['max'] < max_score_int):
+                    scores[key] = {'score': int(score), 'max': max_score_int, 'label': label}
 
             # Patterns (case-insensitive) for multiple phrasings
             patterns = [
