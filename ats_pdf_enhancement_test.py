@@ -119,16 +119,19 @@ class ATSPDFEnhancementTester:
             • Optimize application performance and reliability
             """
             
-            # Prepare the request
-            request_data = {
-                "job_title": "Senior Backend Engineer",
-                "job_description": job_description.strip(),
-                "resume_text": resume_content.strip()
+            # Prepare the request as form data with file upload
+            files = {
+                'resume': ('sample_resume.txt', resume_content.strip().encode('utf-8'), 'text/plain')
+            }
+            
+            form_data = {
+                'job_title': "Senior Backend Engineer",
+                'job_description': job_description.strip()
             }
             
             # Make the API call
             response = self.session.post(f"{BASE_URL}/placement-preparation/ats-score-calculate", 
-                                       json=request_data)
+                                       files=files, data=form_data)
             
             if response.status_code == 200:
                 data = response.json()
