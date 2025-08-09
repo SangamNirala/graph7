@@ -4096,7 +4096,7 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                       </label>
                       <input
                         type="file"
-                        onChange={(e) => setAnalysisResumeFile(e.target.files[0])}
+                        onChange={handleAnalysisFileUpload}
                         accept=".pdf,.doc,.docx,.txt"
                         className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-700"
                         required
