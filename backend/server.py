@@ -5718,20 +5718,66 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
         import re
         
         def parse_ats_analysis(analysis_text):
-            """Parse the ATS analysis text into structured sections with updated format recognition"""
+            """Parse the ATS analysis text into structured sections with comprehensive modern format recognition"""
             sections = {}
             lines = analysis_text.split('\n')
             current_section = None
             current_content = []
             
-            # Extract key sections using modern patterns
+            # Extract key sections using modern AI-generated patterns
             for line in lines:
                 line = line.strip()
                 if not line:
                     continue
                 
-                # Check for main section headers (updated for modern format)
-                if any(keyword in line.upper() for keyword in ['EDUCATIONAL', 'EDUCATION', 'DEGREE', 'CERTIFICATION']):
+                # Check for AI-generated section headers (updated for current format)
+                if any(keyword in line.upper() for keyword in ['COMPREHENSIVE ATS SCORE', 'OVERALL ATS SCORE', 'FINAL SCORE']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'ats_score'
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['DETAILED SCORING BREAKDOWN', 'SCORE BREAKDOWN', 'SCORING BREAKDOWN']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'scoring_breakdown'
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['CRITICAL IMPROVEMENT AREAS', 'IMPROVEMENT AREAS', 'AREAS FOR IMPROVEMENT']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'improvement_areas'
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['IMPLEMENTATION ROADMAP', 'ROADMAP', 'ACTION PLAN']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'implementation_roadmap'
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['IMMEDIATE FIXES', 'SHORT TERM', 'STRATEGIC DEVELOPMENT']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'timeline_improvements'
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['ATS OPTIMIZATION CHECKLIST', 'OPTIMIZATION CHECKLIST', 'CHECKLIST']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'optimization_checklist'
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['HIRING PROBABILITY', 'PROBABILITY ASSESSMENT', 'COMPETITIVE POSITIONING']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'probability_assessment'
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['ENHANCED ANALYSIS INSIGHTS', 'CONTENT ANALYSIS RESULTS', 'KEYWORD MATCHING ANALYSIS', 'HYBRID SCORING CALCULATION']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'enhanced_insights'
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['SCORE ENHANCEMENT RECOMMENDATIONS', 'RECOMMENDATIONS', 'SUGGESTIONS']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'recommendations'
+                    current_content = [line]
+                # Legacy format support for backward compatibility
+                elif any(keyword in line.upper() for keyword in ['EDUCATIONAL', 'EDUCATION', 'DEGREE', 'CERTIFICATION']):
                     if current_section:
                         sections[current_section] = '\n'.join(current_content)
                     current_section = 'education'
@@ -5750,21 +5796,6 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                     if current_section:
                         sections[current_section] = '\n'.join(current_content)
                     current_section = 'skills'
-                    current_content = [line]
-                elif any(keyword in line.upper() for keyword in ['KEYWORD ANALYSIS', 'EXPERIENCE EVALUATION', 'TECHNICAL COMPETENCY', 'QUANTIFIED ACHIEVEMENTS', 'PROJECT INNOVATION', 'SCORING', 'EVALUATION', 'ASSESSMENT']):
-                    if current_section:
-                        sections[current_section] = '\n'.join(current_content)
-                    current_section = 'scoring'
-                    current_content = [line]
-                elif any(keyword in line.upper() for keyword in ['CRITICAL IMPROVEMENT', 'SCORE ENHANCEMENT', 'IMPLEMENTATION ROADMAP', 'IMMEDIATE FIXES', 'RECOMMENDATIONS', 'IMPROVEMENT']):
-                    if current_section:
-                        sections[current_section] = '\n'.join(current_content)
-                    current_section = 'recommendations'
-                    current_content = [line]
-                elif any(keyword in line.upper() for keyword in ['ENHANCED ANALYSIS INSIGHTS', 'CONTENT ANALYSIS', 'PROGRAMMATIC', 'HYBRID SCORING']):
-                    if current_section:
-                        sections[current_section] = '\n'.join(current_content)
-                    current_section = 'detailed_analysis'
                     current_content = [line]
                 elif current_section:
                     current_content.append(line)
