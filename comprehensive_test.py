@@ -7,7 +7,7 @@ import requests
 import json
 import time
 
-BASE_URL = 'https://3b3e66ec-f27f-42ff-b407-1f9f120f4842.preview.emergentagent.com/api'
+BASE_URL = 'https://c6759078-9400-4b0a-aefa-8221ae7fbcdb.preview.emergentagent.com/api'
 
 def test_comprehensive_enhanced_features():
     session = requests.Session()
