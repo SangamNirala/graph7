@@ -7,7 +7,7 @@ import requests
 import json
 import io
 
-BASE_URL = "https://2db48e49-88b4-42ec-82bd-5c0a471191b0.preview.emergentagent.com/api"
+BASE_URL = "https://496a63fe-af0f-4647-916e-0b7ce5ebc17e.preview.emergentagent.com/api"
 
 def test_total_questions_investigation():
     session = requests.Session()
