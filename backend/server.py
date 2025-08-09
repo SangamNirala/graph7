@@ -5814,24 +5814,77 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
             return sections
         
         def extract_scores(analysis_text):
-            """Extract individual scores from the analysis text"""
+            """Extract individual scores from the analysis text across multiple known formats.
+            Returns dict like {category: {score: int, max: int, label: str}}
+            Supported categories: keyword, experience, technical, education, achievements, projects
+            """
             scores = {}
-            
-            # Patterns to match different score formats
-            score_patterns = {
-                'keyword': r'KEYWORD ANALYSIS:\s*(\d+)/(\d+)',
-                'experience': r'EXPERIENCE EVALUATION:\s*(\d+)/(\d+)', 
-                'technical': r'TECHNICAL COMPETENCY:\s*(\d+)/(\d+)',
-                'education': r'EDUCATION.*CERTIFICATIONS:\s*(\d+)/(\d+)',
-                'achievements': r'QUANTIFIED ACHIEVEMENTS:\s*(\d+)/(\d+)',
-                'projects': r'PROJECT INNOVATION:\s*(\d+)/(\d+)'
-            }
-            
-            for category, pattern in score_patterns.items():
-                match = re.search(pattern, analysis_text)
-                if match:
-                    scores[category] = {'score': int(match.group(1)), 'max': int(match.group(2))}
-            
+            text = analysis_text
+            # Normalize unicode emojis and bold markers away for easier matching
+            text = text.replace('**', '')
+
+            # Helper to register a score if better info found later
+            def set_score(key, score, max_score, label):
+                prev = scores.get(key)
+                if not prev or (prev and prev['max'] < max_score):
+                    scores[key] = {'score': int(score), 'max': int(max_score), 'label': label}
+
+            # Patterns (case-insensitive) for multiple phrasings
+            patterns = [
+                # Modern breakdown with names
+                (r"Keyword\s+Optimization\s*:\s*(\d+)\s*/\s*(\d+)", 'keyword', 'Keyword Optimization'),
+                (r"Keyword\s+Analysis\s*:\s*(\d+)\s*/\s*(\d+)", 'keyword', 'Keyword Analysis'),
+
+                (r"Experience\s+Relevance\s*:\s*(\d+)\s*/\s*(\d+)", 'experience', 'Experience Relevance'),
+                (r"Experience\s+Evaluation\s*:\s*(\d+)\s*/\s*(\d+)", 'experience', 'Experience Evaluation'),
+
+                (r"Technical\s+Competenc(?:y|ies)\s*:\s*(\d+)\s*/\s*(\d+)", 'technical', 'Technical Competency'),
+                (r"Technical\s+Skills?\s*:\s*(\d+)\s*/\s*(\d+)", 'technical', 'Technical Skills'),
+
+                (r"Qualifications\s*:\s*(\d+)\s*/\s*(\d+)", 'education', 'Qualifications'),
+                (r"Education.*Certifications\s*:\s*(\d+)\s*/\s*(\d+)", 'education', 'Education & Certifications'),
+
+                (r"Quantified\s+Achievements\s*:\s*(\d+)\s*/\s*(\d+)", 'achievements', 'Quantified Achievements'),
+
+                (r"Project\s+Innovation\s*:\s*(\d+)\s*/\s*(\d+)", 'projects', 'Project Innovation'),
+                (r"Projects?\s*:\s*(\d+)\s*/\s*(\d+)", 'projects', 'Projects')
+            ]
+
+            # Remove common emojis before regex checking
+            emoji_pattern = r"[🎯💼⚙️🎓📊🚀🔍💡📈📋⭐✅⏱️🗺️]"
+            text_wo_emoji = re.sub(emoji_pattern, '', text)
+
+            # Try explicit patterns first on full text
+            for pat, key, label in patterns:
+                m = re.search(pat, text_wo_emoji, flags=re.IGNORECASE)
+                if m:
+                    set_score(key, m.group(1), m.group(2), label)
+
+            # Additionally, within the 'DETAILED SCORING BREAKDOWN' section, capture generic 'Name: x/y' lines
+            breakdown_match = re.search(r"(DETAILED\s+SCORING\s+BREAKDOWN|SCORE\s+BREAKDOWN|SCORING\s+BREAKDOWN)([\s\S]+?)(?:\n\s*\n|\Z)", text_wo_emoji, flags=re.IGNORECASE)
+            if breakdown_match:
+                block = breakdown_match.group(2)
+                for line in block.split('\n'):
+                    line = line.strip()
+                    m = re.search(r"([A-Za-z &]+)\s*:\s*(\d+)\s*/\s*(\d+)", line)
+                    if m:
+                        raw_label = m.group(1).strip()
+                        score_v = m.group(2)
+                        max_v = m.group(3)
+                        label_lower = raw_label.lower()
+                        if 'keyword' in label_lower:
+                            set_score('keyword', score_v, max_v, raw_label)
+                        elif 'experience' in label_lower:
+                            set_score('experience', score_v, max_v, raw_label)
+                        elif 'technical' in label_lower or 'tech' in label_lower:
+                            set_score('technical', score_v, max_v, raw_label)
+                        elif 'qualif' in label_lower or 'education' in label_lower or 'cert' in label_lower:
+                            set_score('education', score_v, max_v, raw_label)
+                        elif 'achievement' in label_lower:
+                            set_score('achievements', score_v, max_v, raw_label)
+                        elif 'project' in label_lower:
+                            set_score('projects', score_v, max_v, raw_label)
+
             return scores
         
         try:
