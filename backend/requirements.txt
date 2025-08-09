@@ -115,5 +115,7 @@ proto-plus
 joblib
 threadpoolctl
 reportlab>=4.4.0
+httplib2
+
 
 # PDF Generation Dependencies
