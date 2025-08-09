@@ -3138,6 +3138,12 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   
+  // ATS Score Calculator state
+  const [atsLoading, setAtsLoading] = useState(false);
+  const [atsResults, setAtsResults] = useState([]);
+  const [showAtsPopup, setShowAtsPopup] = useState(false);
+  const [currentAtsResult, setCurrentAtsResult] = useState(null);
+  
   // Analysis Result state
   const [allAnalyses, setAllAnalyses] = useState([]);
   const [analysesLoading, setAnalysesLoading] = useState(false);
