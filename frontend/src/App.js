@@ -3426,6 +3426,7 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
         setAnalysisJobTitle('');
         setAnalysisJobDescription('');
         setAnalysisResumeFile(null);
+        setAnalysisResumePreview('');
         // Reset file input
         const fileInput = document.querySelector('input[type="file"]');
         if (fileInput) fileInput.value = '';
