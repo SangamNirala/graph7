@@ -6033,24 +6033,44 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                             story.append(Paragraph(f"• {line.strip()}", normal_style))
                 story.append(Spacer(1, 15))
             
-            # Detailed Analysis - Enhanced to capture all analysis content
+            # Detailed Analysis - Enhanced to capture all analysis content with modern sections
             story.append(Paragraph("📋 COMPREHENSIVE ATS ANALYSIS", header_style))
             story.append(Spacer(1, 8))
             
-            # Process all sections comprehensively
-            section_order = ['scoring', 'detailed_analysis', 'recommendations', 'general_analysis']
+            # Process all sections comprehensively with modern section support
+            section_order = [
+                'ats_score', 'scoring_breakdown', 'improvement_areas', 'implementation_roadmap', 
+                'timeline_improvements', 'optimization_checklist', 'probability_assessment', 
+                'enhanced_insights', 'recommendations', 'scoring', 'detailed_analysis', 'general_analysis'
+            ]
             
             for section_name in section_order:
                 if section_name in sections:
                     content = sections[section_name]
                     if content and content.strip():
                         # Add section header based on type
-                        if section_name == 'scoring':
-                            story.append(Paragraph("🎯 SCORING BREAKDOWN", subheader_style))
+                        if section_name == 'ats_score':
+                            story.append(Paragraph("🎯 ATS SCORE SUMMARY", subheader_style))
+                        elif section_name == 'scoring_breakdown':
+                            story.append(Paragraph("📊 DETAILED SCORING BREAKDOWN", subheader_style))
+                        elif section_name == 'improvement_areas':
+                            story.append(Paragraph("🔍 CRITICAL IMPROVEMENT AREAS", subheader_style))
+                        elif section_name == 'implementation_roadmap':
+                            story.append(Paragraph("🗺️ IMPLEMENTATION ROADMAP", subheader_style))
+                        elif section_name == 'timeline_improvements':
+                            story.append(Paragraph("⏱️ TIMELINE-BASED IMPROVEMENTS", subheader_style))
+                        elif section_name == 'optimization_checklist':
+                            story.append(Paragraph("✅ ATS OPTIMIZATION CHECKLIST", subheader_style))
+                        elif section_name == 'probability_assessment':
+                            story.append(Paragraph("📈 HIRING PROBABILITY & COMPETITIVE ANALYSIS", subheader_style))
+                        elif section_name == 'enhanced_insights':
+                            story.append(Paragraph("🔍 ENHANCED ANALYSIS INSIGHTS", subheader_style))
+                        elif section_name == 'recommendations':
+                            story.append(Paragraph("💡 SCORE ENHANCEMENT RECOMMENDATIONS", subheader_style))
+                        elif section_name == 'scoring':
+                            story.append(Paragraph("🎯 SCORING ANALYSIS", subheader_style))
                         elif section_name == 'detailed_analysis':
                             story.append(Paragraph("🔍 DETAILED INSIGHTS", subheader_style))
-                        elif section_name == 'recommendations':
-                            story.append(Paragraph("💡 IMPROVEMENT RECOMMENDATIONS", subheader_style))
                         elif section_name == 'general_analysis':
                             story.append(Paragraph("📊 ANALYSIS OVERVIEW", subheader_style))
                         
@@ -6061,17 +6081,22 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                         for line in content_lines:
                             if line.strip():
                                 clean_line = line.replace('**', '').replace('*', '').replace('■', '•')
-                                clean_line = re.sub(r'[🎯💼⚙️🎓📊🚀🔍💡📈📋⭐]', '', clean_line)
+                                clean_line = re.sub(r'[🎯💼⚙️🎓📊🚀🔍💡📈📋⭐✅⏱️🗺️]', '', clean_line)
                                 
-                                # Determine line formatting
+                                # Determine line formatting with enhanced patterns
                                 if any(keyword in line.upper() for keyword in [
-                                    'KEYWORD ANALYSIS', 'EXPERIENCE EVALUATION', 'TECHNICAL COMPETENCY', 
-                                    'EDUCATION', 'QUANTIFIED ACHIEVEMENTS', 'PROJECT INNOVATION',
-                                    'CONTENT ANALYSIS', 'HYBRID SCORING', 'CRITICAL IMPROVEMENT',
-                                    'SCORE ENHANCEMENT', 'IMPLEMENTATION ROADMAP', 'IMMEDIATE FIXES'
+                                    'COMPREHENSIVE ATS SCORE', 'OVERALL ATS SCORE', 'FINAL SCORE',
+                                    'KEYWORD OPTIMIZATION', 'EXPERIENCE RELEVANCE', 'TECHNICAL COMPETENCY', 
+                                    'QUALIFICATIONS', 'QUANTIFIED ACHIEVEMENTS',
+                                    'HIGH-IMPACT KEYWORDS', 'EXPERIENCE GAPS', 'TECHNICAL SKILLS',
+                                    'QUANTIFICATION OPPORTUNITIES', 'ATS FORMATTING ISSUES',
+                                    'IMMEDIATE FIXES', 'SHORT TERM', 'STRATEGIC DEVELOPMENT',
+                                    'HIRING PROBABILITY', 'COMPETITIVE POSITIONING',
+                                    'CONTENT ANALYSIS RESULTS', 'KEYWORD MATCHING ANALYSIS',
+                                    'HYBRID SCORING CALCULATION', 'SCORE ENHANCEMENT'
                                 ]):
                                     story.append(Paragraph(f"<b>{clean_line.strip()}</b>", subheader_style))
-                                elif line.strip().startswith('•') or line.strip().startswith('-') or line.strip().startswith('→'):
+                                elif line.strip().startswith('•') or line.strip().startswith('-') or line.strip().startswith('→') or line.strip().startswith('✓') or line.strip().startswith('✗'):
                                     story.append(Paragraph(f"  {clean_line.strip()}", normal_style))
                                 elif ':' in clean_line and len(clean_line.split(':')[0]) < 50:  # Likely a label
                                     parts = clean_line.split(':', 1)
@@ -6080,7 +6105,11 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                                     else:
                                         story.append(Paragraph(clean_line.strip(), normal_style))
                                 elif clean_line.strip():
-                                    story.append(Paragraph(clean_line.strip(), normal_style))
+                                    # Check for score patterns like "XX/XX" or percentages
+                                    if re.search(r'\d+/\d+|\d+%|\d+\.\d+%', clean_line):
+                                        story.append(Paragraph(f"<b>{clean_line.strip()}</b>", normal_style))
+                                    else:
+                                        story.append(Paragraph(clean_line.strip(), normal_style))
                                 story.append(Spacer(1, 3))
                         
                         story.append(Spacer(1, 10))
@@ -6095,13 +6124,15 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                 for line in analysis_lines:
                     if line.strip():
                         clean_line = line.replace('**', '').replace('*', '').replace('■', '•')
-                        clean_line = re.sub(r'[🎯💼⚙️🎓📊🚀🔍💡📈📋⭐]', '', clean_line)
+                        clean_line = re.sub(r'[🎯💼⚙️🎓📊🚀🔍💡📈📋⭐✅⏱️🗺️]', '', clean_line)
                         
                         if clean_line.strip():
                             if any(keyword in line.upper() for keyword in [
                                 'COMPREHENSIVE ATS SCORE', 'KEYWORD ANALYSIS', 'EXPERIENCE EVALUATION',
                                 'TECHNICAL COMPETENCY', 'EDUCATION', 'QUANTIFIED ACHIEVEMENTS',
-                                'CRITICAL IMPROVEMENT', 'SCORE ENHANCEMENT', 'IMPLEMENTATION ROADMAP'
+                                'CRITICAL IMPROVEMENT', 'SCORE ENHANCEMENT', 'IMPLEMENTATION ROADMAP',
+                                'IMMEDIATE FIXES', 'SHORT TERM', 'STRATEGIC DEVELOPMENT',
+                                'ATS OPTIMIZATION', 'HIRING PROBABILITY', 'COMPETITIVE POSITIONING'
                             ]):
                                 story.append(Paragraph(f"<b>{clean_line.strip()}</b>", subheader_style))
                             else:
