@@ -5154,6 +5154,351 @@ async def download_resume_analysis_pdf(analysis_id: str):
         logging.error(f"PDF download error: {e}")
         raise HTTPException(status_code=500, detail="Failed to download PDF")
 
+# Enhanced ATS Analysis Engine
+class EnhancedATSAnalyzer:
+    """
+    Multi-Phase ATS Analysis Engine combining AI and programmatic validation
+    """
+    
+    def __init__(self):
+        self.industry_keywords = {
+            'software_engineering': [
+                'python', 'java', 'javascript', 'react', 'node.js', 'mongodb', 'sql', 'git', 
+                'agile', 'scrum', 'api', 'rest', 'microservices', 'cloud', 'aws', 'docker',
+                'kubernetes', 'ci/cd', 'testing', 'debugging', 'algorithms', 'data structures'
+            ],
+            'data_science': [
+                'python', 'r', 'sql', 'machine learning', 'deep learning', 'tensorflow', 
+                'pytorch', 'pandas', 'numpy', 'scikit-learn', 'statistics', 'visualization',
+                'tableau', 'power bi', 'hadoop', 'spark', 'big data', 'nlp', 'computer vision'
+            ],
+            'marketing': [
+                'seo', 'sem', 'google analytics', 'facebook ads', 'content marketing', 
+                'social media', 'email marketing', 'conversion optimization', 'crm',
+                'hubspot', 'salesforce', 'a/b testing', 'roi', 'kpi', 'brand management'
+            ],
+            'finance': [
+                'financial modeling', 'excel', 'valuation', 'accounting', 'gaap', 'ifrs',
+                'risk management', 'portfolio management', 'derivatives', 'bloomberg',
+                'capital markets', 'investment banking', 'corporate finance', 'budgeting'
+            ]
+        }
+        
+        self.ats_friendly_sections = [
+            'summary', 'objective', 'experience', 'education', 'skills', 'projects',
+            'certifications', 'achievements', 'work history', 'professional experience'
+        ]
+    
+    def extract_and_analyze_content(self, resume_content: str, file_extension: str):
+        """Phase 1: Content extraction and formatting analysis"""
+        analysis = {
+            'content_length': len(resume_content),
+            'word_count': len(resume_content.split()),
+            'file_format': file_extension,
+            'sections_detected': [],
+            'formatting_issues': [],
+            'ats_compatibility_score': 0
+        }
+        
+        # Detect resume sections
+        resume_lower = resume_content.lower()
+        for section in self.ats_friendly_sections:
+            if section in resume_lower:
+                analysis['sections_detected'].append(section)
+        
+        # ATS formatting checks
+        if file_extension == '.pdf':
+            analysis['ats_compatibility_score'] += 25  # PDF is ATS-friendly
+        elif file_extension in ['.doc', '.docx']:
+            analysis['ats_compatibility_score'] += 30  # Word docs are most ATS-friendly
+        elif file_extension == '.txt':
+            analysis['ats_compatibility_score'] += 20  # Plain text is compatible but basic
+        
+        # Check for common formatting issues
+        if len(analysis['sections_detected']) < 4:
+            analysis['formatting_issues'].append("Missing common resume sections")
+        
+        if analysis['word_count'] < 200:
+            analysis['formatting_issues'].append("Resume content too brief (under 200 words)")
+        elif analysis['word_count'] > 1000:
+            analysis['formatting_issues'].append("Resume content may be too lengthy (over 1000 words)")
+        
+        # Check for contact information
+        email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+        phone_pattern = r'(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
+        
+        has_email = bool(re.search(email_pattern, resume_content))
+        has_phone = bool(re.search(phone_pattern, resume_content))
+        
+        if has_email and has_phone:
+            analysis['ats_compatibility_score'] += 15
+        elif has_email or has_phone:
+            analysis['ats_compatibility_score'] += 10
+        else:
+            analysis['formatting_issues'].append("Missing contact information")
+        
+        return analysis
+    
+    def analyze_keywords_and_skills(self, resume_content: str, job_description: str, job_title: str):
+        """Phase 2: Programmatic keyword matching and technical validation"""
+        analysis = {
+            'job_keywords_found': [],
+            'job_keywords_missing': [],
+            'keyword_match_percentage': 0,
+            'skill_categories': {},
+            'experience_indicators': [],
+            'quantified_achievements': 0
+        }
+        
+        # Extract keywords from job description
+        job_desc_lower = job_description.lower()
+        resume_lower = resume_content.lower()
+        
+        # Common technical keywords extraction
+        import nltk
+        try:
+            nltk.download('punkt', quiet=True)
+            nltk.download('stopwords', quiet=True)
+            from nltk.corpus import stopwords
+            from nltk.tokenize import word_tokenize
+            
+            stop_words = set(stopwords.words('english'))
+            job_words = [word for word in word_tokenize(job_desc_lower) if word.isalnum() and word not in stop_words and len(word) > 2]
+            job_keywords = list(set(job_words))
+            
+            # Find matching keywords
+            matched_keywords = []
+            for keyword in job_keywords:
+                if keyword in resume_lower:
+                    matched_keywords.append(keyword)
+                    analysis['job_keywords_found'].append(keyword)
+                else:
+                    analysis['job_keywords_missing'].append(keyword)
+            
+            if job_keywords:
+                analysis['keyword_match_percentage'] = (len(matched_keywords) / len(job_keywords)) * 100
+                
+        except Exception as e:
+            logging.warning(f"NLTK processing failed: {e}")
+            # Fallback keyword analysis
+            job_keywords = [word.strip().lower() for word in job_description.split() if len(word.strip()) > 3]
+            unique_keywords = list(set(job_keywords))[:20]  # Limit to 20 keywords
+            
+            matched_keywords = [kw for kw in unique_keywords if kw in resume_lower]
+            analysis['job_keywords_found'] = matched_keywords
+            analysis['job_keywords_missing'] = [kw for kw in unique_keywords if kw not in matched_keywords]
+            
+            if unique_keywords:
+                analysis['keyword_match_percentage'] = (len(matched_keywords) / len(unique_keywords)) * 100
+        
+        # Detect industry and match with industry-specific keywords
+        detected_industry = None
+        for industry, keywords in self.industry_keywords.items():
+            industry_matches = sum(1 for kw in keywords if kw in job_desc_lower)
+            if industry_matches >= 3:  # Threshold for industry detection
+                detected_industry = industry
+                break
+        
+        if detected_industry:
+            industry_skills_found = [kw for kw in self.industry_keywords[detected_industry] if kw in resume_lower]
+            analysis['skill_categories'][detected_industry] = {
+                'found': industry_skills_found,
+                'total': len(self.industry_keywords[detected_industry]),
+                'percentage': (len(industry_skills_found) / len(self.industry_keywords[detected_industry])) * 100
+            }
+        
+        # Look for quantified achievements (numbers, percentages, metrics)
+        number_patterns = [
+            r'\d+%',  # Percentages
+            r'\$\d+',  # Dollar amounts
+            r'\d+\+',  # Numbers with plus
+            r'\d+ years?',  # Years of experience
+            r'\d+ months?',  # Months
+            r'\d+k\+?',  # Thousands
+            r'\d+m\+?',  # Millions
+            r'increased?.*\d+',  # Increased by number
+            r'reduced?.*\d+',  # Reduced by number
+            r'improved?.*\d+',  # Improved by number
+        ]
+        
+        for pattern in number_patterns:
+            matches = re.findall(pattern, resume_content, re.IGNORECASE)
+            analysis['quantified_achievements'] += len(matches)
+        
+        # Experience level indicators
+        experience_patterns = [
+            (r'(\d+)\+?\s*years?', 'years_experience'),
+            (r'senior|lead|principal|manager|director', 'senior_level'),
+            (r'junior|entry|associate|intern', 'junior_level'),
+            (r'architect|consultant|specialist|expert', 'specialist_level')
+        ]
+        
+        for pattern, indicator_type in experience_patterns:
+            if re.search(pattern, resume_content, re.IGNORECASE):
+                analysis['experience_indicators'].append(indicator_type)
+        
+        return analysis
+    
+    def generate_enhanced_ai_analysis(self, resume_content: str, job_title: str, job_description: str, 
+                                    content_analysis: dict, keyword_analysis: dict):
+        """Phase 3: AI-powered contextual analysis with enhanced prompts"""
+        
+        # Create context-aware prompt based on previous analysis
+        context_prompt = f"""
+        ENHANCED ATS ANALYSIS CONTEXT:
+        - File Format: {content_analysis['file_format']} (ATS Compatibility: {content_analysis['ats_compatibility_score']}/70)
+        - Resume Length: {content_analysis['word_count']} words
+        - Sections Detected: {', '.join(content_analysis['sections_detected'])}
+        - Keyword Match Rate: {keyword_analysis['keyword_match_percentage']:.1f}%
+        - Quantified Achievements: {keyword_analysis['quantified_achievements']} found
+        - Experience Indicators: {', '.join(keyword_analysis['experience_indicators'])}
+        """
+        
+        enhanced_prompt = f"""YOU ARE AN ENTERPRISE-GRADE ATS ANALYSIS EXPERT WITH ACCESS TO REAL-TIME RECRUITMENT DATA FROM 1M+ SUCCESSFUL HIRES. PERFORM COMPREHENSIVE MULTI-DIMENSIONAL ANALYSIS.
+
+{context_prompt}
+
+**TARGET ROLE ANALYSIS:**
+Job Title: {job_title}
+Job Description: {job_description}
+
+**CANDIDATE RESUME:**
+{resume_content}
+
+**EXECUTE ADVANCED ATS SCORING WITH THESE ENHANCED CRITERIA:**
+
+**🎯 KEYWORD OPTIMIZATION ANALYSIS (35 POINTS)**
+- **Primary Keywords Match** (20 points): Exact match analysis of must-have terms
+  Current Match Rate: {keyword_analysis['keyword_match_percentage']:.1f}%
+  - 90-100% match = 20pts, 80-89% = 17pts, 70-79% = 14pts, 60-69% = 10pts, <60% = 5pts
+- **Keyword Placement Strategy** (8 points): Strategic positioning in headers, summaries, experience
+- **Semantic Keyword Coverage** (7 points): Industry synonyms and related terms
+
+**💼 EXPERIENCE DEPTH & RELEVANCE (25 POINTS)**
+- **Role Alignment** (12 points): Direct experience match with job requirements
+- **Career Progression** (8 points): Growth trajectory and increasing responsibilities  
+- **Industry Context** (5 points): Sector-specific experience and domain knowledge
+
+**⚙️ TECHNICAL COMPETENCY VALIDATION (20 POINTS)**
+- **Core Skills Demonstration** (12 points): Evidence of required technical abilities
+- **Technology Stack Match** (5 points): Framework, language, and tool alignment
+- **Implementation Evidence** (3 points): Project-based skill validation
+
+**🎓 QUALIFICATION & CERTIFICATION SCORE (10 POINTS)**
+- **Educational Requirements** (6 points): Degree level and field relevance
+- **Professional Certifications** (4 points): Industry-recognized credentials and ongoing learning
+
+**📊 ACHIEVEMENT QUANTIFICATION (10 POINTS)**
+Current Quantified Metrics: {keyword_analysis['quantified_achievements']} found
+- **Measurable Impact** (6 points): ROI, efficiency gains, revenue generation
+- **Scale Indicators** (4 points): Team size, project scope, user base
+
+**🔧 ATS TECHNICAL COMPATIBILITY (BONUS POINTS)**
+Current ATS Score: {content_analysis['ats_compatibility_score']}/70
+- File format compatibility, section recognition, parsing accuracy
+
+**MANDATORY OUTPUT FORMAT:**
+
+**COMPREHENSIVE ATS SCORE: [XX]/100**
+
+**DETAILED SCORING BREAKDOWN:**
+🎯 Keyword Optimization: [XX]/35
+💼 Experience Relevance: [XX]/25  
+⚙️ Technical Competency: [XX]/20
+🎓 Qualifications: [XX]/10
+📊 Quantified Achievements: [XX]/10
+
+**CRITICAL IMPROVEMENT AREAS:**
+1. **High-Impact Keywords Missing**: [List 5-8 specific keywords to add]
+2. **Experience Gaps**: [Specific experience areas to strengthen]
+3. **Technical Skills**: [Missing technologies or tools to highlight]
+4. **Quantification Opportunities**: [Areas where numbers/metrics should be added]
+5. **ATS Formatting Issues**: [Specific formatting improvements needed]
+
+**IMPLEMENTATION ROADMAP:**
+**IMMEDIATE FIXES (0-1 week):**
+- [3-4 specific, actionable changes that can boost score by 10-15 points]
+
+**SHORT TERM (1-4 weeks):**
+- [3-4 medium effort improvements for 15-20 point increase]
+
+**STRATEGIC DEVELOPMENT (1-6 months):**
+- [2-3 longer-term improvements for 20+ point increase]
+
+**ATS OPTIMIZATION CHECKLIST:**
+✓/✗ Contact information prominently placed
+✓/✗ Standard section headers used
+✓/✗ Key skills mentioned in multiple contexts
+✓/✗ Quantified achievements included
+✓/✗ Job-relevant keywords naturally integrated
+✓/✗ Professional formatting maintained
+✓/✗ File format ATS-compatible
+
+**HIRING PROBABILITY ASSESSMENT:**
+Based on analysis: [EXCEPTIONAL (95-100) | OUTSTANDING (85-94) | STRONG (75-84) | GOOD (65-74) | NEEDS IMPROVEMENT (55-64) | SIGNIFICANT GAPS (<55)]
+
+**COMPETITIVE POSITIONING:**
+Estimated ranking against other candidates: [Top 5% | Top 15% | Top 30% | Top 50% | Bottom 50%]
+
+Provide specific, measurable, and immediately actionable recommendations."""
+
+        return enhanced_prompt
+    
+    def calculate_hybrid_score(self, ai_score: int, content_analysis: dict, keyword_analysis: dict):
+        """Phase 4: Hybrid scoring combining programmatic + AI results"""
+        
+        # Start with AI score as base
+        hybrid_score = ai_score
+        
+        # Apply programmatic adjustments
+        programmatic_adjustments = 0
+        
+        # Keyword match adjustment
+        keyword_percentage = keyword_analysis['keyword_match_percentage']
+        if keyword_percentage >= 80:
+            programmatic_adjustments += 5
+        elif keyword_percentage >= 60:
+            programmatic_adjustments += 2
+        elif keyword_percentage < 30:
+            programmatic_adjustments -= 5
+        
+        # Content quality adjustments
+        if content_analysis['word_count'] < 150:
+            programmatic_adjustments -= 10  # Too brief
+        elif content_analysis['word_count'] > 1200:
+            programmatic_adjustments -= 5   # Too long
+        
+        # Section completeness
+        if len(content_analysis['sections_detected']) >= 5:
+            programmatic_adjustments += 3
+        elif len(content_analysis['sections_detected']) < 3:
+            programmatic_adjustments -= 5
+        
+        # Quantified achievements bonus
+        if keyword_analysis['quantified_achievements'] >= 5:
+            programmatic_adjustments += 5
+        elif keyword_analysis['quantified_achievements'] >= 3:
+            programmatic_adjustments += 3
+        elif keyword_analysis['quantified_achievements'] == 0:
+            programmatic_adjustments -= 3
+        
+        # ATS compatibility
+        ats_score = content_analysis['ats_compatibility_score']
+        if ats_score >= 60:
+            programmatic_adjustments += 3
+        elif ats_score >= 40:
+            programmatic_adjustments += 1
+        elif ats_score < 30:
+            programmatic_adjustments -= 3
+        
+        # Apply adjustments
+        final_score = hybrid_score + programmatic_adjustments
+        
+        # Ensure score stays within bounds
+        final_score = max(0, min(100, final_score))
+        
+        return final_score, programmatic_adjustments
+
 # ATS Score Calculator Endpoints
 @api_router.post("/placement-preparation/ats-score-calculate")
 async def calculate_ats_score(
@@ -5162,7 +5507,7 @@ async def calculate_ats_score(
     resume: UploadFile = File(...)
 ):
     """
-    Calculate comprehensive ATS score using advanced AI analysis
+    Calculate comprehensive ATS score using enhanced multi-phase analysis
     """
     try:
         # Validate file type
