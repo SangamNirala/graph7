@@ -13,7 +13,7 @@ from reportlab.lib.pagesizes import letter
 from docx import Document
 
 # Get backend URL from environment
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://2a7599ca-da2e-4632-9f55-89218eb69a13.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://2db48e49-88b4-42ec-82bd-5c0a471191b0.preview.emergentagent.com')
 API_BASE = f"{BACKEND_URL}/api"
 
 class TruncationFixTester:
