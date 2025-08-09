@@ -6091,6 +6091,137 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                             story.append(Paragraph(f"• {line.strip()}", normal_style))
                 story.append(Spacer(1, 15))
             
+            # Scoring Explanation and Improvement Roadmap per Section
+            if scores:
+                story.append(Paragraph("🧮 HOW THE SCORE WAS CALCULATED", header_style))
+                story.append(Spacer(1, 8))
+                for category_key, score_info in scores.items():
+                    label = {
+                        'keyword': 'Keyword Optimization',
+                        'experience': 'Experience Relevance',
+                        'technical': 'Technical Competency',
+                        'education': 'Qualifications',
+                        'achievements': 'Quantified Achievements',
+                        'projects': 'Project Innovation'
+                    }.get(category_key, score_info.get('label') or category_key.title())
+
+                    story.append(Paragraph(f"{label}", subheader_style))
+                    # Explanation extraction heuristics: search in analysis text for the block related to this category
+                    explanation = []
+                    lines = ats_analysis_text.split('\n')
+                    capture = False
+                    for ln in lines:
+                        lcu = ln.upper()
+                        if any(k in lcu for k in [
+                            'KEYWORD OPTIMIZATION' if category_key=='keyword' else '',
+                            'KEYWORD ANALYSIS' if category_key=='keyword' else '',
+                            'EXPERIENCE RELEVANCE' if category_key=='experience' else '',
+                            'EXPERIENCE EVALUATION' if category_key=='experience' else '',
+                            'TECHNICAL COMPETENCY' if category_key=='technical' else '',
+                            'TECHNICAL SKILLS' if category_key=='technical' else '',
+                            'QUALIFICATIONS' if category_key=='education' else '',
+                            'EDUCATION' if category_key=='education' else '',
+                            'QUANTIFIED ACHIEVEMENTS' if category_key=='achievements' else '',
+                            'PROJECT INNOVATION' if category_key=='projects' else '',
+                            'PROJECTS' if category_key=='projects' else ''
+                        ] if k):
+                            capture = True
+                            continue
+                        if capture:
+                            # stop when we hit another known section header
+                            if re.search(r"^[A-Z].+:\s*\d+\s*/\s*\d+", ln) or any(h in lcu for h in [
+                                'COMPREHENSIVE ATS SCORE','DETAILED SCORING BREAKDOWN','CRITICAL IMPROVEMENT','IMPLEMENTATION ROADMAP','ATS OPTIMIZATION','HIRING PROBABILITY','ENHANCED ANALYSIS','SCORE ENHANCEMENT','IMMEDIATE FIXES','SHORT TERM','STRATEGIC DEVELOPMENT'
+                            ]):
+                                break
+                            # bullet points help readability
+                            if ln.strip():
+                                explanation.append(ln.strip())
+                    # Fallback if nothing captured
+                    if not explanation:
+                        explanation.append(f"Score {score_info['score']}/{score_info['max']}. See analysis sections for details.")
+
+                    # Contribution line
+                    total_max = sum(v.get('max', 0) for v in scores.values()) or 100
+                    weight_pct = int(round((score_info.get('max', 0) / total_max) * 100))
+                    contribution_text = f"Contributes {weight_pct}% to the final ATS score."
+
+                    story.append(Paragraph(f"Why this score:", normal_style))
+                    for ln in explanation[:6]:  # limit to keep PDF concise
+                        story.append(Paragraph(f"• {ln}", normal_style))
+                    story.append(Paragraph(contribution_text, normal_style))
+                    story.append(Spacer(1, 6))
+
+                story.append(Spacer(1, 12))
+                story.append(Paragraph("🚀 IMPROVEMENT ROADMAP BY CATEGORY", header_style))
+                story.append(Spacer(1, 8))
+                for category_key, score_info in scores.items():
+                    if score_info.get('score', 0) >= score_info.get('max', 0):
+                        continue
+                    label = {
+                        'keyword': 'Keyword Optimization',
+                        'experience': 'Experience Relevance',
+                        'technical': 'Technical Competency',
+                        'education': 'Qualifications',
+                        'achievements': 'Quantified Achievements',
+                        'projects': 'Project Innovation'
+                    }.get(category_key, score_info.get('label') or category_key.title())
+
+                    story.append(Paragraph(f"{label}", subheader_style))
+
+                    # Identify deficiencies from the analysis text heuristically
+                    deficiencies = []
+                    potential_gains = []
+                    # Heuristics based on keywords
+                    text_lower = ats_analysis_text.lower()
+                    if category_key == 'keyword':
+                        # Look for missing keywords count pattern
+                        m = re.search(r"missing\s+(\d+)\s+(?:key|job-specific)?\s*keywords?", text_lower)
+                        if m:
+                            missing = int(m.group(1))
+                            deficiencies.append(f"Missing {missing} key job-specific terms")
+                            # assume ~1 point per missing keyword up to max
+                            potential = min(missing, max(0, score_info['max'] - score_info['score']))
+                            potential_gains.append((f"Add {missing} missing keywords", potential))
+                        else:
+                            deficiencies.append("Keyword density below target for critical terms")
+                            potential_gains.append(("Add missing keywords and synonyms", min(10, max(0, score_info['max'] - score_info['score']))))
+                    elif category_key == 'experience':
+                        if 'quantif' in text_lower or 'metrics' in text_lower:
+                            deficiencies.append("Insufficient quantified achievements in experience bullets")
+                            potential_gains.append(("Quantify 3-5 achievements (%, $, time)", min(7, max(0, score_info['max'] - score_info['score']))))
+                        if 'gap' in text_lower:
+                            deficiencies.append("Experience gaps vs job requirements")
+                    elif category_key == 'technical':
+                        if 'trending' in text_lower or 'missing' in text_lower:
+                            deficiencies.append("Missing trending technologies relevant to role")
+                            potential_gains.append(("Add 2 trending technologies", min(5, max(0, score_info['max'] - score_info['score']))))
+                    elif category_key == 'education':
+                        if 'certif' in text_lower:
+                            deficiencies.append("Additional certifications recommended")
+                            potential_gains.append(("Obtain 1 industry certification", min(3, max(0, score_info['max'] - score_info['score']))))
+                    elif category_key == 'achievements':
+                        deficiencies.append("Add measurable impact statements")
+                        potential_gains.append(("Quantify 3 achievements", min(7, max(0, score_info['max'] - score_info['score']))))
+                    elif category_key == 'projects':
+                        deficiencies.append("Include 1-2 high-impact projects with outcomes")
+                        potential_gains.append(("Add project with measurable results", min(5, max(0, score_info['max'] - score_info['score']))))
+
+                    if deficiencies:
+                        story.append(Paragraph("Deficiencies:", normal_style))
+                        for d in deficiencies[:4]:
+                            story.append(Paragraph(f"• {d}", normal_style))
+                    if potential_gains:
+                        story.append(Paragraph("Improvements and potential score gain:", normal_style))
+                        for desc, gain in potential_gains[:4]:
+                            story.append(Paragraph(f"• {desc} (+{gain})", normal_style))
+                    # Priority based on weight and gap
+                    total_max = sum(v.get('max', 0) for v in scores.values()) or 100
+                    weight_pct = (score_info.get('max', 0) / total_max) if total_max else 0
+                    gap = max(0, score_info.get('max', 0) - score_info.get('score', 0))
+                    priority = 'High' if weight_pct >= 0.25 or gap >= 8 else 'Medium' if weight_pct >= 0.15 or gap >= 5 else 'Low'
+                    story.append(Paragraph(f"Priority: {priority}", normal_style))
+                    story.append(Spacer(1, 10))
+
             # Detailed Analysis - Enhanced to capture all analysis content with modern sections
             story.append(Paragraph("📋 COMPREHENSIVE ATS ANALYSIS", header_style))
             story.append(Spacer(1, 8))
