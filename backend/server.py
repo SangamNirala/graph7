@@ -5418,79 +5418,311 @@ Identify specific deficiencies and quantify improvement potential.
         pdf_filename = f"ats_score_report_{ats_id[:8]}.pdf"
         pdf_path = f"/tmp/{pdf_filename}"
         
-        # Generate PDF using reportlab
+        # Generate PDF using reportlab with improved formatting
         from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import letter, A4
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
         from reportlab.lib.units import inch
-        from reportlab.lib.colors import HexColor
+        from reportlab.lib.colors import HexColor, Color
+        from reportlab.lib import colors
         import os
+        import re
+        
+        def parse_ats_analysis(analysis_text):
+            """Parse the ATS analysis text into structured sections"""
+            sections = {}
+            lines = analysis_text.split('\n')
+            current_section = None
+            current_content = []
+            
+            # Extract key sections using patterns
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Check for main section headers
+                if 'Educational Qualifications' in line:
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'education'
+                    current_content = []
+                elif 'Job History' in line:
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'job_history'
+                    current_content = []
+                elif 'Personal Projects' in line:
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'projects'
+                    current_content = []
+                elif 'Skill Set' in line:
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'skills'
+                    current_content = []
+                elif 'PRECISION ATS EVALUATION' in line or 'INTELLIGENT SCORING MATRIX' in line:
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'scoring'
+                    current_content = []
+                elif current_section:
+                    current_content.append(line)
+            
+            # Add the last section
+            if current_section:
+                sections[current_section] = '\n'.join(current_content)
+            
+            return sections
+        
+        def extract_scores(analysis_text):
+            """Extract individual scores from the analysis text"""
+            scores = {}
+            
+            # Patterns to match different score formats
+            score_patterns = {
+                'keyword': r'KEYWORD ANALYSIS:\s*(\d+)/(\d+)',
+                'experience': r'EXPERIENCE EVALUATION:\s*(\d+)/(\d+)', 
+                'technical': r'TECHNICAL COMPETENCY:\s*(\d+)/(\d+)',
+                'education': r'EDUCATION.*CERTIFICATIONS:\s*(\d+)/(\d+)',
+                'achievements': r'QUANTIFIED ACHIEVEMENTS:\s*(\d+)/(\d+)',
+                'projects': r'PROJECT INNOVATION:\s*(\d+)/(\d+)'
+            }
+            
+            for category, pattern in score_patterns.items():
+                match = re.search(pattern, analysis_text)
+                if match:
+                    scores[category] = {'score': int(match.group(1)), 'max': int(match.group(2))}
+            
+            return scores
         
         try:
-            # Create PDF document
-            doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+            # Create PDF document with margins
+            doc = SimpleDocTemplate(
+                pdf_path, 
+                pagesize=A4,
+                leftMargin=0.75*inch,
+                rightMargin=0.75*inch,
+                topMargin=1*inch,
+                bottomMargin=0.75*inch
+            )
             styles = getSampleStyleSheet()
             story = []
             
-            # Title
+            # Custom styles
             title_style = ParagraphStyle(
                 'CustomTitle',
                 parent=styles['Heading1'],
-                fontSize=20,
-                spaceAfter=20,
+                fontSize=22,
+                spaceAfter=30,
                 textColor=HexColor('#1e40af'),
-                alignment=1  # Center alignment
+                alignment=1,
+                fontName='Helvetica-Bold'
             )
-            story.append(Paragraph("ATS Score Analysis Report", title_style))
-            story.append(Spacer(1, 12))
             
-            # Job details
-            job_style = ParagraphStyle(
-                'JobStyle',
+            header_style = ParagraphStyle(
+                'HeaderStyle',
+                parent=styles['Heading2'],
+                fontSize=16,
+                spaceAfter=15,
+                spaceBefore=20,
+                textColor=HexColor('#1f2937'),
+                fontName='Helvetica-Bold',
+                backColor=HexColor('#f3f4f6'),
+                leftIndent=10,
+                rightIndent=10
+            )
+            
+            subheader_style = ParagraphStyle(
+                'SubHeaderStyle',
+                parent=styles['Heading3'],
+                fontSize=13,
+                spaceAfter=8,
+                spaceBefore=10,
+                textColor=HexColor('#374151'),
+                fontName='Helvetica-Bold'
+            )
+            
+            normal_style = ParagraphStyle(
+                'NormalStyle',
+                parent=styles['Normal'],
+                fontSize=11,
+                spaceAfter=6,
+                textColor=HexColor('#4b5563'),
+                leading=14
+            )
+            
+            job_info_style = ParagraphStyle(
+                'JobInfoStyle',
                 parent=styles['Normal'],
                 fontSize=12,
                 spaceAfter=8,
-                textColor=HexColor('#374151')
+                textColor=HexColor('#6b7280'),
+                alignment=1
             )
-            story.append(Paragraph(f"<b>Position:</b> {job_title}", job_style))
-            story.append(Paragraph(f"<b>Generated on:</b> {current_time} UTC", job_style))
-            story.append(Spacer(1, 20))
             
-            # ATS Score Highlight
-            score_style = ParagraphStyle(
-                'ScoreStyle',
-                parent=styles['Heading1'],
-                fontSize=24,
-                spaceAfter=15,
-                textColor=HexColor('#16a34a') if ats_score >= 75 else HexColor('#dc2626'),
-                alignment=1  # Center alignment
-            )
-            story.append(Paragraph(f"ATS SCORE: {ats_score}/100", score_style))
-            story.append(Spacer(1, 20))
-            
-            # Analysis results
-            story.append(Paragraph("ATS Analysis Details:", styles['Heading2']))
+            # Title
+            story.append(Paragraph("📊 ATS SCORE ANALYSIS REPORT", title_style))
             story.append(Spacer(1, 12))
             
-            # Format the analysis text for PDF - limit to prevent huge PDFs
-            analysis_lines = ats_analysis_text.split('\n')
-            for i, line in enumerate(analysis_lines[:50]):  # Limit to first 50 lines
-                if line.strip():
-                    # Remove markdown formatting for PDF
-                    clean_line = line.replace('**', '').replace('*', '')
-                    if line.startswith('**') or line.startswith('•') or line.startswith('#'):
-                        # Make headers and bullet points bold
-                        story.append(Paragraph(f"<b>{clean_line}</b>", styles['Normal']))
-                    else:
-                        story.append(Paragraph(clean_line, styles['Normal']))
-                    story.append(Spacer(1, 4))
+            # Job details in a box
+            story.append(Paragraph(f"<b>Position:</b> {job_title}", job_info_style))
+            story.append(Paragraph(f"<b>Generated:</b> {current_time} UTC", job_info_style))
+            story.append(Spacer(1, 25))
+            
+            # ATS Score in a prominent box
+            score_color = HexColor('#16a34a') if ats_score >= 75 else HexColor('#dc2626') if ats_score >= 50 else HexColor('#b91c1c')
+            
+            # Create score table
+            score_data = [
+                ['OVERALL ATS SCORE', f'{ats_score}/100'],
+                ['COMPATIBILITY LEVEL', 
+                 'EXCEPTIONAL (95-100)' if ats_score >= 95 else
+                 'OUTSTANDING (85-94)' if ats_score >= 85 else
+                 'STRONG (75-84)' if ats_score >= 75 else
+                 'GOOD (65-74)' if ats_score >= 65 else
+                 'MODERATE (55-64)' if ats_score >= 55 else
+                 'NEEDS IMPROVEMENT (<55)'
+                ]
+            ]
+            
+            score_table = Table(score_data, colWidths=[2.5*inch, 2.5*inch])
+            score_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), HexColor('#f8fafc')),
+                ('TEXTCOLOR', (0, 0), (0, -1), HexColor('#1f2937')),
+                ('TEXTCOLOR', (1, 0), (1, 0), score_color),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 14),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
+                ('ROWBACKGROUNDS', (0, 0), (-1, -1), [HexColor('#ffffff'), HexColor('#f1f5f9')])
+            ]))
+            story.append(score_table)
+            story.append(Spacer(1, 25))
+            
+            # Parse sections from analysis
+            sections = parse_ats_analysis(ats_analysis_text)
+            scores = extract_scores(ats_analysis_text)
+            
+            # Score Breakdown Section
+            if scores:
+                story.append(Paragraph("📈 SCORE BREAKDOWN", header_style))
+                story.append(Spacer(1, 8))
+                
+                score_breakdown_data = [['CATEGORY', 'SCORE', 'PERCENTAGE']]
+                for category, score_info in scores.items():
+                    category_name = {
+                        'keyword': '🎯 Keyword Analysis',
+                        'experience': '💼 Experience Evaluation', 
+                        'technical': '⚙️ Technical Competency',
+                        'education': '🎓 Education & Certifications',
+                        'achievements': '📊 Quantified Achievements',
+                        'projects': '🚀 Project Innovation'
+                    }.get(category, category.title())
+                    
+                    percentage = int((score_info['score'] / score_info['max']) * 100)
+                    score_breakdown_data.append([
+                        category_name,
+                        f"{score_info['score']}/{score_info['max']}",
+                        f"{percentage}%"
+                    ])
+                
+                breakdown_table = Table(score_breakdown_data, colWidths=[2.8*inch, 1.2*inch, 1*inch])
+                breakdown_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), HexColor('#3b82f6')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 12),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('FONTSIZE', (0, 1), (-1, -1), 10),
+                    ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [HexColor('#ffffff'), HexColor('#f8fafc')] * 10)
+                ]))
+                story.append(breakdown_table)
+                story.append(Spacer(1, 20))
+            
+            # Educational Background
+            if 'education' in sections:
+                story.append(Paragraph("🎓 EDUCATIONAL QUALIFICATIONS", header_style))
+                story.append(Spacer(1, 8))
+                education_content = sections['education'].replace('**', '').replace('*', '')
+                for line in education_content.split('\n'):
+                    if line.strip():
+                        story.append(Paragraph(f"• {line.strip()}", normal_style))
+                story.append(Spacer(1, 15))
+            
+            # Work Experience
+            if 'job_history' in sections:
+                story.append(Paragraph("💼 PROFESSIONAL EXPERIENCE", header_style))
+                story.append(Spacer(1, 8))
+                job_content = sections['job_history'].replace('**', '').replace('*', '')
+                if 'no formal job history' in job_content.lower():
+                    story.append(Paragraph("• No formal job history listed in resume", normal_style))
+                else:
+                    for line in job_content.split('\n'):
+                        if line.strip():
+                            story.append(Paragraph(f"• {line.strip()}", normal_style))
+                story.append(Spacer(1, 15))
+            
+            # Projects
+            if 'projects' in sections:
+                story.append(Paragraph("🚀 KEY PROJECTS", header_style))
+                story.append(Spacer(1, 8))
+                projects_content = sections['projects'].replace('**', '').replace('*', '')
+                project_lines = projects_content.split('\n')
+                for line in project_lines:
+                    if line.strip():
+                        # Check if it's a project title (contains parentheses with tech stack)
+                        if '(' in line and ')' in line and ':' in line:
+                            story.append(Paragraph(f"<b>• {line.strip()}</b>", subheader_style))
+                        else:
+                            story.append(Paragraph(f"  {line.strip()}", normal_style))
+                story.append(Spacer(1, 15))
+            
+            # Skills
+            if 'skills' in sections:
+                story.append(Paragraph("⚡ SKILLS & COMPETENCIES", header_style))
+                story.append(Spacer(1, 8))
+                skills_content = sections['skills'].replace('**', '').replace('*', '')
+                for line in skills_content.split('\n'):
+                    if line.strip():
+                        if line.startswith('Core Technical Skills:') or line.startswith('Specialized Tools:') or line.startswith('Soft Skills:') or line.startswith('Domain Expertise:'):
+                            story.append(Paragraph(f"<b>{line.strip()}</b>", subheader_style))
+                        else:
+                            story.append(Paragraph(f"• {line.strip()}", normal_style))
+                story.append(Spacer(1, 15))
+            
+            # Detailed Analysis (if there's remaining content)
+            story.append(Paragraph("📋 DETAILED ANALYSIS", header_style))
+            story.append(Spacer(1, 8))
+            
+            # Process the scoring section more carefully
+            if 'scoring' in sections:
+                scoring_lines = sections['scoring'].split('\n')
+                for line in scoring_lines:
+                    if line.strip():
+                        clean_line = line.replace('**', '').replace('*', '').replace('■', '•').replace('🎯', '').replace('💼', '').replace('⚙️', '').replace('🎓', '').replace('📊', '').replace('🚀', '')
+                        
+                        if ('KEYWORD ANALYSIS:' in line or 'EXPERIENCE EVALUATION:' in line or 
+                            'TECHNICAL COMPETENCY:' in line or 'EDUCATION' in line or 
+                            'QUANTIFIED ACHIEVEMENTS:' in line or 'PROJECT INNOVATION:' in line):
+                            story.append(Paragraph(f"<b>{clean_line.strip()}</b>", subheader_style))
+                        elif line.strip().startswith('•') or line.strip().startswith('-'):
+                            story.append(Paragraph(clean_line.strip(), normal_style))
+                        elif clean_line.strip():
+                            story.append(Paragraph(clean_line.strip(), normal_style))
+                        story.append(Spacer(1, 3))
             
             # Build PDF
             doc.build(story)
             
         except Exception as e:
-            logging.error(f"PDF generation error: {e}")
+            logging.error(f"Enhanced PDF generation error: {e}")
             pdf_filename = ""  # Continue without PDF if generation fails
         
         # Store ATS analysis in database
