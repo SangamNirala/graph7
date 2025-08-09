@@ -4301,10 +4301,10 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
               <div className="text-center py-8">
                 <div className="text-white text-lg">🔄 Loading analyses...</div>
               </div>
-            ) : allAnalyses.length === 0 ? (
+            ) : allAnalyses.length === 0 && atsResults.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-gray-400 mb-4">📄 No resume analyses available yet</div>
-                <p className="text-gray-300 mb-6">Start by analyzing a resume in the Resume Analysis tab</p>
+                <div className="text-gray-400 mb-4">📄 No analyses available yet</div>
+                <p className="text-gray-300 mb-6">Start by analyzing a resume or calculating ATS scores in the Resume Analysis tab</p>
                 <button
                   onClick={() => setActiveTab('resume-analysis')}
                   className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300"
@@ -4314,6 +4314,50 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
               </div>
             ) : (
               <div className="space-y-6">
+                {/* ATS Score Results */}
+                {atsResults.map((atsResult) => (
+                  <div key={atsResult.ats_id} className="bg-gradient-to-r from-blue-900/50 to-indigo-900/50 rounded-lg p-6 border border-blue-400/30">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-white flex items-center">
+                          🎯 ATS Score: {atsResult.ats_score}/100 - {atsResult.job_title}
+                        </h3>
+                        <p className="text-gray-300 text-sm">
+                          Generated: {new Date(atsResult.created_at).toLocaleDateString()} at{' '}
+                          {new Date(atsResult.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => downloadAtsPDF(atsResult.ats_id, atsResult.job_title)}
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center"
+                      >
+                        📄 Download ATS Report
+                      </button>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-4 mb-4">
+                      <h4 className="text-lg font-semibold text-white mb-2">Job Requirements</h4>
+                      <p className="text-gray-300 text-sm">
+                        {atsResult.job_description.length > 200 
+                          ? `${atsResult.job_description.substring(0, 200)}...`
+                          : atsResult.job_description
+                        }
+                      </p>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h4 className="text-lg font-semibold text-white mb-2">ATS Analysis Preview</h4>
+                      <div className="text-gray-300 text-sm max-h-32 overflow-y-auto">
+                        {atsResult.analysis_text?.length > 300 
+                          ? `${atsResult.analysis_text.substring(0, 300)}...`
+                          : atsResult.analysis_text || 'Full ATS analysis available in PDF download'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Regular Analysis Results */}
                 {allAnalyses.map((analysis) => (
                   <div key={analysis.id} className="bg-white/10 rounded-lg p-6 border border-white/20">
                     <div className="flex justify-between items-start mb-4">
