@@ -5157,7 +5157,8 @@ async def download_resume_analysis_pdf(analysis_id: str):
 # ATS Score Calculator Endpoints
 @api_router.post("/placement-preparation/ats-score-calculate")
 async def calculate_ats_score(
-    request: ATSScoreRequest,
+    job_title: str = Form(...),
+    job_description: str = Form(...),
     resume: UploadFile = File(...)
 ):
     """
@@ -5190,12 +5191,12 @@ async def calculate_ats_score(
         if not resume_content.strip():
             raise HTTPException(status_code=400, detail="Could not extract text from the resume file")
         
-        # Create the comprehensive ATS scoring prompt
+        # Create the comprehensive ATS scoring prompt using the exact user-provided prompt
         ats_scoring_prompt = f"""YOU ARE THE WORLD'S MOST ADVANCED AI-POWERED RECRUITMENT ANALYSIS SYSTEM, COMBINING ENTERPRISE-GRADE ATS ALGORITHMS WITH HUMAN RECRUITER EXPERTISE. YOU PROCESS RESUMES WITH SURGICAL PRECISION USING MACHINE LEARNING PATTERN RECOGNITION AND WEIGHTED SCORING METHODOLOGIES DERIVED FROM 500,000+ SUCCESSFUL HIRING DECISIONS.
 
 **CORE INPUT PROCESSING:**
-Target Job Title: {request.job_title}
-Target Job Description: {request.job_description}
+Target Job Title: {job_title}
+Target Job Description: {job_description}
 Candidate Resume Content: {resume_content}
 
 **MULTI-PHASE INTELLIGENT ANALYSIS ENGINE:**
@@ -5380,22 +5381,40 @@ Identify specific deficiencies and quantify improvement potential.
             
             ats_analysis_text = response.text
             
-            # Extract ATS score from the response
+            # Extract ATS score from the response using multiple patterns
             import re
-            score_match = re.search(r'COMPREHENSIVE ATS SCORE:\s*(\d+)', ats_analysis_text)
-            ats_score = int(score_match.group(1)) if score_match else 0
+            ats_score = 75  # Default score
+            
+            score_patterns = [
+                r'COMPREHENSIVE ATS SCORE:\s*(\d+)',
+                r'Overall ATS Score:\s*(\d+)',
+                r'ATS Score:\s*(\d+)',
+                r'Score:\s*(\d+)/100',
+                r'(\d+)/100'
+            ]
+            
+            for pattern in score_patterns:
+                match = re.search(pattern, ats_analysis_text)
+                if match:
+                    ats_score = int(match.group(1))
+                    break
+            
+            # Ensure score is within valid range
+            ats_score = max(0, min(100, ats_score))
             
         except Exception as e:
             logging.error(f"Gemini API error: {e}")
             # Fallback if Gemini fails
-            ats_analysis_text = f"ATS Score Analysis for {request.job_title}:\n\n**COMPREHENSIVE ATS SCORE: 75/100**\n\n• **ANALYSIS**: Due to API limitations, this is a basic assessment. Manual review recommended for comprehensive scoring."
+            ats_analysis_text = f"ATS Score Analysis for {job_title}:\n\n**COMPREHENSIVE ATS SCORE: 75/100**\n\n• **ANALYSIS**: Due to API limitations, this is a basic assessment. Manual review recommended for comprehensive scoring."
             ats_score = 75
         
         # Generate PDF report
         current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         
         # Create unique filename
-        pdf_filename = f"ats_score_report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
+        import uuid
+        ats_id = str(uuid.uuid4())
+        pdf_filename = f"ats_score_report_{ats_id[:8]}.pdf"
         pdf_path = f"/tmp/{pdf_filename}"
         
         # Generate PDF using reportlab
@@ -5407,71 +5426,77 @@ Identify specific deficiencies and quantify improvement potential.
         from reportlab.lib.colors import HexColor
         import os
         
-        # Create PDF document
-        doc = SimpleDocTemplate(pdf_path, pagesize=A4)
-        styles = getSampleStyleSheet()
-        story = []
-        
-        # Title
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=20,
-            spaceAfter=20,
-            textColor=HexColor('#1e40af'),
-            alignment=1  # Center alignment
-        )
-        story.append(Paragraph("ATS Score Analysis Report", title_style))
-        story.append(Spacer(1, 12))
-        
-        # Job details
-        job_style = ParagraphStyle(
-            'JobStyle',
-            parent=styles['Normal'],
-            fontSize=12,
-            spaceAfter=8,
-            textColor=HexColor('#374151')
-        )
-        story.append(Paragraph(f"<b>Position:</b> {request.job_title}", job_style))
-        story.append(Paragraph(f"<b>Generated on:</b> {current_time} UTC", job_style))
-        story.append(Spacer(1, 20))
-        
-        # ATS Score Highlight
-        score_style = ParagraphStyle(
-            'ScoreStyle',
-            parent=styles['Heading1'],
-            fontSize=24,
-            spaceAfter=15,
-            textColor=HexColor('#16a34a') if ats_score >= 75 else HexColor('#dc2626'),
-            alignment=1  # Center alignment
-        )
-        story.append(Paragraph(f"ATS SCORE: {ats_score}/100", score_style))
-        story.append(Spacer(1, 20))
-        
-        # Analysis results
-        story.append(Paragraph("ATS Analysis Details:", styles['Heading2']))
-        story.append(Spacer(1, 12))
-        
-        # Format the analysis text for PDF
-        analysis_lines = ats_analysis_text.split('\n')
-        for line in analysis_lines:
-            if line.strip():
-                # Remove markdown formatting for PDF
-                clean_line = line.replace('**', '').replace('*', '')
-                if line.startswith('**') or line.startswith('•') or line.startswith('#'):
-                    # Make headers and bullet points bold
-                    story.append(Paragraph(f"<b>{clean_line}</b>", styles['Normal']))
-                else:
-                    story.append(Paragraph(clean_line, styles['Normal']))
-                story.append(Spacer(1, 4))
-        
-        # Build PDF
-        doc.build(story)
+        try:
+            # Create PDF document
+            doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+            styles = getSampleStyleSheet()
+            story = []
+            
+            # Title
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=20,
+                spaceAfter=20,
+                textColor=HexColor('#1e40af'),
+                alignment=1  # Center alignment
+            )
+            story.append(Paragraph("ATS Score Analysis Report", title_style))
+            story.append(Spacer(1, 12))
+            
+            # Job details
+            job_style = ParagraphStyle(
+                'JobStyle',
+                parent=styles['Normal'],
+                fontSize=12,
+                spaceAfter=8,
+                textColor=HexColor('#374151')
+            )
+            story.append(Paragraph(f"<b>Position:</b> {job_title}", job_style))
+            story.append(Paragraph(f"<b>Generated on:</b> {current_time} UTC", job_style))
+            story.append(Spacer(1, 20))
+            
+            # ATS Score Highlight
+            score_style = ParagraphStyle(
+                'ScoreStyle',
+                parent=styles['Heading1'],
+                fontSize=24,
+                spaceAfter=15,
+                textColor=HexColor('#16a34a') if ats_score >= 75 else HexColor('#dc2626'),
+                alignment=1  # Center alignment
+            )
+            story.append(Paragraph(f"ATS SCORE: {ats_score}/100", score_style))
+            story.append(Spacer(1, 20))
+            
+            # Analysis results
+            story.append(Paragraph("ATS Analysis Details:", styles['Heading2']))
+            story.append(Spacer(1, 12))
+            
+            # Format the analysis text for PDF - limit to prevent huge PDFs
+            analysis_lines = ats_analysis_text.split('\n')
+            for i, line in enumerate(analysis_lines[:50]):  # Limit to first 50 lines
+                if line.strip():
+                    # Remove markdown formatting for PDF
+                    clean_line = line.replace('**', '').replace('*', '')
+                    if line.startswith('**') or line.startswith('•') or line.startswith('#'):
+                        # Make headers and bullet points bold
+                        story.append(Paragraph(f"<b>{clean_line}</b>", styles['Normal']))
+                    else:
+                        story.append(Paragraph(clean_line, styles['Normal']))
+                    story.append(Spacer(1, 4))
+            
+            # Build PDF
+            doc.build(story)
+            
+        except Exception as e:
+            logging.error(f"PDF generation error: {e}")
+            pdf_filename = ""  # Continue without PDF if generation fails
         
         # Store ATS analysis in database
         ats_record = ATSScoreResult(
-            job_title=request.job_title,
-            job_description=request.job_description,
+            id=ats_id,
+            job_title=job_title,
+            job_description=job_description,
             resume_content=resume_content,
             ats_score=ats_score,
             ats_details={"analysis_text": ats_analysis_text, "generated_at": current_time},
@@ -5484,7 +5509,7 @@ Identify specific deficiencies and quantify improvement potential.
         
         return {
             "success": True,
-            "ats_id": ats_record.id,
+            "ats_id": ats_id,
             "ats_score": ats_score,
             "analysis_text": ats_analysis_text,
             "pdf_filename": pdf_filename,
