@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: Complete the remaining part of main task - In the AI screening tab, before (Job Requirements & Screening Setup) line add a section to upload resume files (that is documents), once the resume files have been uploaded, then allow the users to make changes in the (Job Requirements & Screening Setup) section and once the user clicked on (save job requirement) button, then there should be a button (screen candidates) to screen all the candidates and the ATS score should be generated based on each candidates resume and the job requirements (set on Job Requirements & Screening Setup section). Now create a (results) tab in the right side of (ai screening), A completely separate tab in the navigation and the ATS score of each candidates should be displayed on a new (results) tab. Ensure admin login using Game@1234 password works.
+user_problem_statement: I am unable to preview the resume properly in the resume analysis section in preparation tab, the resume preview should be as same as present in create interview section in preparation tab
 
 CURRENT TASK: ✅ COMPLETED - Placement Preparation Box Implementation with Create Interview Functionality
 
