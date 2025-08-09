@@ -10,7 +10,7 @@ import io
 from typing import Dict, Any
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://eaf11cb1-62bc-4a4c-b83f-3b9ff2fe22cf.preview.emergentagent.com/api"
+BASE_URL = "https://e143a5dd-640d-4366-979e-f44e8b4324a2.preview.emergentagent.com/api"
 
 class WebSpeechAPITester:
     def __init__(self):
