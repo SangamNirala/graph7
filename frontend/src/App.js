@@ -4173,10 +4173,11 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                       <h3 className="text-lg font-semibold text-white mb-4">📊 Analysis Tools</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <button
-                          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 text-sm"
-                          onClick={() => {/* TODO: Add functionality */}}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={handleAtsScoreCalculation}
+                          disabled={atsLoading}
                         >
-                          📈 ATS Score Calculator
+                          {atsLoading ? '⏳ Calculating...' : '📈 ATS Score Calculator'}
                         </button>
                         <button
                           className="bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-red-700 hover:to-pink-700 transition-all duration-300 text-sm"
