@@ -5718,46 +5718,63 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
         import re
         
         def parse_ats_analysis(analysis_text):
-            """Parse the ATS analysis text into structured sections"""
+            """Parse the ATS analysis text into structured sections with updated format recognition"""
             sections = {}
             lines = analysis_text.split('\n')
             current_section = None
             current_content = []
             
-            # Extract key sections using patterns
+            # Extract key sections using modern patterns
             for line in lines:
                 line = line.strip()
                 if not line:
                     continue
                 
-                # Check for main section headers
-                if 'Educational Qualifications' in line:
+                # Check for main section headers (updated for modern format)
+                if any(keyword in line.upper() for keyword in ['EDUCATIONAL', 'EDUCATION', 'DEGREE', 'CERTIFICATION']):
                     if current_section:
                         sections[current_section] = '\n'.join(current_content)
                     current_section = 'education'
-                    current_content = []
-                elif 'Job History' in line:
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['JOB HISTORY', 'WORK EXPERIENCE', 'PROFESSIONAL EXPERIENCE', 'CAREER']):
                     if current_section:
                         sections[current_section] = '\n'.join(current_content)
                     current_section = 'job_history'
-                    current_content = []
-                elif 'Personal Projects' in line:
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['PROJECTS', 'PROJECT', 'PORTFOLIO']):
                     if current_section:
                         sections[current_section] = '\n'.join(current_content)
                     current_section = 'projects'
-                    current_content = []
-                elif 'Skill Set' in line:
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['SKILL', 'TECHNICAL', 'COMPETENC', 'TECHNOLOG']):
                     if current_section:
                         sections[current_section] = '\n'.join(current_content)
                     current_section = 'skills'
-                    current_content = []
-                elif 'PRECISION ATS EVALUATION' in line or 'INTELLIGENT SCORING MATRIX' in line:
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['KEYWORD ANALYSIS', 'EXPERIENCE EVALUATION', 'TECHNICAL COMPETENCY', 'QUANTIFIED ACHIEVEMENTS', 'PROJECT INNOVATION', 'SCORING', 'EVALUATION', 'ASSESSMENT']):
                     if current_section:
                         sections[current_section] = '\n'.join(current_content)
                     current_section = 'scoring'
-                    current_content = []
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['CRITICAL IMPROVEMENT', 'SCORE ENHANCEMENT', 'IMPLEMENTATION ROADMAP', 'IMMEDIATE FIXES', 'RECOMMENDATIONS', 'IMPROVEMENT']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'recommendations'
+                    current_content = [line]
+                elif any(keyword in line.upper() for keyword in ['ENHANCED ANALYSIS INSIGHTS', 'CONTENT ANALYSIS', 'PROGRAMMATIC', 'HYBRID SCORING']):
+                    if current_section:
+                        sections[current_section] = '\n'.join(current_content)
+                    current_section = 'detailed_analysis'
+                    current_content = [line]
                 elif current_section:
                     current_content.append(line)
+                else:
+                    # Start a general section for unmatched content
+                    if not current_section:
+                        current_section = 'general_analysis'
+                        current_content = [line]
+                    else:
+                        current_content.append(line)
             
             # Add the last section
             if current_section:
