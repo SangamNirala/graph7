@@ -4054,49 +4054,6 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
             <h2 className="text-2xl font-bold text-white mb-6">📝 Resume Analysis</h2>
             
-            {/* Resume Analysis Tools Section */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-white mb-4">📊 Analysis Tools</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <button
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 text-sm"
-                  onClick={() => {/* TODO: Add functionality */}}
-                >
-                  📈 ATS Score Calculator
-                </button>
-                <button
-                  className="bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-red-700 hover:to-pink-700 transition-all duration-300 text-sm"
-                  onClick={() => {/* TODO: Add functionality */}}
-                >
-                  ❌ Rejection Reasons
-                </button>
-                <button
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 text-sm"
-                  onClick={() => {/* TODO: Add functionality */}}
-                >
-                  ✅ Acceptance Reasons
-                </button>
-                <button
-                  className="bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-purple-700 hover:to-violet-700 transition-all duration-300 text-sm"
-                  onClick={() => {/* TODO: Add functionality */}}
-                >
-                  📄 ATS Optimised Resume
-                </button>
-                <button
-                  className="bg-gradient-to-r from-orange-600 to-yellow-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-orange-700 hover:to-yellow-700 transition-all duration-300 text-sm"
-                  onClick={() => {/* TODO: Add functionality */}}
-                >
-                  💻 Technical Interview Questions
-                </button>
-                <button
-                  className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-cyan-700 hover:to-teal-700 transition-all duration-300 text-sm"
-                  onClick={() => {/* TODO: Add functionality */}}
-                >
-                  🗣️ Behavioural Interview Questions
-                </button>
-              </div>
-            </div>
-            
             {!analysisResult ? (
               <form onSubmit={handleResumeAnalysisSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-8">
