@@ -5168,7 +5168,7 @@ class RejectionReasonsAnalysis(BaseModel):
     pdf_path: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-@api_router.post("/api/placement-preparation/rejection-reasons")
+@api_router.post("/placement-preparation/rejection-reasons")
 async def analyze_rejection_reasons(
     job_title: str = Form(...),
     job_description: str = Form(...),
