@@ -6108,19 +6108,75 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
             story.append(progress_bar)
             story.append(Spacer(1, 20))
             
-            # Parse sections from analysis
+            # Parse sections from analysis to get top recommendations
             sections = parse_ats_analysis(ats_analysis_text)
             scores = extract_scores(ats_analysis_text)
             
-            # Score Breakdown Section
+            # Generate Top 3 Recommendations based on lowest scoring categories
+            top_recommendations = []
             if scores:
-                story.append(Paragraph("📈 SCORE BREAKDOWN", header_style))
-                story.append(Spacer(1, 8))
+                # Sort categories by score gap (max - current score)
+                sorted_categories = sorted(
+                    scores.items(),
+                    key=lambda x: x[1].get('max', 0) - x[1].get('score', 0),
+                    reverse=True
+                )
                 
-                # Compute weights based on max points of each category (normalized if totals != 100)
+                category_names = {
+                    'keyword': 'Add missing job-specific keywords',
+                    'experience': 'Quantify achievements with metrics',
+                    'technical': 'Update with trending technologies',
+                    'education': 'Include relevant certifications',
+                    'achievements': 'Add measurable impact statements',
+                    'projects': 'Showcase high-impact projects'
+                }
+                
+                for category, score_info in sorted_categories[:3]:
+                    if score_info.get('score', 0) < score_info.get('max', 0):
+                        gap = score_info.get('max', 0) - score_info.get('score', 0)
+                        recommendation = category_names.get(category, f"Improve {category}")
+                        top_recommendations.append(f"• {recommendation} (+{gap} points)")
+            
+            # If no specific scores, provide generic recommendations
+            if not top_recommendations:
+                top_recommendations = [
+                    "• Add more job-specific keywords throughout resume",
+                    "• Include quantified achievements with metrics",
+                    "• Update technical skills with current technologies"
+                ]
+            
+            # Top 3 Recommendations in callout box
+            story.append(Paragraph("🎯 TOP 3 PRIORITY IMPROVEMENTS", subheader_style))
+            story.append(Spacer(1, 8))
+            
+            recommendations_table = Table([['\n'.join(top_recommendations)]], colWidths=[5.5*inch])
+            recommendations_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), HexColor('#f0f9ff')),
+                ('TEXTCOLOR', (0, 0), (-1, -1), HexColor('#1f2937')),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 11),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('GRID', (0, 0), (-1, -1), 2, HexColor('#0ea5e9')),
+                ('TOPPADDING', (0, 0), (-1, -1), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+                ('LEFTPADDING', (0, 0), (-1, -1), 15),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 15)
+            ]))
+            story.append(recommendations_table)
+            story.append(Spacer(1, 25))
+            
+            # Enhanced Score Breakdown Section with progress bars
+            if scores:
+                story.append(Paragraph("📈 DETAILED SCORE BREAKDOWN", header_style))
+                story.append(Spacer(1, 12))
+                
+                # Compute weights based on max points of each category
                 total_max = sum(int(info.get('max', 0)) for info in scores.values()) or 100
 
-                score_breakdown_data = [['CATEGORY', 'SCORE', 'PERCENTAGE', 'WEIGHT']]
+                # Create enhanced score breakdown with progress bars
+                score_breakdown_data = [['CATEGORY', 'SCORE', 'PERCENTAGE', 'WEIGHT', 'PROGRESS']]
+                
                 for category, score_info in scores.items():
                     category_name = {
                         'keyword': '🎯 Keyword Optimization',
@@ -6135,25 +6191,44 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                     max_val = int(score_info.get('max', 1))
                     percentage = int((score_val / max_val) * 100) if max_val > 0 else 0
                     weight_pct = int(round((max_val / total_max) * 100)) if total_max > 0 else 0
+                    
+                    # Create mini progress bar for this row
+                    progress_drawing = create_progress_bar(score_val, max_val, width=1.2*inch, height=0.15*inch)
+                    
                     score_breakdown_data.append([
                         category_name,
                         f"{score_val}/{max_val}",
                         f"{percentage}%",
-                        f"{weight_pct}%"
+                        f"{weight_pct}%",
+                        progress_drawing
                     ])
                 
-                breakdown_table = Table(score_breakdown_data, colWidths=[2.6*inch, 1.1*inch, 0.9*inch, 0.9*inch])
+                breakdown_table = Table(
+                    score_breakdown_data, 
+                    colWidths=[2.2*inch, 0.8*inch, 0.7*inch, 0.7*inch, 1.3*inch]
+                )
                 breakdown_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), HexColor('#3b82f6')),
+                    # Header row styling
+                    ('BACKGROUND', (0, 0), (-1, 0), HexColor('#1f2937')),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 12),
-                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                    ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 11),
+                    # Data rows styling
+                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
                     ('FONTSIZE', (0, 1), (-1, -1), 10),
-                    ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
-                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [HexColor('#ffffff'), HexColor('#f8fafc')] * 10)
+                    ('ALIGN', (0, 0), (0, -1), 'LEFT'),  # Category names left-aligned
+                    ('ALIGN', (1, 0), (-2, -1), 'CENTER'),  # Scores and percentages centered
+                    ('ALIGN', (-1, 1), (-1, -1), 'CENTER'),  # Progress bars centered
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('GRID', (0, 0), (-1, -1), 1, HexColor('#e2e8f0')),
+                    # Alternating row colors
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), 
+                     [HexColor('#ffffff'), HexColor('#f8fafc')] * 10),
+                    # Padding
+                    ('TOPPADDING', (0, 0), (-1, -1), 8),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 10)
                 ]))
                 story.append(breakdown_table)
                 story.append(Spacer(1, 20))
