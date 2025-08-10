@@ -4834,7 +4834,7 @@ class ATSScoreResult(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 # Resume Analysis Endpoints
-@api_router.post("/api/placement-preparation/resume-analysis")
+@api_router.post("/placement-preparation/resume-analysis")
 async def analyze_resume(
     request: ResumeAnalysisRequest,
     resume: UploadFile = File(...)
