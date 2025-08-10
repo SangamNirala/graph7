@@ -255,7 +255,7 @@ Responsibilities:
             # Find our analysis
             our_analysis = None
             for analysis in analyses:
-                if analysis.get("rejection_id") == self.rejection_analysis_id:
+                if analysis.get("id") == self.rejection_analysis_id:
                     our_analysis = analysis
                     break
             
@@ -265,7 +265,7 @@ Responsibilities:
                 return False
             
             # Verify analysis structure - use more flexible field checking
-            required_fields = ["rejection_id", "job_title"]
+            required_fields = ["id", "job_title"]
             missing_fields = [field for field in required_fields if field not in our_analysis]
             
             if missing_fields:
