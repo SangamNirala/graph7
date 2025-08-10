@@ -83,65 +83,69 @@ class ComprehensivePlacementTester:
     def test_ats_score_calculation(self) -> bool:
         """Test Enhanced ATS Score Calculation System with Multi-Phase Analysis"""
         try:
-            # Prepare comprehensive test data
-            test_data = {
-                "job_title": "Senior Full Stack Developer",
-                "job_description": """We are seeking a Senior Full Stack Developer to join our dynamic team. 
-                The ideal candidate will have extensive experience in both frontend and backend development, 
-                with a strong focus on modern web technologies and scalable architecture design.""",
-                "resume_text": """
-                John Smith
-                Senior Software Engineer
-                Email: john.smith@email.com
-                Phone: (555) 123-4567
-                
-                PROFESSIONAL SUMMARY:
-                Experienced Senior Software Engineer with 7+ years of expertise in full-stack development.
-                Proven track record of leading development teams and delivering scalable web applications.
-                Strong background in Python, JavaScript, React, and cloud technologies.
-                
-                TECHNICAL SKILLS:
-                • Programming Languages: Python, JavaScript, TypeScript, Java
-                • Frontend: React, Vue.js, HTML5, CSS3, Bootstrap, Tailwind CSS
-                • Backend: FastAPI, Django, Node.js, Express.js
-                • Databases: PostgreSQL, MongoDB, Redis
-                • Cloud: AWS (EC2, S3, Lambda), Docker, Kubernetes
-                • Tools: Git, Jenkins, JIRA, Agile methodologies
-                
-                PROFESSIONAL EXPERIENCE:
-                Senior Software Engineer | TechCorp Inc. | 2020 - Present
-                • Led a team of 5 developers in building microservices architecture
-                • Improved application performance by 40% through optimization
-                • Implemented CI/CD pipelines reducing deployment time by 60%
-                • Mentored junior developers and conducted code reviews
-                
-                Software Engineer | StartupXYZ | 2018 - 2020
-                • Developed full-stack web applications using React and Python
-                • Collaborated with product team to define technical requirements
-                • Implemented automated testing increasing code coverage to 85%
-                
-                Junior Developer | DevCompany | 2017 - 2018
-                • Built responsive web interfaces using modern JavaScript frameworks
-                • Participated in agile development processes
-                • Contributed to open-source projects
-                
-                EDUCATION:
-                Bachelor of Science in Computer Science
-                University of Technology | 2017
-                
-                CERTIFICATIONS:
-                • AWS Certified Solutions Architect
-                • Certified Scrum Master
-                
-                ACHIEVEMENTS:
-                • Led successful migration of legacy system serving 100K+ users
-                • Reduced system downtime by 75% through improved monitoring
-                • Published 3 technical articles on software architecture
-                """
+            # Prepare comprehensive test resume content
+            resume_content = """
+            John Smith
+            Senior Software Engineer
+            Email: john.smith@email.com
+            Phone: (555) 123-4567
+            
+            PROFESSIONAL SUMMARY:
+            Experienced Senior Software Engineer with 7+ years of expertise in full-stack development.
+            Proven track record of leading development teams and delivering scalable web applications.
+            Strong background in Python, JavaScript, React, and cloud technologies.
+            
+            TECHNICAL SKILLS:
+            • Programming Languages: Python, JavaScript, TypeScript, Java
+            • Frontend: React, Vue.js, HTML5, CSS3, Bootstrap, Tailwind CSS
+            • Backend: FastAPI, Django, Node.js, Express.js
+            • Databases: PostgreSQL, MongoDB, Redis
+            • Cloud: AWS (EC2, S3, Lambda), Docker, Kubernetes
+            • Tools: Git, Jenkins, JIRA, Agile methodologies
+            
+            PROFESSIONAL EXPERIENCE:
+            Senior Software Engineer | TechCorp Inc. | 2020 - Present
+            • Led a team of 5 developers in building microservices architecture
+            • Improved application performance by 40% through optimization
+            • Implemented CI/CD pipelines reducing deployment time by 60%
+            • Mentored junior developers and conducted code reviews
+            
+            Software Engineer | StartupXYZ | 2018 - 2020
+            • Developed full-stack web applications using React and Python
+            • Collaborated with product team to define technical requirements
+            • Implemented automated testing increasing code coverage to 85%
+            
+            Junior Developer | DevCompany | 2017 - 2018
+            • Built responsive web interfaces using modern JavaScript frameworks
+            • Participated in agile development processes
+            • Contributed to open-source projects
+            
+            EDUCATION:
+            Bachelor of Science in Computer Science
+            University of Technology | 2017
+            
+            CERTIFICATIONS:
+            • AWS Certified Solutions Architect
+            • Certified Scrum Master
+            
+            ACHIEVEMENTS:
+            • Led successful migration of legacy system serving 100K+ users
+            • Reduced system downtime by 75% through improved monitoring
+            • Published 3 technical articles on software architecture
+            """
+            
+            # Prepare form data with file upload
+            files = {
+                'resume': ('john_resume.txt', resume_content.encode(), 'text/plain')
+            }
+            
+            form_data = {
+                'job_title': 'Senior Full Stack Developer',
+                'job_description': 'We are seeking a Senior Full Stack Developer to join our dynamic team. The ideal candidate will have extensive experience in both frontend and backend development, with a strong focus on modern web technologies and scalable architecture design.'
             }
             
             response = self.session.post(f"{BASE_URL}/placement-preparation/ats-score-calculate", 
-                                       json=test_data)
+                                       files=files, data=form_data)
             
             if response.status_code == 200:
                 data = response.json()
