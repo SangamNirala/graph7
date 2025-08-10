@@ -16,7 +16,7 @@ from datetime import datetime
 import PyPDF2
 
 # Get backend URL from environment
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://65275256-099e-4a3f-b83d-fcbfb7a6d86b.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://d608964e-3bc2-49ac-82ce-24fb220fc6c6.preview.emergentagent.com')
 BASE_URL = f"{BACKEND_URL}/api"
 
 class ATSPDFEnhancementTester:
