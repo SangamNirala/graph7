@@ -15,7 +15,7 @@ import io
 from typing import Dict, Any, List
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://882970a1-15c9-4eb2-9f43-a49f0b775561.preview.emergentagent.com/api"
+BASE_URL = "https://ed1be7ee-3b3d-4ddb-a670-999d49a5f3da.preview.emergentagent.com/api"
 
 class QuestionSelectionTester:
     def __init__(self):

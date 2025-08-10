@@ -12,7 +12,7 @@ from datetime import datetime
 import re
 
 # Configuration
-BACKEND_URL = "https://882970a1-15c9-4eb2-9f43-a49f0b775561.preview.emergentagent.com"
+BACKEND_URL = "https://ed1be7ee-3b3d-4ddb-a670-999d49a5f3da.preview.emergentagent.com"
 ATS_ENDPOINT = f"{BACKEND_URL}/api/placement-preparation/ats-score-calculate"
 
 class ATSPDFAnalysisTester:
