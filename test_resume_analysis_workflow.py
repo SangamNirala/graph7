@@ -81,13 +81,19 @@ def test_resume_analysis_workflow():
     try:
         url = f"{BACKEND_URL}/api/placement-preparation/resume-analysis"
         
-        # Create form data
+        # Create multipart form data with JSON request
         files = {
             'resume': ('test_resume.txt', sample_resume, 'text/plain')
         }
-        data = {
+        
+        # Create JSON request body
+        request_data = {
             'job_title': job_title,
             'job_description': job_description
+        }
+        
+        data = {
+            'request': json.dumps(request_data)
         }
         
         print(f"URL: {url}")
