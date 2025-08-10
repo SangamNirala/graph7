@@ -167,6 +167,9 @@ Responsibilities:
             if response.status_code == 200:
                 data = response.json()
                 
+                # Debug: Print the actual response
+                print(f"    DEBUG: Actual response: {data}")
+                
                 # Verify response structure
                 required_fields = ["success", "rejection_id", "analysis_text"]
                 missing_fields = [field for field in required_fields if field not in data]
