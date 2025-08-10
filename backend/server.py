@@ -6059,41 +6059,54 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
             story.append(job_info_table)
             story.append(Spacer(1, 20))
             
-            # ATS Score in a prominent box (robust casting)
+            # EXECUTIVE SUMMARY SECTION
+            story.append(Paragraph("📋 EXECUTIVE SUMMARY", summary_title_style))
+            story.append(Spacer(1, 10))
+            
+            # ATS Score with enhanced presentation
             try:
                 ats_score_num = int(float(ats_score))
             except Exception:
                 ats_score_num = 0
 
-            score_color = HexColor('#16a34a') if ats_score_num >= 75 else HexColor('#dc2626') if ats_score_num >= 50 else HexColor('#b91c1c')
+            score_color = get_score_color(ats_score_num)
+            compatibility_level = (
+                'EXCEPTIONAL (95-100)' if ats_score_num >= 95 else
+                'OUTSTANDING (85-94)' if ats_score_num >= 85 else
+                'STRONG (75-84)' if ats_score_num >= 75 else
+                'GOOD (65-74)' if ats_score_num >= 65 else
+                'MODERATE (55-64)' if ats_score_num >= 55 else
+                'NEEDS IMPROVEMENT (<55)'
+            )
             
-            # Create score table
+            # Overall score table with enhanced styling
             score_data = [
-                ['OVERALL ATS SCORE', f'{ats_score_num}/100'],
-                ['COMPATIBILITY LEVEL', 
-                 'EXCEPTIONAL (95-100)' if ats_score_num >= 95 else
-                 'OUTSTANDING (85-94)' if ats_score_num >= 85 else
-                 'STRONG (75-84)' if ats_score_num >= 75 else
-                 'GOOD (65-74)' if ats_score_num >= 65 else
-                 'MODERATE (55-64)' if ats_score_num >= 55 else
-                 'NEEDS IMPROVEMENT (<55)'
-                ]
+                ['OVERALL ATS SCORE', f'{ats_score_num}/100', compatibility_level]
             ]
             
-            score_table = Table(score_data, colWidths=[2.5*inch, 2.5*inch])
+            score_table = Table(score_data, colWidths=[1.8*inch, 1.2*inch, 2.5*inch])
             score_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, -1), HexColor('#f8fafc')),
-                ('TEXTCOLOR', (0, 0), (0, -1), HexColor('#1f2937')),
-                ('TEXTCOLOR', (1, 0), (1, 0), score_color),
+                ('BACKGROUND', (0, 0), (-1, -1), HexColor('#ffffff')),
+                ('BACKGROUND', (1, 0), (1, 0), score_color),
+                ('TEXTCOLOR', (0, 0), (0, 0), HexColor('#1f2937')),
+                ('TEXTCOLOR', (1, 0), (1, 0), colors.white),
+                ('TEXTCOLOR', (2, 0), (2, 0), score_color),
                 ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, -1), 14),
+                ('FONTSIZE', (1, 0), (1, 0), 18),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                ('GRID', (0, 0), (-1, -1), 1, HexColor('#e5e7eb')),
-                ('ROWBACKGROUNDS', (0, 0), (-1, -1), [HexColor('#ffffff'), HexColor('#f1f5f9')])
+                ('GRID', (0, 0), (-1, -1), 2, HexColor('#e2e8f0')),
+                ('TOPPADDING', (0, 0), (-1, -1), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 12)
             ]))
             story.append(score_table)
-            story.append(Spacer(1, 25))
+            story.append(Spacer(1, 15))
+            
+            # Add progress bar for overall score
+            progress_bar = create_progress_bar(ats_score_num, 100)
+            story.append(progress_bar)
+            story.append(Spacer(1, 20))
             
             # Parse sections from analysis
             sections = parse_ats_analysis(ats_analysis_text)
