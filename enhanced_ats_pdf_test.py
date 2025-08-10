@@ -161,15 +161,18 @@ class EnhancedATSPDFTester:
 
             job_title = "Senior Data Scientist"
 
-            # Make ATS score calculation request
-            ats_request = {
-                "job_title": job_title,
-                "job_description": job_description,
-                "resume_text": resume_content.strip()
+            # Make ATS score calculation request using form data with file upload
+            files = {
+                'resume': ('data_scientist_resume.txt', resume_content.encode('utf-8'), 'text/plain')
+            }
+            
+            form_data = {
+                'job_title': job_title,
+                'job_description': job_description
             }
 
             response = self.session.post(f"{BASE_URL}/placement-preparation/ats-score-calculate", 
-                                       json=ats_request, timeout=60)
+                                       files=files, data=form_data, timeout=60)
 
             if response.status_code == 200:
                 data = response.json()
