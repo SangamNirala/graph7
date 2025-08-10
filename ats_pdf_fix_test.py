@@ -16,7 +16,7 @@ import time
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://0c2b0365-8196-4dec-8bd0-3f2be3854916.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://ac4a8740-efd2-428f-8ad3-3fb890045006.preview.emergentagent.com')
 ATS_ENDPOINT = f"{BACKEND_URL}/api/placement-preparation/ats-score-calculate"
 
 class ATSPDFTester:
