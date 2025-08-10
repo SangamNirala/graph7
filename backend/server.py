@@ -5154,6 +5154,344 @@ async def download_resume_analysis_pdf(analysis_id: str):
         logging.error(f"PDF download error: {e}")
         raise HTTPException(status_code=500, detail="Failed to download PDF")
 
+# Rejection Reasons Analysis Data Models
+class RejectionReasonsRequest(BaseModel):
+    job_title: str
+    job_description: str
+
+class RejectionReasonsAnalysis(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_title: str
+    job_description: str
+    resume_content: str
+    rejection_reasons: str
+    pdf_path: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+@api_router.post("/api/placement-preparation/rejection-reasons")
+async def analyze_rejection_reasons(
+    job_title: str = Form(...),
+    job_description: str = Form(...),
+    resume: UploadFile = File(...)
+):
+    """
+    Generate comprehensive rejection reasons analysis using LLM
+    """
+    try:
+        # Validate file type
+        if not resume.filename.lower().endswith(('.pdf', '.doc', '.docx', '.txt')):
+            raise HTTPException(status_code=400, detail="Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files.")
+        
+        # Parse resume content
+        resume_content = ""
+        file_content = await resume.read()
+        
+        if resume.filename.lower().endswith('.txt'):
+            resume_content = file_content.decode('utf-8')
+        elif resume.filename.lower().endswith('.pdf'):
+            import PyPDF2
+            import io
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+            resume_content = ""
+            for page in pdf_reader.pages:
+                resume_content += page.extract_text() + "\n"
+        elif resume.filename.lower().endswith(('.doc', '.docx')):
+            import docx
+            import io
+            doc = docx.Document(io.BytesIO(file_content))
+            resume_content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+        
+        if not resume_content.strip():
+            raise HTTPException(status_code=400, detail="Could not extract text from the resume file")
+        
+        # Perform LLM rejection reasons analysis using the specific prompt
+        rejection_reasons_prompt = f"""You are an expert Technical Recruiter and HR Business Partner with 15+ years of experience in high-volume candidate assessment. Your task is to generate ALL rejection reasons in a comprehensive bullet-point format by conducting a systematic gap analysis between candidate qualifications and job requirements.
+
+**INPUT DATA:**
+Resume Content: {resume_content}
+Job Requirements: {job_description}
+Job Title: {job_title}
+
+**COMPREHENSIVE EVALUATION PROTOCOL:**
+
+**STEP 1: COMPLETE REQUIREMENTS AUDIT**
+Systematically extract and compare ALL aspects:
+- Technical skills (programming languages, frameworks, tools, platforms)
+- Experience years and seniority level
+- Educational background and degrees
+- Industry domain and business context
+- Certifications and professional qualifications
+- Project scale and complexity
+- Leadership and management experience
+- Soft skills and methodologies
+
+**STEP 2: EXHAUSTIVE GAP IDENTIFICATION**
+Identify EVERY gap, regardless of severity:
+- **CRITICAL**: Mandatory requirements missing (immediate disqualification)
+- **MAJOR**: Significant gaps affecting role performance
+- **MODERATE**: Important requirements not met
+- **MINOR**: Preferred qualifications absent
+
+**MANDATORY OUTPUT FORMAT:**
+Generate ALL rejection reasons as individual bullet points using this EXACT structure:
+
+**REJECTION REASONS:**
+
+• **[CATEGORY]**: [Specific rejection reason with evidence]
+  - Required: [Exact requirement from job description]
+  - Candidate Reality: [Exact content from resume or "NOT MENTIONED"]
+  - Gap Impact: [Business/performance impact]
+
+• **[CATEGORY]**: [Next specific rejection reason with evidence]
+  - Required: [Exact requirement from job description] 
+  - Candidate Reality: [Exact content from resume or "NOT MENTIONED"]
+  - Gap Impact: [Business/performance impact]
+
+[Continue for ALL identified gaps...]
+
+**COMPREHENSIVE REJECTION CATEGORIES:**
+
+**TECHNICAL SKILL GAPS:**
+- **PROGRAMMING LANGUAGES**: Missing required coding languages
+- **FRAMEWORKS & LIBRARIES**: Absent development frameworks
+- **DATABASE TECHNOLOGIES**: Wrong or missing database skills
+- **CLOUD PLATFORMS**: Missing cloud infrastructure experience
+- **DEVELOPMENT TOOLS**: Absent required development tools
+- **ARCHITECTURE SKILLS**: Missing system design capabilities
+- **SECURITY EXPERTISE**: Absent cybersecurity knowledge
+- **API DEVELOPMENT**: Missing integration experience
+- **TESTING METHODOLOGIES**: Absent QA/testing skills
+- **VERSION CONTROL**: Missing Git/source control experience
+
+**EXPERIENCE GAPS:**
+- **YEARS OF EXPERIENCE**: Insufficient overall experience
+- **SENIORITY MISMATCH**: Wrong level (junior vs senior vs lead)
+- **INDUSTRY EXPERIENCE**: Wrong business domain background
+- **COMPANY SIZE EXPERIENCE**: Startup vs enterprise mismatch
+- **PROJECT SCALE**: Experience with wrong project sizes
+- **LEADERSHIP EXPERIENCE**: Missing management/mentoring experience
+- **CLIENT-FACING EXPERIENCE**: Missing customer interaction skills
+- **REMOTE WORK EXPERIENCE**: Missing distributed team experience
+
+**EDUCATIONAL & CERTIFICATION GAPS:**
+- **DEGREE REQUIREMENT**: Missing required educational level
+- **FIELD OF STUDY**: Wrong academic background
+- **TECHNICAL CERTIFICATIONS**: Missing required certifications
+- **PROFESSIONAL LICENSES**: Absent required licenses
+- **CONTINUING EDUCATION**: Outdated knowledge/skills
+
+**METHODOLOGY & PROCESS GAPS:**
+- **AGILE EXPERIENCE**: Missing Scrum/Kanban experience
+- **DEVOPS PRACTICES**: Missing CI/CD pipeline experience
+- **CODE REVIEW PROCESS**: Missing peer review experience
+- **DOCUMENTATION SKILLS**: Poor technical writing abilities
+
+**OTHER DISQUALIFYING FACTORS:**
+- **GEOGRAPHIC MISMATCH**: Location/timezone incompatibility
+- **OVERQUALIFICATION**: Too senior for the role
+- **CAREER PROGRESSION**: Inconsistent career trajectory
+- **COMMUNICATION SKILLS**: Poor written/verbal communication
+- **WORK AUTHORIZATION**: Visa/work permit issues
+
+**PROCESSING RULES FOR COMPREHENSIVE COVERAGE:**
+✅ MUST identify ALL gaps, not just top 3-4
+✅ Each bullet point = one specific rejection reason
+✅ Include evidence from resume or mark as "NOT MENTIONED"
+✅ Cover technical, experience, education, and soft skill gaps
+✅ Use consistent bullet-point formatting throughout
+✅ Prioritize by severity but list ALL findings
+✅ No overlapping or duplicate rejection reasons
+
+**FINAL QUALITY ASSURANCE:**
+Before submitting, verify:
+1. ALL significant gaps are captured as individual bullet points
+2. Each bullet point contains specific evidence or "NOT MENTIONED"
+3. No duplicate or overlapping rejection reasons
+4. Professional, factual language throughout
+5. Comprehensive coverage of technical, experience, and qualification gaps
+6. Consistent formatting and structure"""
+
+        # Use Gemini API for analysis
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+            
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(rejection_reasons_prompt)
+            
+            rejection_reasons_text = response.text
+        except Exception as e:
+            logging.error(f"Gemini API error: {e}")
+            # Fallback to a simple analysis if Gemini fails
+            rejection_reasons_text = f"""**REJECTION REASONS:**
+
+• **TECHNICAL SKILLS**: Manual review required due to API limitations
+  - Required: Detailed technical skill analysis needed
+  - Candidate Reality: Cannot be automatically assessed
+  - Gap Impact: Unable to verify technical competency match
+
+• **EXPERIENCE**: Comprehensive experience analysis pending
+  - Required: Years of experience and seniority level verification needed
+  - Candidate Reality: Manual evaluation required
+  - Gap Impact: Cannot confirm experience alignment
+
+• **QUALIFICATIONS**: Education and certification gap analysis needed
+  - Required: Degree and certification requirements verification
+  - Candidate Reality: Manual document review required
+  - Gap Impact: Unable to validate qualification requirements"""
+        
+        # Generate PDF using reportlab
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+        from reportlab.lib.units import inch
+        import os
+        
+        # Create unique filename
+        pdf_filename = f"rejection_reasons_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
+        pdf_path = f"/tmp/{pdf_filename}"
+        
+        # Create PDF document
+        doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Title
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            spaceAfter=20,
+            textColor='darkred'
+        )
+        story.append(Paragraph("Candidate Rejection Reasons Analysis", title_style))
+        story.append(Spacer(1, 12))
+        
+        # Job details
+        current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        story.append(Paragraph(f"<b>Position:</b> {job_title}", styles['Normal']))
+        story.append(Paragraph(f"<b>Generated on:</b> {current_time} UTC", styles['Normal']))
+        story.append(Spacer(1, 20))
+        
+        # Job description
+        story.append(Paragraph("<b>Job Requirements:</b>", styles['Heading2']))
+        story.append(Paragraph(job_description, styles['Normal']))
+        story.append(Spacer(1, 20))
+        
+        # Rejection reasons results
+        story.append(Paragraph("<b>Comprehensive Rejection Reasons:</b>", styles['Heading2']))
+        story.append(Spacer(1, 12))
+        
+        # Format the rejection reasons text for PDF
+        rejection_lines = rejection_reasons_text.split('\n')
+        for line in rejection_lines:
+            if line.strip():
+                if line.startswith('•'):
+                    # Main bullet point
+                    bullet_style = ParagraphStyle(
+                        'BulletPoint',
+                        parent=styles['Normal'],
+                        leftIndent=20,
+                        bulletIndent=10,
+                        spaceAfter=6,
+                        textColor='darkred'
+                    )
+                    story.append(Paragraph(line, bullet_style))
+                elif line.strip().startswith('-'):
+                    # Sub-point
+                    sub_style = ParagraphStyle(
+                        'SubPoint',
+                        parent=styles['Normal'],
+                        leftIndent=40,
+                        bulletIndent=30,
+                        spaceAfter=3,
+                        fontSize=10,
+                        textColor='black'
+                    )
+                    story.append(Paragraph(line, sub_style))
+                else:
+                    story.append(Paragraph(line, styles['Normal']))
+                    story.append(Spacer(1, 6))
+        
+        # Footer
+        story.append(Spacer(1, 30))
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor='gray',
+            alignment=1  # Center alignment
+        )
+        story.append(Paragraph("This comprehensive rejection analysis was generated using AI-powered gap analysis technology.", footer_style))
+        story.append(Paragraph("For questions or clarifications, please consult with HR or hiring manager.", footer_style))
+        
+        # Build PDF
+        doc.build(story)
+        
+        # Store analysis in database
+        rejection_analysis = RejectionReasonsAnalysis(
+            job_title=job_title,
+            job_description=job_description,
+            resume_content=resume_content,
+            rejection_reasons=rejection_reasons_text,
+            pdf_path=pdf_path
+        )
+        
+        # Convert to dict for MongoDB
+        analysis_dict = rejection_analysis.dict()
+        await db.rejection_reasons_analyses.insert_one(analysis_dict)
+        
+        return {
+            "success": True,
+            "rejection_id": rejection_analysis.id,
+            "rejection_reasons": rejection_reasons_text,
+            "pdf_filename": pdf_filename,
+            "message": "Rejection reasons analysis completed successfully"
+        }
+        
+    except Exception as e:
+        logging.error(f"Rejection reasons analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze rejection reasons: {str(e)}")
+
+@api_router.get("/api/placement-preparation/rejection-reasons")
+async def get_rejection_reasons_analyses():
+    """Get all rejection reasons analyses"""
+    try:
+        analyses = await db.rejection_reasons_analyses.find({}).to_list(1000)
+        # Convert MongoDB ObjectIds to strings for JSON serialization
+        for analysis in analyses:
+            if '_id' in analysis:
+                analysis['_id'] = str(analysis['_id'])
+        return {"analyses": analyses}
+    except Exception as e:
+        logging.error(f"Failed to fetch rejection reasons analyses: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch rejection reasons analyses")
+
+@api_router.get("/api/placement-preparation/rejection-reasons/{rejection_id}/download")
+async def download_rejection_reasons_pdf(rejection_id: str):
+    """Download PDF report for specific rejection reasons analysis"""
+    try:
+        analysis = await db.rejection_reasons_analyses.find_one({"id": rejection_id})
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Rejection reasons analysis not found")
+        
+        pdf_path = analysis.get("pdf_path", "")
+        if not os.path.exists(pdf_path):
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            path=pdf_path,
+            media_type='application/pdf',
+            filename=f"rejection_reasons_{rejection_id}.pdf"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"PDF download error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to download PDF")
+
 # Enhanced ATS Analysis Engine
 class EnhancedATSAnalyzer:
     """
