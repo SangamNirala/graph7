@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 
 # Get backend URL from environment
-BACKEND_URL = "https://b3855e00-962c-4d9a-8527-850a152dcbe3.preview.emergentagent.com/api"
+BACKEND_URL = "https://350119d5-292b-44b0-a739-5efd46504bc2.preview.emergentagent.com/api"
 
 def print_test_header(test_name):
     """Print formatted test header"""
