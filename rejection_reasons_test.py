@@ -171,7 +171,7 @@ Responsibilities:
                 print(f"    DEBUG: Actual response: {data}")
                 
                 # Verify response structure
-                required_fields = ["success", "rejection_id", "analysis_text"]
+                required_fields = ["success", "rejection_id", "rejection_reasons"]
                 missing_fields = [field for field in required_fields if field not in data]
                 
                 if missing_fields:
@@ -185,7 +185,7 @@ Responsibilities:
                     return False
                 
                 self.rejection_analysis_id = data.get("rejection_id")
-                analysis_text = data.get("analysis_text", "")
+                analysis_text = data.get("rejection_reasons", "")
                 
                 # Verify analysis quality
                 if len(analysis_text) < 500:
