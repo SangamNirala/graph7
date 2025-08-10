@@ -39,14 +39,14 @@ aiohttp
 openai
 # Advanced AI Analysis Dependencies
 librosa>=0.11.0
-opencv-python>=4.12.0
-mediapipe>=0.10.14
+#opencv-python>=4.12.0
+# mediapipe>=0.10.14
 tensorflow>=2.19.0
 scipy>=1.16.0
 # ML and emotional intelligence dependencies
 textstat>=0.7.7
 torch>=2.7.0
-transformers>=4.53.0
+#transformers>=4.53.0
 vaderSentiment>=3.3.2
 scikit-learn>=1.7.0
 # Additional dependencies for voice recording functionality
@@ -74,9 +74,9 @@ ml_dtypes>=0.5.0
 
 # Phase 3: Open-Source AI Model Integration Dependencies
 # Step 7.1: Replace Proprietary AI Services
-sentence-transformers>=2.2.0
-huggingface-hub>=0.16.0
-datasets>=2.14.0
+#sentence-transformers>=2.2.0
+#huggingface-hub>=0.16.0
+#datasets>=2.14.0
 
 # Step 7.2: Advanced Speech Analysis
 pydub>=0.25.1
