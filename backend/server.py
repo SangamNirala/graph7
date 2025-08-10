@@ -5706,14 +5706,17 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
         pdf_filename = f"ats_score_report_{ats_id[:8]}.pdf"
         pdf_path = f"/tmp/{pdf_filename}"
         
-        # Generate PDF using reportlab with improved formatting
+        # Generate PDF using reportlab with enhanced professional formatting
         from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import letter, A4
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle, KeepTogether
         from reportlab.lib.units import inch
         from reportlab.lib.colors import HexColor, Color
         from reportlab.lib import colors
+        from reportlab.graphics.shapes import Drawing, Rect
+        from reportlab.graphics.charts.barcharts import VerticalBarChart
+        from reportlab.graphics.charts.textlabels import Label
         import os
         import re
         
