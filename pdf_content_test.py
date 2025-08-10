@@ -7,7 +7,7 @@ import requests
 import json
 import re
 
-BACKEND_URL = "https://350119d5-292b-44b0-a739-5efd46504bc2.preview.emergentagent.com"
+BACKEND_URL = "https://0c2b0365-8196-4dec-8bd0-3f2be3854916.preview.emergentagent.com"
 ATS_ENDPOINT = f"{BACKEND_URL}/api/placement-preparation/ats-score-calculate"
 
 def test_pdf_content():

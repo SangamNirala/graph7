@@ -19,7 +19,7 @@ import os
 from typing import Dict, Any, Optional
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://350119d5-292b-44b0-a739-5efd46504bc2.preview.emergentagent.com/api"
+BASE_URL = "https://0c2b0365-8196-4dec-8bd0-3f2be3854916.preview.emergentagent.com/api"
 
 class PlacementEndpointsTester:
     def __init__(self):
