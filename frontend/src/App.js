@@ -3457,13 +3457,32 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
   const fetchAllAnalyses = async () => {
     setAnalysesLoading(true);
     try {
-      const response = await fetch(`${API}/placement-preparation/resume-analyses`);
-      if (response.ok) {
-        const data = await response.json();
-        setAllAnalyses(data.analyses || []);
-      } else {
-        console.error('Failed to fetch analyses');
+      // Fetch both resume analyses and rejection reasons analyses
+      const [resumeResponse, rejectionResponse] = await Promise.all([
+        fetch(`${API}/placement-preparation/resume-analyses`).catch(() => null),
+        fetch(`${API}/placement-preparation/rejection-reasons`).catch(() => null)
+      ]);
+
+      let allAnalyses = [];
+
+      // Add resume analyses if available
+      if (resumeResponse && resumeResponse.ok) {
+        const resumeData = await resumeResponse.json();
+        const resumeAnalyses = resumeData.analyses || [];
+        allAnalyses = [...allAnalyses, ...resumeAnalyses.map(analysis => ({...analysis, type: 'resume'}))];
       }
+
+      // Add rejection reasons analyses if available
+      if (rejectionResponse && rejectionResponse.ok) {
+        const rejectionData = await rejectionResponse.json();
+        const rejectionAnalyses = rejectionData.analyses || [];
+        allAnalyses = [...allAnalyses, ...rejectionAnalyses.map(analysis => ({...analysis, type: 'rejection'}))];
+      }
+
+      // Sort by creation date (newest first)
+      allAnalyses.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      
+      setAllAnalyses(allAnalyses);
     } catch (err) {
       console.error('Failed to fetch analyses:', err);
     } finally {
