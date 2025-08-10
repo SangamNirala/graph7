@@ -251,7 +251,7 @@ class ComprehensivePlacementTester:
             """
             
             files = {
-                'resume_file': ('jane_resume.txt', resume_content.encode(), 'text/plain')
+                'resume': ('jane_resume.txt', resume_content.encode(), 'text/plain')
             }
             
             response = self.session.post(f"{BASE_URL}/admin/upload", files=files)
