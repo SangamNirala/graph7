@@ -5891,8 +5891,48 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
 
             return scores
         
+        def create_progress_bar(score, max_score=100, width=3*inch, height=0.2*inch):
+            """Create a visual progress bar for score representation"""
+            drawing = Drawing(width, height)
+            
+            # Determine color based on score percentage
+            percentage = (score / max_score) * 100 if max_score > 0 else 0
+            if percentage >= 75:
+                bar_color = HexColor('#28A745')  # Green for good scores
+            elif percentage >= 50:
+                bar_color = HexColor('#FFC107')  # Orange for needs improvement
+            else:
+                bar_color = HexColor('#DC3545')  # Red for critical areas
+            
+            # Background bar (light gray)
+            bg_rect = Rect(0, 0, width, height)
+            bg_rect.fillColor = HexColor('#e5e7eb')
+            bg_rect.strokeColor = HexColor('#d1d5db')
+            bg_rect.strokeWidth = 1
+            drawing.add(bg_rect)
+            
+            # Progress bar (colored based on score)
+            progress_width = (score / max_score) * width if max_score > 0 else 0
+            if progress_width > 0:
+                progress_rect = Rect(0, 0, progress_width, height)
+                progress_rect.fillColor = bar_color
+                progress_rect.strokeColor = bar_color
+                drawing.add(progress_rect)
+            
+            return drawing
+            
+        def get_score_color(score, max_score=100):
+            """Get color based on score percentage"""
+            percentage = (score / max_score) * 100 if max_score > 0 else 0
+            if percentage >= 75:
+                return HexColor('#28A745')  # Green
+            elif percentage >= 50:
+                return HexColor('#FFC107')  # Orange
+            else:
+                return HexColor('#DC3545')  # Red
+
         try:
-            # Create PDF document with margins
+            # Create PDF document with enhanced margins and professional layout
             doc = SimpleDocTemplate(
                 pdf_path, 
                 pagesize=A4,
@@ -5904,13 +5944,13 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
             styles = getSampleStyleSheet()
             story = []
             
-            # Custom styles
+            # Enhanced custom styles with professional typography
             title_style = ParagraphStyle(
                 'CustomTitle',
                 parent=styles['Heading1'],
-                fontSize=22,
-                spaceAfter=30,
-                textColor=HexColor('#1e40af'),
+                fontSize=24,
+                spaceAfter=20,
+                textColor=HexColor('#1f2937'),
                 alignment=1,
                 fontName='Helvetica-Bold'
             )
@@ -5919,21 +5959,24 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                 'HeaderStyle',
                 parent=styles['Heading2'],
                 fontSize=16,
-                spaceAfter=15,
+                spaceAfter=12,
                 spaceBefore=20,
                 textColor=HexColor('#1f2937'),
                 fontName='Helvetica-Bold',
-                backColor=HexColor('#f3f4f6'),
-                leftIndent=10,
-                rightIndent=10
+                backColor=HexColor('#f8fafc'),
+                borderColor=HexColor('#e2e8f0'),
+                borderWidth=1,
+                borderPadding=8,
+                leftIndent=12,
+                rightIndent=12
             )
             
             subheader_style = ParagraphStyle(
                 'SubHeaderStyle',
                 parent=styles['Heading3'],
-                fontSize=13,
+                fontSize=14,
                 spaceAfter=8,
-                spaceBefore=10,
+                spaceBefore=12,
                 textColor=HexColor('#374151'),
                 fontName='Helvetica-Bold'
             )
@@ -5944,26 +5987,77 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                 fontSize=11,
                 spaceAfter=6,
                 textColor=HexColor('#4b5563'),
-                leading=14
+                leading=15
+            )
+            
+            bullet_style = ParagraphStyle(
+                'BulletStyle',
+                parent=styles['Normal'],
+                fontSize=11,
+                spaceAfter=4,
+                textColor=HexColor('#4b5563'),
+                leading=14,
+                leftIndent=20,
+                bulletIndent=10
             )
             
             job_info_style = ParagraphStyle(
                 'JobInfoStyle',
                 parent=styles['Normal'],
                 fontSize=12,
-                spaceAfter=8,
+                spaceAfter=6,
                 textColor=HexColor('#6b7280'),
+                alignment=1,
+                fontName='Helvetica'
+            )
+            
+            summary_title_style = ParagraphStyle(
+                'SummaryTitle',
+                parent=styles['Heading2'],
+                fontSize=18,
+                spaceAfter=15,
+                spaceBefore=10,
+                textColor=HexColor('#1f2937'),
+                fontName='Helvetica-Bold',
                 alignment=1
             )
             
-            # Title
-            story.append(Paragraph("📊 ATS SCORE ANALYSIS REPORT", title_style))
-            story.append(Spacer(1, 12))
+            callout_style = ParagraphStyle(
+                'CalloutStyle',
+                parent=styles['Normal'],
+                fontSize=12,
+                spaceAfter=8,
+                textColor=HexColor('#1f2937'),
+                backColor=HexColor('#f0f9ff'),
+                borderColor=HexColor('#0ea5e9'),
+                borderWidth=1,
+                borderPadding=10,
+                leftIndent=10,
+                rightIndent=10,
+                fontName='Helvetica-Bold'
+            )
             
-            # Job details in a box
-            story.append(Paragraph(f"<b>Position:</b> {job_title}", job_info_style))
-            story.append(Paragraph(f"<b>Generated:</b> {current_time} UTC", job_info_style))
-            story.append(Spacer(1, 25))
+            # Professional title with enhanced styling
+            story.append(Paragraph("📊 ATS SCORE ANALYSIS REPORT", title_style))
+            story.append(Spacer(1, 15))
+            
+            # Job details in professional box
+            job_info_table = Table([
+                [f"Position: {job_title}"],
+                [f"Analysis Date: {current_time} UTC"]
+            ], colWidths=[5*inch])
+            job_info_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), HexColor('#f8fafc')),
+                ('TEXTCOLOR', (0, 0), (-1, -1), HexColor('#374151')),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 11),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('GRID', (0, 0), (-1, -1), 1, HexColor('#e2e8f0')),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8)
+            ]))
+            story.append(job_info_table)
+            story.append(Spacer(1, 20))
             
             # ATS Score in a prominent box (robust casting)
             try:
