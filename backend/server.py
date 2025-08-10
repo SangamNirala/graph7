@@ -6498,57 +6498,67 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                         story.append(Paragraph(f"• {rec}", bullet_style))
                     story.append(Spacer(1, 12))
 
-            # Detailed Analysis - Enhanced to capture all analysis content with modern sections
+            # Enhanced Comprehensive Analysis Section with better visual hierarchy
             story.append(Paragraph("📋 COMPREHENSIVE ATS ANALYSIS", header_style))
-            story.append(Spacer(1, 8))
+            story.append(Spacer(1, 12))
             
-            # Process all sections comprehensively with modern section support
+            # Process all sections with enhanced formatting and visual elements
             section_order = [
                 'ats_score', 'scoring_breakdown', 'improvement_areas', 'implementation_roadmap', 
                 'timeline_improvements', 'optimization_checklist', 'probability_assessment', 
                 'enhanced_insights', 'recommendations', 'scoring', 'detailed_analysis', 'general_analysis'
             ]
             
+            section_icons = {
+                'ats_score': '🎯',
+                'scoring_breakdown': '📊',
+                'improvement_areas': '🔍',
+                'implementation_roadmap': '🗺️',
+                'timeline_improvements': '⏱️',
+                'optimization_checklist': '✅',
+                'probability_assessment': '📈',
+                'enhanced_insights': '💡',
+                'recommendations': '⭐',
+                'scoring': '🎯',
+                'detailed_analysis': '🔍',
+                'general_analysis': '📋'
+            }
+            
             for section_name in section_order:
                 if section_name in sections:
                     content = sections[section_name]
                     if content and content.strip():
-                        # Add section header based on type
-                        if section_name == 'ats_score':
-                            story.append(Paragraph("🎯 ATS SCORE SUMMARY", subheader_style))
-                        elif section_name == 'scoring_breakdown':
-                            story.append(Paragraph("📊 DETAILED SCORING BREAKDOWN", subheader_style))
-                        elif section_name == 'improvement_areas':
-                            story.append(Paragraph("🔍 CRITICAL IMPROVEMENT AREAS", subheader_style))
-                        elif section_name == 'implementation_roadmap':
-                            story.append(Paragraph("🗺️ IMPLEMENTATION ROADMAP", subheader_style))
-                        elif section_name == 'timeline_improvements':
-                            story.append(Paragraph("⏱️ TIMELINE-BASED IMPROVEMENTS", subheader_style))
-                        elif section_name == 'optimization_checklist':
-                            story.append(Paragraph("✅ ATS OPTIMIZATION CHECKLIST", subheader_style))
-                        elif section_name == 'probability_assessment':
-                            story.append(Paragraph("📈 HIRING PROBABILITY & COMPETITIVE ANALYSIS", subheader_style))
-                        elif section_name == 'enhanced_insights':
-                            story.append(Paragraph("🔍 ENHANCED ANALYSIS INSIGHTS", subheader_style))
-                        elif section_name == 'recommendations':
-                            story.append(Paragraph("💡 SCORE ENHANCEMENT RECOMMENDATIONS", subheader_style))
-                        elif section_name == 'scoring':
-                            story.append(Paragraph("🎯 SCORING ANALYSIS", subheader_style))
-                        elif section_name == 'detailed_analysis':
-                            story.append(Paragraph("🔍 DETAILED INSIGHTS", subheader_style))
-                        elif section_name == 'general_analysis':
-                            story.append(Paragraph("📊 ANALYSIS OVERVIEW", subheader_style))
+                        # Add section header with icon
+                        icon = section_icons.get(section_name, '📄')
+                        section_titles = {
+                            'ats_score': f'{icon} ATS SCORE SUMMARY',
+                            'scoring_breakdown': f'{icon} DETAILED SCORING BREAKDOWN',
+                            'improvement_areas': f'{icon} CRITICAL IMPROVEMENT AREAS',
+                            'implementation_roadmap': f'{icon} IMPLEMENTATION ROADMAP',
+                            'timeline_improvements': f'{icon} TIMELINE-BASED IMPROVEMENTS',
+                            'optimization_checklist': f'{icon} ATS OPTIMIZATION CHECKLIST',
+                            'probability_assessment': f'{icon} HIRING PROBABILITY ASSESSMENT',
+                            'enhanced_insights': f'{icon} ENHANCED ANALYSIS INSIGHTS',
+                            'recommendations': f'{icon} SCORE ENHANCEMENT RECOMMENDATIONS',
+                            'scoring': f'{icon} SCORING ANALYSIS',
+                            'detailed_analysis': f'{icon} DETAILED INSIGHTS',
+                            'general_analysis': f'{icon} ANALYSIS OVERVIEW'
+                        }
                         
-                        story.append(Spacer(1, 5))
+                        section_title = section_titles.get(section_name, f'{icon} {section_name.upper()}')
+                        story.append(Paragraph(section_title, subheader_style))
+                        story.append(Spacer(1, 8))
                         
-                        # Process content line by line
+                        # Process content with enhanced formatting
                         content_lines = content.split('\n')
+                        in_list = False
+                        
                         for line in content_lines:
                             if line.strip():
                                 clean_line = line.replace('**', '').replace('*', '').replace('■', '•')
                                 clean_line = re.sub(r'[🎯💼⚙️🎓📊🚀🔍💡📈📋⭐✅⏱️🗺️]', '', clean_line)
                                 
-                                # Determine line formatting with enhanced patterns
+                                # Enhanced line formatting with better hierarchy
                                 if any(keyword in line.upper() for keyword in [
                                     'COMPREHENSIVE ATS SCORE', 'OVERALL ATS SCORE', 'FINAL SCORE',
                                     'KEYWORD OPTIMIZATION', 'EXPERIENCE RELEVANCE', 'TECHNICAL COMPETENCY', 
@@ -6560,31 +6570,44 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                                     'CONTENT ANALYSIS RESULTS', 'KEYWORD MATCHING ANALYSIS',
                                     'HYBRID SCORING CALCULATION', 'SCORE ENHANCEMENT'
                                 ]):
+                                    # Major section headers
                                     story.append(Paragraph(f"<b>{clean_line.strip()}</b>", subheader_style))
-                                elif line.strip().startswith('•') or line.strip().startswith('-') or line.strip().startswith('→') or line.strip().startswith('✓') or line.strip().startswith('✗'):
-                                    story.append(Paragraph(f"  {clean_line.strip()}", normal_style))
-                                elif ':' in clean_line and len(str(clean_line.split(':')[0])) < 50:  # Likely a label
+                                    story.append(Spacer(1, 4))
+                                    in_list = False
+                                elif line.strip().startswith(('•', '-', '→', '✓', '✗', '▪', '▫')):
+                                    # Bullet points with consistent formatting
+                                    bullet_text = clean_line.strip().lstrip('•-→✓✗▪▫ ')
+                                    story.append(Paragraph(f"• {bullet_text}", bullet_style))
+                                    in_list = True
+                                elif ':' in clean_line and len(clean_line.split(':')[0]) < 60:
+                                    # Label-value pairs
                                     parts = clean_line.split(':', 1)
                                     if len(parts) == 2:
                                         story.append(Paragraph(f"<b>{parts[0].strip()}:</b> {parts[1].strip()}", normal_style))
-                                    else:
-                                        story.append(Paragraph(clean_line.strip(), normal_style))
+                                        story.append(Spacer(1, 2))
+                                    in_list = False
+                                elif re.search(r'\d+/\d+|\d+%|\d+\.\d+%', clean_line):
+                                    # Numeric scores and percentages - highlight them
+                                    story.append(Paragraph(f"<b>{clean_line.strip()}</b>", normal_style))
+                                    story.append(Spacer(1, 2))
+                                    in_list = False
                                 elif clean_line.strip():
-                                    # Check for score patterns like "XX/XX" or percentages
-                                    if re.search(r'\d+/\d+|\d+%|\d+\.\d+%', clean_line):
-                                        story.append(Paragraph(f"<b>{clean_line.strip()}</b>", normal_style))
+                                    # Regular paragraphs
+                                    if in_list:
+                                        # Continuation of list item
+                                        story.append(Paragraph(f"  {clean_line.strip()}", bullet_style))
                                     else:
                                         story.append(Paragraph(clean_line.strip(), normal_style))
-                                story.append(Spacer(1, 3))
+                                        story.append(Spacer(1, 3))
                         
-                        story.append(Spacer(1, 10))
+                        story.append(Spacer(1, 15))
             
-            # Fallback: If no structured sections found, include raw analysis text
+            # Enhanced fallback section if no structured sections found
             if not any(section in sections for section in section_order):
                 story.append(Paragraph("🔍 COMPLETE ANALYSIS", subheader_style))
-                story.append(Spacer(1, 8))
+                story.append(Spacer(1, 10))
                 
-                # Split analysis text and add it directly
+                # Process raw analysis with better formatting
                 analysis_lines = ats_analysis_text.split('\n')
                 for line in analysis_lines:
                     if line.strip():
@@ -6600,11 +6623,32 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                                 'ATS OPTIMIZATION', 'HIRING PROBABILITY', 'COMPETITIVE POSITIONING'
                             ]):
                                 story.append(Paragraph(f"<b>{clean_line.strip()}</b>", subheader_style))
+                                story.append(Spacer(1, 4))
+                            elif line.strip().startswith(('•', '-', '→', '✓', '✗')):
+                                bullet_text = clean_line.strip().lstrip('•-→✓✗ ')
+                                story.append(Paragraph(f"• {bullet_text}", bullet_style))
                             else:
                                 story.append(Paragraph(clean_line.strip(), normal_style))
-                            story.append(Spacer(1, 3))
+                                story.append(Spacer(1, 3))
+                story.append(Spacer(1, 15))
             
-            # Build PDF
+            # Footer with timestamp and professional note
+            footer_style = ParagraphStyle(
+                'FooterStyle',
+                parent=styles['Normal'],
+                fontSize=9,
+                textColor=HexColor('#6b7280'),
+                alignment=1,
+                spaceBefore=20
+            )
+            
+            story.append(Paragraph(
+                f"Generated by ATS Analysis System | {current_time} UTC<br/>"
+                "This analysis is based on industry-standard ATS parsing algorithms and best practices.",
+                footer_style
+            ))
+            
+            # Build the enhanced PDF
             doc.build(story)
             
         except Exception as e:
