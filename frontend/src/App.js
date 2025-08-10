@@ -4536,6 +4536,57 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
           </div>
         </div>
       )}
+      
+      {/* Rejection Reasons Analysis Success Popup */}
+      {showRejectionPopup && currentRejectionResult && (
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-red-900/90 to-pink-900/90 backdrop-blur-lg rounded-2xl border border-white/20 max-w-2xl w-full">
+            <div className="p-8 text-center">
+              <div className="text-6xl mb-4">❌</div>
+              <h3 className="text-3xl font-bold text-white mb-4">Rejection Reasons Generated!</h3>
+              <p className="text-gray-300 mb-6">
+                Comprehensive rejection reasons analysis has been completed and the detailed report has been generated.
+              </p>
+              
+              <div className="bg-white/10 rounded-lg p-6 mb-6">
+                <h4 className="text-xl font-semibold text-white mb-2">
+                  📋 Analysis for: {currentRejectionResult.jobTitle}
+                </h4>
+                <p className="text-gray-300 text-sm">
+                  Generated on: {new Date(currentRejectionResult.timestamp).toLocaleDateString()}
+                </p>
+              </div>
+              
+              <p className="text-gray-300 mb-6">
+                The comprehensive rejection reasons analysis with detailed explanations 
+                is now available in your Analysis Results for download.
+              </p>
+              
+              <div className="space-x-4">
+                <button
+                  onClick={() => {
+                    setShowRejectionPopup(false);
+                    setCurrentRejectionResult(null);
+                    setActiveTab('analysis-result');
+                  }}
+                  className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300"
+                >
+                  📋 View Results
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRejectionPopup(false);
+                    setCurrentRejectionResult(null);
+                  }}
+                  className="bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold py-3 px-6 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-300"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
