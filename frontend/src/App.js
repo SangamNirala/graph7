@@ -3144,6 +3144,12 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
   const [showAtsPopup, setShowAtsPopup] = useState(false);
   const [currentAtsResult, setCurrentAtsResult] = useState(null);
   
+  // Rejection Reasons state
+  const [rejectionLoading, setRejectionLoading] = useState(false);
+  const [rejectionResults, setRejectionResults] = useState([]);
+  const [showRejectionPopup, setShowRejectionPopup] = useState(false);
+  const [currentRejectionResult, setCurrentRejectionResult] = useState(null);
+  
   // Analysis Result state
   const [allAnalyses, setAllAnalyses] = useState([]);
   const [analysesLoading, setAnalysesLoading] = useState(false);
