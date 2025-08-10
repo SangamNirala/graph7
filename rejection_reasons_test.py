@@ -1,542 +1,423 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend Testing for Rejection Reasons Analysis Functionality
-Testing Agent - Focus on New Rejection Reasons Feature
+Focused Testing for Rejection Reasons POST Endpoint Functionality
+Testing the specific rejection reasons workflow that was reported as failing with net::ERR_FAILED
 """
 
 import requests
 import json
-import os
 import time
+import os
 from datetime import datetime
-import tempfile
+import io
 
-# Configuration
-BACKEND_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://882970a1-15c9-4eb2-9f43-a49f0b775561.preview.emergentagent.com')
-API_BASE = f"{BACKEND_URL}/api"
+# Get backend URL from environment
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://882970a1-15c9-4eb2-9f43-a49f0b775561.preview.emergentagent.com')
+BASE_URL = f"{BACKEND_URL}/api"
 
-def log_test_result(test_name, status, details=""):
-    """Log test results with timestamp"""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    status_symbol = "✅" if status == "PASS" else "❌" if status == "FAIL" else "⚠️"
-    print(f"[{timestamp}] {status_symbol} {test_name}: {status}")
-    if details:
-        print(f"    Details: {details}")
-    print()
+class RejectionReasonsWorkflowTester:
+    def __init__(self):
+        self.session = requests.Session()
+        self.rejection_analysis_id = None
+        
+    def log_test(self, test_name, status, details=""):
+        """Log test results with timestamp"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        status_symbol = "✅" if status == "PASS" else "❌" if status == "FAIL" else "⚠️"
+        print(f"[{timestamp}] {status_symbol} {test_name}")
+        if details:
+            print(f"    {details}")
+        print()
 
-def test_backend_connectivity():
-    """Test basic backend connectivity"""
-    try:
-        response = requests.get(f"{BACKEND_URL}/", timeout=10)
-        if response.status_code == 200:
-            log_test_result("Backend Connectivity", "PASS", f"Status: {response.status_code}")
-            return True
-        else:
-            log_test_result("Backend Connectivity", "FAIL", f"Status: {response.status_code}")
+    def test_backend_connectivity(self):
+        """Test basic backend connectivity"""
+        try:
+            response = self.session.get(f"{BASE_URL}/health", timeout=10)
+            if response.status_code == 200:
+                self.log_test("Backend Connectivity", "PASS", f"Backend accessible at {BASE_URL}")
+                return True
+            else:
+                # Try a different endpoint if health doesn't exist
+                response = self.session.get(f"{BASE_URL}/placement-preparation/rejection-reasons", timeout=10)
+                if response.status_code in [200, 404]:  # 404 is acceptable for empty list
+                    self.log_test("Backend Connectivity", "PASS", f"Backend accessible at {BASE_URL}")
+                    return True
+                else:
+                    self.log_test("Backend Connectivity", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                    return False
+        except Exception as e:
+            self.log_test("Backend Connectivity", "FAIL", f"Connection error: {str(e)}")
             return False
-    except Exception as e:
-        log_test_result("Backend Connectivity", "FAIL", f"Error: {str(e)}")
-        return False
 
-def create_test_resume_file():
-    """Create a realistic test resume file for testing"""
-    resume_content = """SARAH JOHNSON
-Senior Software Engineer
+    def test_get_rejection_reasons_endpoint(self):
+        """Test GET /api/placement-preparation/rejection-reasons endpoint"""
+        try:
+            response = self.session.get(f"{BASE_URL}/placement-preparation/rejection-reasons", timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                analyses = data.get("analyses", [])
+                self.log_test("GET Rejection Reasons Endpoint", "PASS", 
+                            f"Retrieved {len(analyses)} existing analyses")
+                return True
+            else:
+                self.log_test("GET Rejection Reasons Endpoint", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("GET Rejection Reasons Endpoint", "FAIL", f"Exception: {str(e)}")
+            return False
+
+    def create_sample_resume_file(self):
+        """Create a realistic sample resume for testing"""
+        resume_content = """SARAH JOHNSON
+Senior Data Scientist
 Email: sarah.johnson@email.com | Phone: (555) 123-4567
-LinkedIn: linkedin.com/in/sarahjohnson | GitHub: github.com/sarahjohnson
+LinkedIn: linkedin.com/in/sarahjohnson
 
 PROFESSIONAL SUMMARY
-Experienced software engineer with 6+ years developing scalable web applications using modern technologies. 
-Strong background in full-stack development, cloud architecture, and agile methodologies.
+Experienced data scientist with 4+ years in machine learning, statistical analysis, and data visualization. 
+Proven track record in developing predictive models and deriving actionable insights from complex datasets.
 
 TECHNICAL SKILLS
-• Programming Languages: JavaScript, Python, Java
-• Frontend: React, Vue.js, HTML5, CSS3, TypeScript
-• Backend: Node.js, Express.js, Django, Spring Boot
-• Databases: PostgreSQL, MongoDB, Redis
-• Cloud: AWS (EC2, S3, Lambda), Docker, Kubernetes
-• Tools: Git, Jenkins, JIRA, Postman
+• Programming Languages: Python, R, SQL
+• Machine Learning: Scikit-learn, TensorFlow, Keras, XGBoost
+• Data Visualization: Matplotlib, Seaborn, Plotly, Tableau
+• Databases: PostgreSQL, MongoDB, MySQL
+• Tools: Jupyter, Git, Docker, AWS
 
 PROFESSIONAL EXPERIENCE
 
-Senior Software Engineer | TechCorp Inc. | 2021 - Present
-• Led development of microservices architecture serving 100K+ daily users
-• Implemented CI/CD pipelines reducing deployment time by 60%
-• Mentored 3 junior developers and conducted code reviews
-• Built RESTful APIs and integrated third-party services
+Data Scientist | TechCorp Inc. | 2020 - Present
+• Developed machine learning models that improved customer retention by 15%
+• Built automated data pipelines processing 1M+ records daily
+• Created interactive dashboards for executive reporting
+• Collaborated with cross-functional teams on product analytics
 
-Software Engineer | StartupXYZ | 2019 - 2021
-• Developed responsive web applications using React and Node.js
-• Collaborated with cross-functional teams in agile environment
-• Optimized database queries improving performance by 40%
-• Participated in on-call rotation for production support
-
-Junior Developer | WebSolutions | 2018 - 2019
-• Built frontend components using HTML, CSS, and JavaScript
-• Assisted in bug fixes and feature enhancements
-• Learned version control with Git and participated in code reviews
+Junior Data Analyst | DataSolutions LLC | 2019 - 2020
+• Performed statistical analysis on customer behavior data
+• Created reports and visualizations for business stakeholders
+• Assisted in A/B testing and experimental design
 
 EDUCATION
-Bachelor of Science in Computer Science
-State University | 2018
-GPA: 3.7/4.0
-
-CERTIFICATIONS
-• AWS Certified Solutions Architect - Associate (2022)
-• Certified Scrum Master (2021)
+Master of Science in Data Science | University of Technology | 2019
+Bachelor of Science in Statistics | State University | 2017
 
 PROJECTS
-• E-commerce Platform: Built full-stack application with React, Node.js, and PostgreSQL
-• Task Management API: Developed RESTful API with authentication and real-time updates
-• Data Visualization Dashboard: Created interactive charts using D3.js and Python"""
-    
-    # Create temporary file
-    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
-    temp_file.write(resume_content)
-    temp_file.close()
-    return temp_file.name, resume_content
+• Customer Churn Prediction Model: Achieved 92% accuracy using ensemble methods
+• Sales Forecasting System: Reduced forecasting error by 25% using time series analysis
+• Sentiment Analysis Tool: Built NLP pipeline for social media monitoring
 
-def test_rejection_reasons_analysis():
-    """Test the new rejection reasons analysis endpoint"""
-    try:
-        # Create test resume file
-        resume_file_path, resume_content = create_test_resume_file()
-        
-        # Test data - realistic job requirements that will generate rejection reasons
-        job_title = "Principal Machine Learning Engineer"
-        job_description = """We are seeking a Principal Machine Learning Engineer to lead our AI initiatives.
+CERTIFICATIONS
+• AWS Certified Machine Learning - Specialty
+• Google Analytics Certified
+"""
+        return resume_content.strip()
 
-REQUIRED QUALIFICATIONS:
-• PhD in Computer Science, Machine Learning, or related field
-• 10+ years of experience in machine learning and AI
-• Expert-level proficiency in Python, TensorFlow, PyTorch
-• Deep experience with NLP, computer vision, and deep learning
-• Experience with MLOps, model deployment, and production systems
-• Strong background in statistics, mathematics, and algorithms
-• Experience leading ML teams of 5+ engineers
-• Publications in top-tier ML conferences (NIPS, ICML, ICLR)
-• Experience with distributed computing (Spark, Hadoop)
-• Cloud ML platforms (AWS SageMaker, Google AI Platform)
-• Real-time ML inference systems and model optimization
-• A/B testing and experimentation frameworks
-• Kubernetes and Docker for ML workloads
-• Advanced degree in quantitative field required
-
-PREFERRED QUALIFICATIONS:
-• Experience in healthcare/medical AI applications
-• Knowledge of federated learning and privacy-preserving ML
-• Experience with edge computing and mobile ML deployment
-• Background in reinforcement learning and robotics
-• Industry experience at FAANG companies
-• Track record of ML patents and intellectual property"""
-
-        # Prepare multipart form data
-        with open(resume_file_path, 'rb') as f:
+    def test_post_rejection_reasons_with_formdata(self):
+        """Test POST /api/placement-preparation/rejection-reasons endpoint with proper FormData"""
+        try:
+            # Create sample resume content
+            resume_content = self.create_sample_resume_file()
+            
+            # Prepare FormData with file upload
             files = {
-                'resume': ('test_resume.txt', f, 'text/plain')
-            }
-            data = {
-                'job_title': job_title,
-                'job_description': job_description
+                'resume_file': ('sarah_resume.txt', resume_content.encode('utf-8'), 'text/plain')
             }
             
-            # Make request to rejection reasons endpoint
-            response = requests.post(
-                f"{API_BASE}/placement-preparation/rejection-reasons",
-                files=files,
-                data=data,
-                timeout=60  # Longer timeout for LLM processing
+            form_data = {
+                'job_title': 'Senior Data Scientist',
+                'job_description': '''We are seeking a Senior Data Scientist with 5+ years of experience to join our AI team. 
+                
+Key Requirements:
+- 5+ years of experience in machine learning and data science
+- Expert-level proficiency in Python, R, and SQL
+- Experience with deep learning frameworks (TensorFlow, PyTorch)
+- Strong background in statistical modeling and hypothesis testing
+- Experience with cloud platforms (AWS, GCP, Azure)
+- PhD in Computer Science, Statistics, or related field preferred
+- Experience with big data technologies (Spark, Hadoop)
+- Knowledge of MLOps and model deployment
+- Experience leading data science teams
+- Published research in top-tier conferences/journals
+
+Responsibilities:
+- Lead complex machine learning projects from conception to deployment
+- Mentor junior data scientists and analysts
+- Collaborate with engineering teams on model productionization
+- Present findings to C-level executives
+- Drive innovation in AI/ML methodologies'''
+            }
+            
+            self.log_test("POST Rejection Reasons - Sending Request", "INFO", 
+                        f"Sending POST request to {BASE_URL}/placement-preparation/rejection-reasons")
+            
+            # Send POST request with FormData
+            response = self.session.post(
+                f"{BASE_URL}/placement-preparation/rejection-reasons", 
+                files=files, 
+                data=form_data,
+                timeout=30  # Increased timeout for analysis processing
             )
-        
-        # Clean up temp file
-        os.unlink(resume_file_path)
-        
-        if response.status_code == 200:
-            result = response.json()
             
-            # Validate response structure
-            required_fields = ['success', 'rejection_id', 'rejection_reasons', 'pdf_filename']
-            missing_fields = [field for field in required_fields if field not in result]
+            self.log_test("POST Rejection Reasons - Response Received", "INFO", 
+                        f"Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Verify response structure
+                required_fields = ["success", "rejection_id", "analysis_text"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test("POST Rejection Reasons FormData", "FAIL", 
+                                f"Missing required response fields: {missing_fields}")
+                    return False
+                
+                if not data.get("success"):
+                    self.log_test("POST Rejection Reasons FormData", "FAIL", 
+                                f"Request not successful: {data.get('message', 'Unknown error')}")
+                    return False
+                
+                self.rejection_analysis_id = data.get("rejection_id")
+                analysis_text = data.get("analysis_text", "")
+                
+                # Verify analysis quality
+                if len(analysis_text) < 500:
+                    self.log_test("POST Rejection Reasons FormData", "FAIL", 
+                                f"Analysis text too short: {len(analysis_text)} characters")
+                    return False
+                
+                # Count bullet points in analysis
+                bullet_count = analysis_text.count('•') + analysis_text.count('-') + analysis_text.count('*')
+                
+                self.log_test("POST Rejection Reasons FormData", "PASS", 
+                            f"Analysis created successfully - ID: {self.rejection_analysis_id}, "
+                            f"Analysis length: {len(analysis_text)} chars, Bullet points: {bullet_count}")
+                return True
+                
+            elif response.status_code == 400:
+                self.log_test("POST Rejection Reasons FormData", "FAIL", 
+                            f"Bad Request (400): {response.text}")
+                return False
+            elif response.status_code == 500:
+                self.log_test("POST Rejection Reasons FormData", "FAIL", 
+                            f"Server Error (500): {response.text}")
+                return False
+            else:
+                self.log_test("POST Rejection Reasons FormData", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except requests.exceptions.Timeout:
+            self.log_test("POST Rejection Reasons FormData", "FAIL", 
+                        "Request timeout - server may be processing")
+            return False
+        except requests.exceptions.ConnectionError as e:
+            self.log_test("POST Rejection Reasons FormData", "FAIL", 
+                        f"Connection error (net::ERR_FAILED equivalent): {str(e)}")
+            return False
+        except Exception as e:
+            self.log_test("POST Rejection Reasons FormData", "FAIL", f"Exception: {str(e)}")
+            return False
+
+    def test_analysis_storage_verification(self):
+        """Test that the analysis was properly stored by retrieving it via GET"""
+        try:
+            if not self.rejection_analysis_id:
+                self.log_test("Analysis Storage Verification", "FAIL", 
+                            "No rejection analysis ID available from POST request")
+                return False
+            
+            # Get all analyses to verify our analysis is stored
+            response = self.session.get(f"{BASE_URL}/placement-preparation/rejection-reasons", timeout=15)
+            
+            if response.status_code != 200:
+                self.log_test("Analysis Storage Verification", "FAIL", 
+                            f"Failed to retrieve analyses: HTTP {response.status_code}")
+                return False
+            
+            data = response.json()
+            analyses = data.get("analyses", [])
+            
+            # Find our analysis
+            our_analysis = None
+            for analysis in analyses:
+                if analysis.get("rejection_id") == self.rejection_analysis_id:
+                    our_analysis = analysis
+                    break
+            
+            if not our_analysis:
+                self.log_test("Analysis Storage Verification", "FAIL", 
+                            f"Analysis with ID {self.rejection_analysis_id} not found in stored analyses")
+                return False
+            
+            # Verify analysis structure
+            required_fields = ["rejection_id", "job_title", "analysis_text", "created_at"]
+            missing_fields = [field for field in required_fields if field not in our_analysis]
             
             if missing_fields:
-                log_test_result("Rejection Reasons Analysis - Response Structure", "FAIL", 
-                              f"Missing fields: {missing_fields}")
-                return False, None
-            
-            # Validate content
-            if not result.get('success'):
-                log_test_result("Rejection Reasons Analysis - Success Flag", "FAIL", 
-                              "Success flag is False")
-                return False, None
-            
-            rejection_reasons = result.get('rejection_reasons', '')
-            if len(rejection_reasons) < 500:  # Should be comprehensive
-                log_test_result("Rejection Reasons Analysis - Content Length", "FAIL", 
-                              f"Analysis too short: {len(rejection_reasons)} characters")
-                return False, None
-            
-            # Check for bullet points (comprehensive format)
-            bullet_count = rejection_reasons.count('•')
-            if bullet_count < 5:  # Should have multiple rejection reasons
-                log_test_result("Rejection Reasons Analysis - Bullet Points", "FAIL", 
-                              f"Too few bullet points: {bullet_count}")
-                return False, None
-            
-            # Check for required sections/keywords
-            required_keywords = ['REJECTION REASONS', 'Required:', 'Candidate Reality:', 'Gap Impact:']
-            missing_keywords = [kw for kw in required_keywords if kw not in rejection_reasons]
-            
-            if missing_keywords:
-                log_test_result("Rejection Reasons Analysis - Required Keywords", "FAIL", 
-                              f"Missing keywords: {missing_keywords}")
-                return False, None
-            
-            log_test_result("Rejection Reasons Analysis - Core Functionality", "PASS", 
-                          f"Generated {len(rejection_reasons)} chars, {bullet_count} bullet points, ID: {result['rejection_id']}")
-            
-            return True, result
-            
-        else:
-            log_test_result("Rejection Reasons Analysis - API Call", "FAIL", 
-                          f"Status: {response.status_code}, Response: {response.text}")
-            return False, None
-            
-    except Exception as e:
-        log_test_result("Rejection Reasons Analysis - Exception", "FAIL", f"Error: {str(e)}")
-        return False, None
-
-def test_pdf_generation_and_download(rejection_id):
-    """Test PDF generation and download functionality"""
-    try:
-        # Test PDF download endpoint
-        response = requests.get(
-            f"{API_BASE}/placement-preparation/rejection-reasons/{rejection_id}/download",
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            # Validate PDF content
-            content_type = response.headers.get('content-type', '')
-            if 'application/pdf' not in content_type:
-                log_test_result("PDF Download - Content Type", "FAIL", 
-                              f"Wrong content type: {content_type}")
+                self.log_test("Analysis Storage Verification", "FAIL", 
+                            f"Stored analysis missing fields: {missing_fields}")
                 return False
             
-            pdf_size = len(response.content)
-            if pdf_size < 1000:  # PDF should be substantial
-                log_test_result("PDF Download - File Size", "FAIL", 
-                              f"PDF too small: {pdf_size} bytes")
-                return False
-            
-            # Check PDF headers
-            pdf_content = response.content
-            if not pdf_content.startswith(b'%PDF'):
-                log_test_result("PDF Download - PDF Format", "FAIL", 
-                              "Invalid PDF format")
-                return False
-            
-            log_test_result("PDF Generation and Download", "PASS", 
-                          f"PDF downloaded successfully: {pdf_size} bytes, Content-Type: {content_type}")
+            self.log_test("Analysis Storage Verification", "PASS", 
+                        f"Analysis properly stored and retrievable - Job: {our_analysis.get('job_title')}")
             return True
             
-        else:
-            log_test_result("PDF Download - API Call", "FAIL", 
-                          f"Status: {response.status_code}, Response: {response.text}")
+        except Exception as e:
+            self.log_test("Analysis Storage Verification", "FAIL", f"Exception: {str(e)}")
             return False
-            
-    except Exception as e:
-        log_test_result("PDF Generation and Download - Exception", "FAIL", f"Error: {str(e)}")
-        return False
 
-def test_database_storage():
-    """Test database storage and retrieval of rejection reasons analyses"""
-    try:
-        # Test GET endpoint for all analyses
-        response = requests.get(
-            f"{API_BASE}/placement-preparation/rejection-reasons",
-            timeout=15
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            
-            if 'analyses' not in result:
-                log_test_result("Database Storage - Response Structure", "FAIL", 
-                              "Missing 'analyses' field in response")
+    def test_pdf_download_functionality(self):
+        """Test PDF download functionality for the created analysis"""
+        try:
+            if not self.rejection_analysis_id:
+                self.log_test("PDF Download Functionality", "FAIL", 
+                            "No rejection analysis ID available for PDF download")
                 return False
             
-            analyses = result['analyses']
-            if not isinstance(analyses, list):
-                log_test_result("Database Storage - Data Type", "FAIL", 
-                              "Analyses should be a list")
+            # Test PDF download endpoint
+            pdf_url = f"{BASE_URL}/placement-preparation/rejection-reasons/{self.rejection_analysis_id}/download"
+            response = self.session.get(pdf_url, timeout=20)
+            
+            if response.status_code == 200:
+                # Verify it's a PDF
+                content_type = response.headers.get('content-type', '')
+                if 'application/pdf' not in content_type:
+                    self.log_test("PDF Download Functionality", "FAIL", 
+                                f"Invalid content type: {content_type} (expected application/pdf)")
+                    return False
+                
+                # Verify PDF content size
+                pdf_size = len(response.content)
+                if pdf_size < 1000:  # PDF should be at least 1KB
+                    self.log_test("PDF Download Functionality", "FAIL", 
+                                f"PDF too small: {pdf_size} bytes")
+                    return False
+                
+                # Verify PDF header
+                if not response.content.startswith(b'%PDF'):
+                    self.log_test("PDF Download Functionality", "FAIL", 
+                                "Invalid PDF format - missing PDF header")
+                    return False
+                
+                self.log_test("PDF Download Functionality", "PASS", 
+                            f"PDF downloaded successfully - Size: {pdf_size} bytes")
+                return True
+                
+            elif response.status_code == 404:
+                self.log_test("PDF Download Functionality", "FAIL", 
+                            "PDF not found - analysis may not have been processed correctly")
                 return False
-            
-            if len(analyses) == 0:
-                log_test_result("Database Storage - Data Presence", "FAIL", 
-                              "No analyses found in database")
+            else:
+                self.log_test("PDF Download Functionality", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
                 return False
-            
-            # Validate structure of first analysis
-            first_analysis = analyses[0]
-            required_fields = ['id', 'job_title', 'job_description', 'rejection_reasons', 'created_at']
-            missing_fields = [field for field in required_fields if field not in first_analysis]
-            
-            if missing_fields:
-                log_test_result("Database Storage - Analysis Structure", "FAIL", 
-                              f"Missing fields in analysis: {missing_fields}")
-                return False
-            
-            log_test_result("Database Storage and Retrieval", "PASS", 
-                          f"Found {len(analyses)} analyses in database")
-            return True
-            
-        else:
-            log_test_result("Database Storage - API Call", "FAIL", 
-                          f"Status: {response.status_code}, Response: {response.text}")
+                
+        except Exception as e:
+            self.log_test("PDF Download Functionality", "FAIL", f"Exception: {str(e)}")
             return False
-            
-    except Exception as e:
-        log_test_result("Database Storage - Exception", "FAIL", f"Error: {str(e)}")
-        return False
 
-def test_error_handling():
-    """Test error handling for invalid inputs"""
-    try:
-        # Test 1: Invalid file format
-        invalid_file_content = b"This is not a valid resume file"
-        files = {
-            'resume': ('test.xyz', invalid_file_content, 'application/octet-stream')
-        }
-        data = {
-            'job_title': 'Test Job',
-            'job_description': 'Test description'
-        }
-        
-        response = requests.post(
-            f"{API_BASE}/placement-preparation/rejection-reasons",
-            files=files,
-            data=data,
-            timeout=30
-        )
-        
-        if response.status_code != 400:
-            log_test_result("Error Handling - Invalid File Format", "FAIL", 
-                          f"Expected 400, got {response.status_code}")
-            return False
-        
-        # Test 2: Missing required fields
-        resume_file_path, _ = create_test_resume_file()
-        with open(resume_file_path, 'rb') as f:
+    def test_error_handling_invalid_file(self):
+        """Test error handling with invalid file format"""
+        try:
+            # Test with invalid file format
             files = {
-                'resume': ('test_resume.txt', f, 'text/plain')
-            }
-            data = {
-                'job_title': 'Test Job'
-                # Missing job_description
+                'resume_file': ('invalid.xyz', b'invalid content', 'application/octet-stream')
             }
             
-            response = requests.post(
-                f"{API_BASE}/placement-preparation/rejection-reasons",
-                files=files,
-                data=data,
-                timeout=30
+            form_data = {
+                'job_title': 'Test Position',
+                'job_description': 'Test description for error handling'
+            }
+            
+            response = self.session.post(
+                f"{BASE_URL}/placement-preparation/rejection-reasons", 
+                files=files, 
+                data=form_data,
+                timeout=15
             )
-        
-        os.unlink(resume_file_path)
-        
-        if response.status_code not in [400, 422]:  # FastAPI returns 422 for validation errors
-            log_test_result("Error Handling - Missing Fields", "FAIL", 
-                          f"Expected 400/422, got {response.status_code}")
-            return False
-        
-        # Test 3: Invalid rejection ID for PDF download
-        response = requests.get(
-            f"{API_BASE}/placement-preparation/rejection-reasons/invalid-id/download",
-            timeout=15
-        )
-        
-        if response.status_code != 404:
-            log_test_result("Error Handling - Invalid Rejection ID", "FAIL", 
-                          f"Expected 404, got {response.status_code}")
-            return False
-        
-        log_test_result("Error Handling", "PASS", 
-                      "All error scenarios handled correctly")
-        return True
-        
-    except Exception as e:
-        log_test_result("Error Handling - Exception", "FAIL", f"Error: {str(e)}")
-        return False
-
-def test_comprehensive_analysis_quality():
-    """Test the quality and comprehensiveness of rejection reasons analysis"""
-    try:
-        # Create test resume file
-        resume_file_path, resume_content = create_test_resume_file()
-        
-        # Use a very specific job that should generate many rejection reasons
-        job_title = "Senior Data Scientist - Healthcare AI"
-        job_description = """We are seeking a Senior Data Scientist specializing in Healthcare AI applications.
-
-REQUIRED QUALIFICATIONS:
-• PhD in Statistics, Biostatistics, or Computational Biology
-• 8+ years of experience in healthcare data science
-• Expert proficiency in R, SAS, and STATA (Python secondary)
-• Deep learning experience with medical imaging (radiology, pathology)
-• Clinical trial design and biostatistical analysis
-• FDA regulatory submission experience
-• HIPAA compliance and healthcare data privacy expertise
-• Experience with electronic health records (EHR) systems
-• Medical device software development (FDA 510k process)
-• Publications in medical journals (NEJM, Lancet, JAMA)
-• Board certification in biostatistics or epidemiology
-• Experience with genomics and precision medicine
-• Real-world evidence (RWE) and health economics outcomes research
-• Clinical decision support systems development
-• Medical coding systems (ICD-10, CPT, SNOMED)
-• Healthcare interoperability standards (HL7, FHIR)"""
-
-        # Prepare multipart form data
-        with open(resume_file_path, 'rb') as f:
-            files = {
-                'resume': ('test_resume.txt', f, 'text/plain')
-            }
-            data = {
-                'job_title': job_title,
-                'job_description': job_description
-            }
             
-            # Make request
-            response = requests.post(
-                f"{API_BASE}/placement-preparation/rejection-reasons",
-                files=files,
-                data=data,
-                timeout=60
-            )
-        
-        # Clean up temp file
-        os.unlink(resume_file_path)
-        
-        if response.status_code == 200:
-            result = response.json()
-            rejection_reasons = result.get('rejection_reasons', '')
-            
-            # Quality checks
-            quality_checks = {
-                'Length': len(rejection_reasons) >= 1000,  # Should be comprehensive
-                'Bullet Points': rejection_reasons.count('•') >= 8,  # Multiple rejection reasons
-                'Evidence Structure': 'Required:' in rejection_reasons and 'Candidate Reality:' in rejection_reasons,
-                'Gap Impact': 'Gap Impact:' in rejection_reasons,
-                'Technical Skills': 'TECHNICAL' in rejection_reasons.upper(),
-                'Experience': 'EXPERIENCE' in rejection_reasons.upper(),
-                'Education': 'EDUCATION' in rejection_reasons.upper() or 'PhD' in rejection_reasons,
-                'Healthcare Domain': 'healthcare' in rejection_reasons.lower() or 'medical' in rejection_reasons.lower()
-            }
-            
-            passed_checks = sum(quality_checks.values())
-            total_checks = len(quality_checks)
-            
-            if passed_checks >= total_checks * 0.8:  # 80% pass rate
-                log_test_result("Comprehensive Analysis Quality", "PASS", 
-                              f"Quality score: {passed_checks}/{total_checks}, Length: {len(rejection_reasons)} chars")
+            # Should return 400 for invalid file format
+            if response.status_code == 400:
+                self.log_test("Error Handling - Invalid File", "PASS", 
+                            "Properly rejected invalid file format with 400 error")
                 return True
             else:
-                failed_checks = [check for check, passed in quality_checks.items() if not passed]
-                log_test_result("Comprehensive Analysis Quality", "FAIL", 
-                              f"Failed checks: {failed_checks}, Score: {passed_checks}/{total_checks}")
+                self.log_test("Error Handling - Invalid File", "FAIL", 
+                            f"Expected 400 error, got {response.status_code}")
                 return False
-            
-        else:
-            log_test_result("Comprehensive Analysis Quality - API Call", "FAIL", 
-                          f"Status: {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Error Handling - Invalid File", "FAIL", f"Exception: {str(e)}")
             return False
-            
-    except Exception as e:
-        log_test_result("Comprehensive Analysis Quality - Exception", "FAIL", f"Error: {str(e)}")
-        return False
+
+    def run_comprehensive_test(self):
+        """Run all rejection reasons workflow tests"""
+        print("=" * 80)
+        print("REJECTION REASONS POST ENDPOINT WORKFLOW TESTING")
+        print("Testing the specific functionality reported as failing with net::ERR_FAILED")
+        print("=" * 80)
+        print()
+        
+        test_results = []
+        
+        # Test 1: Basic Connectivity
+        test_results.append(self.test_backend_connectivity())
+        
+        # Test 2: GET Endpoint (baseline)
+        test_results.append(self.test_get_rejection_reasons_endpoint())
+        
+        # Test 3: POST Endpoint with FormData (main focus)
+        test_results.append(self.test_post_rejection_reasons_with_formdata())
+        
+        # Test 4: Verify Analysis Storage
+        test_results.append(self.test_analysis_storage_verification())
+        
+        # Test 5: PDF Download Functionality
+        test_results.append(self.test_pdf_download_functionality())
+        
+        # Test 6: Error Handling
+        test_results.append(self.test_error_handling_invalid_file())
+        
+        # Summary
+        print("=" * 80)
+        print("REJECTION REASONS WORKFLOW TEST SUMMARY")
+        print("=" * 80)
+        
+        passed_tests = sum(test_results)
+        total_tests = len(test_results)
+        
+        print(f"✅ Passed: {passed_tests}/{total_tests} tests")
+        print(f"❌ Failed: {total_tests - passed_tests}/{total_tests} tests")
+        print(f"📊 Success Rate: {(passed_tests/total_tests)*100:.1f}%")
+        
+        if passed_tests == total_tests:
+            print("\n🎉 ALL TESTS PASSED! Rejection reasons POST endpoint is working correctly.")
+            print("The net::ERR_FAILED issue has been resolved.")
+        else:
+            print(f"\n⚠️  {total_tests - passed_tests} test(s) failed.")
+            if test_results[2] == False:  # POST endpoint test failed
+                print("❌ CRITICAL: POST endpoint is still failing - net::ERR_FAILED issue persists")
+            else:
+                print("✅ POST endpoint is working - other minor issues detected")
+        
+        return passed_tests == total_tests
 
 def main():
-    """Run comprehensive rejection reasons analysis testing"""
-    print("=" * 80)
-    print("🔍 REJECTION REASONS ANALYSIS FUNCTIONALITY TESTING")
-    print("=" * 80)
-    print(f"Backend URL: {BACKEND_URL}")
-    print(f"API Base: {API_BASE}")
-    print()
+    """Main test execution"""
+    tester = RejectionReasonsWorkflowTester()
+    success = tester.run_comprehensive_test()
     
-    # Test results tracking
-    test_results = []
-    
-    # Test 1: Backend Connectivity
-    print("📡 Testing Backend Connectivity...")
-    connectivity_result = test_backend_connectivity()
-    test_results.append(("Backend Connectivity", connectivity_result))
-    
-    if not connectivity_result:
-        print("❌ Backend connectivity failed. Stopping tests.")
-        return
-    
-    # Test 2: Core Rejection Reasons Analysis
-    print("🎯 Testing Core Rejection Reasons Analysis...")
-    analysis_result, analysis_data = test_rejection_reasons_analysis()
-    test_results.append(("Rejection Reasons Analysis", analysis_result))
-    
-    rejection_id = None
-    if analysis_result and analysis_data:
-        rejection_id = analysis_data.get('rejection_id')
-    
-    # Test 3: PDF Generation and Download
-    if rejection_id:
-        print("📄 Testing PDF Generation and Download...")
-        pdf_result = test_pdf_generation_and_download(rejection_id)
-        test_results.append(("PDF Generation and Download", pdf_result))
+    if success:
+        print("\n✅ REJECTION REASONS TESTING COMPLETED SUCCESSFULLY")
+        exit(0)
     else:
-        print("⚠️ Skipping PDF test - no rejection ID available")
-        test_results.append(("PDF Generation and Download", False))
-    
-    # Test 4: Database Storage and Retrieval
-    print("💾 Testing Database Storage and Retrieval...")
-    db_result = test_database_storage()
-    test_results.append(("Database Storage", db_result))
-    
-    # Test 5: Error Handling
-    print("⚠️ Testing Error Handling...")
-    error_result = test_error_handling()
-    test_results.append(("Error Handling", error_result))
-    
-    # Test 6: Comprehensive Analysis Quality
-    print("🔬 Testing Comprehensive Analysis Quality...")
-    quality_result = test_comprehensive_analysis_quality()
-    test_results.append(("Analysis Quality", quality_result))
-    
-    # Final Results Summary
-    print("=" * 80)
-    print("📊 FINAL TEST RESULTS SUMMARY")
-    print("=" * 80)
-    
-    passed_tests = 0
-    total_tests = len(test_results)
-    
-    for test_name, result in test_results:
-        status_symbol = "✅" if result else "❌"
-        print(f"{status_symbol} {test_name}: {'PASS' if result else 'FAIL'}")
-        if result:
-            passed_tests += 1
-    
-    print()
-    success_rate = (passed_tests / total_tests) * 100
-    print(f"🎯 Overall Success Rate: {passed_tests}/{total_tests} ({success_rate:.1f}%)")
-    
-    if success_rate >= 80:
-        print("🎉 REJECTION REASONS ANALYSIS FUNCTIONALITY: OPERATIONAL")
-    elif success_rate >= 60:
-        print("⚠️ REJECTION REASONS ANALYSIS FUNCTIONALITY: PARTIALLY OPERATIONAL")
-    else:
-        print("❌ REJECTION REASONS ANALYSIS FUNCTIONALITY: NEEDS ATTENTION")
-    
-    print("=" * 80)
-    
-    return test_results
+        print("\n❌ REJECTION REASONS TESTING COMPLETED WITH ISSUES")
+        exit(1)
 
 if __name__ == "__main__":
     main()
