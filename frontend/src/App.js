@@ -4259,10 +4259,11 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                           {atsLoading ? '⏳ Calculating...' : '📈 ATS Score Calculator'}
                         </button>
                         <button
-                          className="bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-red-700 hover:to-pink-700 transition-all duration-300 text-sm"
-                          onClick={() => {/* TODO: Add functionality */}}
+                          className="bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-red-700 hover:to-pink-700 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={handleRejectionReasonsAnalysis}
+                          disabled={rejectionLoading}
                         >
-                          ❌ Rejection Reasons
+                          {rejectionLoading ? '⏳ Analyzing...' : '❌ Rejection Reasons'}
                         </button>
                         <button
                           className="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 text-sm"
