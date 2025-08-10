@@ -42,11 +42,17 @@ class EnhancedATSPDFTester:
     def test_backend_connectivity(self):
         """Test basic backend connectivity"""
         try:
-            response = self.session.get(f"{BASE_URL}/health", timeout=10)
+            response = self.session.get(f"{BASE_URL}/", timeout=10)
             if response.status_code == 200:
-                self.log_test("Backend Connectivity", "PASS", 
-                            f"Backend accessible at {BACKEND_URL}")
-                return True
+                data = response.json()
+                if "AI-Powered Interview Agent API" in data.get("message", ""):
+                    self.log_test("Backend Connectivity", "PASS", 
+                                f"Backend accessible at {BACKEND_URL}")
+                    return True
+                else:
+                    self.log_test("Backend Connectivity", "FAIL", 
+                                f"Unexpected response: {data}")
+                    return False
             else:
                 self.log_test("Backend Connectivity", "FAIL", 
                             f"Backend returned status {response.status_code}")
