@@ -11774,5 +11774,4 @@ async def analyze_voice_enhanced(data: dict):
         logging.error(f"Enhanced voice analysis error: {e}")
         raise HTTPException(status_code=500, detail=f"Enhanced voice analysis failed: {str(e)}")
 
-# Mount all routes to the main app
-app.include_router(api_router)
+# Routes already mounted above at line 10881
