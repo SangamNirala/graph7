@@ -5468,7 +5468,7 @@ async def get_rejection_reasons_analyses():
         logging.error(f"Failed to fetch rejection reasons analyses: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch rejection reasons analyses")
 
-@api_router.get("/api/placement-preparation/rejection-reasons/{rejection_id}/download")
+@api_router.get("/placement-preparation/rejection-reasons/{rejection_id}/download")
 async def download_rejection_reasons_pdf(rejection_id: str):
     """Download PDF report for specific rejection reasons analysis"""
     try:
