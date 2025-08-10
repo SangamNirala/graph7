@@ -5116,7 +5116,7 @@ Provide a comprehensive analysis with ALL rejection reasons following the exact 
         logging.error(f"Resume analysis error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to analyze resume: {str(e)}")
 
-@api_router.get("/api/placement-preparation/resume-analyses")
+@api_router.get("/placement-preparation/resume-analyses")
 async def get_resume_analyses():
     """Get all resume analyses"""
     try:
