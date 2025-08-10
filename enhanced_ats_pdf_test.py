@@ -168,7 +168,7 @@ class EnhancedATSPDFTester:
                 "resume_text": resume_content.strip()
             }
 
-            response = self.session.post(f"{BASE_URL}/placement-preparation/calculate-ats", 
+            response = self.session.post(f"{BASE_URL}/placement-preparation/ats-score-calculate", 
                                        json=ats_request, timeout=60)
 
             if response.status_code == 200:
