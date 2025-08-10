@@ -258,7 +258,7 @@ Responsibilities:
                 return False
             
             # Verify analysis structure
-            required_fields = ["rejection_id", "job_title", "analysis_text", "created_at"]
+            required_fields = ["rejection_id", "job_title", "rejection_reasons", "created_at"]
             missing_fields = [field for field in required_fields if field not in our_analysis]
             
             if missing_fields:
