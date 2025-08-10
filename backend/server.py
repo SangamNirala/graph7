@@ -6284,136 +6284,219 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                             story.append(Paragraph(f"• {line.strip()}", bullet_style))
                 story.append(Spacer(1, 15))
             
-            # Scoring Explanation and Improvement Roadmap per Section
+            # Enhanced Scoring Explanation with better structure
             if scores:
                 story.append(Paragraph("🧮 HOW THE SCORE WAS CALCULATED", header_style))
-                story.append(Spacer(1, 8))
+                story.append(Spacer(1, 12))
+                
                 for category_key, score_info in scores.items():
-                    label = {
+                    category_names = {
                         'keyword': 'Keyword Optimization',
                         'experience': 'Experience Relevance',
                         'technical': 'Technical Competency',
                         'education': 'Qualifications',
                         'achievements': 'Quantified Achievements',
                         'projects': 'Project Innovation'
-                    }.get(category_key, score_info.get('label') or category_key.title())
+                    }
+                    label = category_names.get(category_key, score_info.get('label') or category_key.title())
 
-                    story.append(Paragraph(f"{label}", subheader_style))
-                    # Explanation extraction heuristics: search in analysis text for the block related to this category
+                    # Category header with score
+                    score_val = score_info.get('score', 0)
+                    max_val = score_info.get('max', 1)
+                    percentage = int((score_val / max_val) * 100) if max_val > 0 else 0
+                    category_color = get_score_color(percentage)
+                    
+                    # Create category table with score and color coding
+                    category_data = [[
+                        f"{label}",
+                        f"{score_val}/{max_val}",
+                        f"{percentage}%"
+                    ]]
+                    
+                    category_table = Table(category_data, colWidths=[2.5*inch, 0.8*inch, 0.8*inch])
+                    category_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, -1), HexColor('#f8fafc')),
+                        ('BACKGROUND', (1, 0), (2, 0), category_color),
+                        ('TEXTCOLOR', (0, 0), (0, 0), HexColor('#1f2937')),
+                        ('TEXTCOLOR', (1, 0), (2, 0), colors.white),
+                        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, -1), 12),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('GRID', (0, 0), (-1, -1), 1, HexColor('#e2e8f0')),
+                        ('TOPPADDING', (0, 0), (-1, -1), 6),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 6)
+                    ]))
+                    story.append(category_table)
+                    story.append(Spacer(1, 8))
+                    
+                    # Explanation extraction with better formatting
                     explanation = []
                     lines = ats_analysis_text.split('\n')
                     capture = False
+                    section_keywords = {
+                        'keyword': ['KEYWORD OPTIMIZATION', 'KEYWORD ANALYSIS'],
+                        'experience': ['EXPERIENCE RELEVANCE', 'EXPERIENCE EVALUATION'],
+                        'technical': ['TECHNICAL COMPETENCY', 'TECHNICAL SKILLS'],
+                        'education': ['QUALIFICATIONS', 'EDUCATION'],
+                        'achievements': ['QUANTIFIED ACHIEVEMENTS'],
+                        'projects': ['PROJECT INNOVATION', 'PROJECTS']
+                    }
+                    
                     for ln in lines:
                         lcu = ln.upper()
-                        if any(k in lcu for k in [
-                            'KEYWORD OPTIMIZATION' if category_key=='keyword' else '',
-                            'KEYWORD ANALYSIS' if category_key=='keyword' else '',
-                            'EXPERIENCE RELEVANCE' if category_key=='experience' else '',
-                            'EXPERIENCE EVALUATION' if category_key=='experience' else '',
-                            'TECHNICAL COMPETENCY' if category_key=='technical' else '',
-                            'TECHNICAL SKILLS' if category_key=='technical' else '',
-                            'QUALIFICATIONS' if category_key=='education' else '',
-                            'EDUCATION' if category_key=='education' else '',
-                            'QUANTIFIED ACHIEVEMENTS' if category_key=='achievements' else '',
-                            'PROJECT INNOVATION' if category_key=='projects' else '',
-                            'PROJECTS' if category_key=='projects' else ''
-                        ] if k):
+                        if any(k in lcu for k in section_keywords.get(category_key, [])):
                             capture = True
                             continue
                         if capture:
-                            # stop when we hit another known section header
+                            # Stop when we hit another section
                             if re.search(r"^[A-Z].+:\s*\d+\s*/\s*\d+", ln) or any(h in lcu for h in [
-                                'COMPREHENSIVE ATS SCORE','DETAILED SCORING BREAKDOWN','CRITICAL IMPROVEMENT','IMPLEMENTATION ROADMAP','ATS OPTIMIZATION','HIRING PROBABILITY','ENHANCED ANALYSIS','SCORE ENHANCEMENT','IMMEDIATE FIXES','SHORT TERM','STRATEGIC DEVELOPMENT'
+                                'COMPREHENSIVE ATS SCORE','DETAILED SCORING BREAKDOWN',
+                                'CRITICAL IMPROVEMENT','IMPLEMENTATION ROADMAP',
+                                'ATS OPTIMIZATION','HIRING PROBABILITY'
                             ]):
                                 break
-                            # bullet points help readability
                             if ln.strip():
                                 explanation.append(ln.strip())
-                    # Fallback if nothing captured
+                    
+                    # Fallback explanation
                     if not explanation:
-                        explanation.append(f"Score {score_info['score']}/{score_info['max']}. See analysis sections for details.")
+                        if percentage >= 75:
+                            explanation.append("Strong performance in this category.")
+                        elif percentage >= 50:
+                            explanation.append("Adequate performance with room for improvement.")
+                        else:
+                            explanation.append("Significant improvement needed in this category.")
+                        explanation.append(f"Score {score_val}/{max_val}. See detailed analysis for specific recommendations.")
 
-                    # Contribution line
+                    # Display explanation with better formatting
+                    for i, ln in enumerate(explanation[:4]):  # Limit to 4 lines
+                        story.append(Paragraph(f"• {ln}", bullet_style))
+                    
+                    # Weight contribution
                     total_max = sum(v.get('max', 0) for v in scores.values()) or 100
-                    weight_pct = int(round((score_info.get('max', 0) / total_max) * 100))
-                    contribution_text = f"Contributes {weight_pct}% to the final ATS score."
+                    weight_pct = int(round((max_val / total_max) * 100))
+                    story.append(Paragraph(f"Weight: {weight_pct}% of total ATS score", normal_style))
+                    story.append(Spacer(1, 12))
 
-                    story.append(Paragraph(f"Why this score:", normal_style))
-                    for ln in explanation[:6]:  # limit to keep PDF concise
-                        story.append(Paragraph(f"• {ln}", normal_style))
-                    story.append(Paragraph(contribution_text, normal_style))
-                    story.append(Spacer(1, 6))
-
-                story.append(Spacer(1, 12))
+                story.append(Spacer(1, 15))
+                
+                # Enhanced Improvement Roadmap with color-coded priorities
                 story.append(Paragraph("🚀 IMPROVEMENT ROADMAP BY CATEGORY", header_style))
-                story.append(Spacer(1, 8))
+                story.append(Spacer(1, 12))
+                
+                improvement_items = []
                 for category_key, score_info in scores.items():
-                    if score_info.get('score', 0) >= score_info.get('max', 0):
-                        continue
-                    label = {
+                    score_val = score_info.get('score', 0)
+                    max_val = score_info.get('max', 0)
+                    if score_val >= max_val:
+                        continue  # Skip categories that are already at max
+                    
+                    gap = max_val - score_val
+                    percentage = int((score_val / max_val) * 100) if max_val > 0 else 0
+                    
+                    category_names = {
                         'keyword': 'Keyword Optimization',
                         'experience': 'Experience Relevance',
                         'technical': 'Technical Competency',
                         'education': 'Qualifications',
                         'achievements': 'Quantified Achievements',
                         'projects': 'Project Innovation'
-                    }.get(category_key, score_info.get('label') or category_key.title())
-
-                    story.append(Paragraph(f"{label}", subheader_style))
-
-                    # Identify deficiencies from the analysis text heuristically
-                    deficiencies = []
-                    potential_gains = []
-                    # Heuristics based on keywords
-                    text_lower = ats_analysis_text.lower()
-                    if category_key == 'keyword':
-                        # Look for missing keywords count pattern
-                        m = re.search(r"missing\s+(\d+)\s+(?:key|job-specific)?\s*keywords?", text_lower)
-                        if m:
-                            missing = int(m.group(1))
-                            deficiencies.append(f"Missing {missing} key job-specific terms")
-                            # assume ~1 point per missing keyword up to max
-                            potential = min(missing, max(0, score_info['max'] - score_info['score']))
-                            potential_gains.append((f"Add {missing} missing keywords", potential))
-                        else:
-                            deficiencies.append("Keyword density below target for critical terms")
-                            potential_gains.append(("Add missing keywords and synonyms", min(10, max(0, score_info['max'] - score_info['score']))))
-                    elif category_key == 'experience':
-                        if 'quantif' in text_lower or 'metrics' in text_lower:
-                            deficiencies.append("Insufficient quantified achievements in experience bullets")
-                            potential_gains.append(("Quantify 3-5 achievements (%, $, time)", min(7, max(0, score_info['max'] - score_info['score']))))
-                        if 'gap' in text_lower:
-                            deficiencies.append("Experience gaps vs job requirements")
-                    elif category_key == 'technical':
-                        if 'trending' in text_lower or 'missing' in text_lower:
-                            deficiencies.append("Missing trending technologies relevant to role")
-                            potential_gains.append(("Add 2 trending technologies", min(5, max(0, score_info['max'] - score_info['score']))))
-                    elif category_key == 'education':
-                        if 'certif' in text_lower:
-                            deficiencies.append("Additional certifications recommended")
-                            potential_gains.append(("Obtain 1 industry certification", min(3, max(0, score_info['max'] - score_info['score']))))
-                    elif category_key == 'achievements':
-                        deficiencies.append("Add measurable impact statements")
-                        potential_gains.append(("Quantify 3 achievements", min(7, max(0, score_info['max'] - score_info['score']))))
-                    elif category_key == 'projects':
-                        deficiencies.append("Include 1-2 high-impact projects with outcomes")
-                        potential_gains.append(("Add project with measurable results", min(5, max(0, score_info['max'] - score_info['score']))))
-
-                    if deficiencies:
-                        story.append(Paragraph("Deficiencies:", normal_style))
-                        for d in deficiencies[:4]:
-                            story.append(Paragraph(f"• {d}", normal_style))
-                    if potential_gains:
-                        story.append(Paragraph("Improvements and potential score gain:", normal_style))
-                        for desc, gain in potential_gains[:4]:
-                            story.append(Paragraph(f"• {desc} (+{gain})", normal_style))
-                    # Priority based on weight and gap
-                    total_max = sum(v.get('max', 0) for v in scores.values()) or 100
-                    weight_pct = (score_info.get('max', 0) / total_max) if total_max else 0
-                    gap = max(0, score_info.get('max', 0) - score_info.get('score', 0))
-                    priority = 'High' if weight_pct >= 0.25 or gap >= 8 else 'Medium' if weight_pct >= 0.15 or gap >= 5 else 'Low'
-                    story.append(Paragraph(f"Priority: {priority}", normal_style))
-                    story.append(Spacer(1, 10))
+                    }
+                    label = category_names.get(category_key, category_key.title())
+                    
+                    # Determine priority based on gap and percentage
+                    if percentage < 50:
+                        priority = "HIGH"
+                        priority_color = HexColor('#DC3545')
+                        priority_bg = HexColor('#fef2f2')
+                    elif percentage < 75:
+                        priority = "MEDIUM"
+                        priority_color = HexColor('#FFC107')
+                        priority_bg = HexColor('#fffbeb')
+                    else:
+                        priority = "LOW"
+                        priority_color = HexColor('#28A745')
+                        priority_bg = HexColor('#f0fdf4')
+                    
+                    # Generate specific recommendations
+                    recommendations = {
+                        'keyword': [
+                            "Add missing job-specific keywords throughout resume",
+                            "Include industry terminology and technical terms",
+                            "Use keyword variations and synonyms"
+                        ],
+                        'experience': [
+                            "Quantify achievements with specific metrics",
+                            "Add measurable results and impact statements", 
+                            "Include percentage improvements and cost savings"
+                        ],
+                        'technical': [
+                            "Update with current trending technologies",
+                            "Add certifications in relevant tools",
+                            "Include hands-on project experience"
+                        ],
+                        'education': [
+                            "Add relevant professional certifications",
+                            "Include continuing education courses",
+                            "Highlight academic achievements"
+                        ],
+                        'achievements': [
+                            "Convert responsibilities into achievements",
+                            "Add quantified results (%, $, time)",
+                            "Include awards and recognition"
+                        ],
+                        'projects': [
+                            "Add 1-2 high-impact projects",
+                            "Include project outcomes and metrics",
+                            "Showcase technical complexity"
+                        ]
+                    }
+                    
+                    improvement_items.append({
+                        'category': label,
+                        'priority': priority,
+                        'priority_color': priority_color,
+                        'priority_bg': priority_bg,
+                        'gap': gap,
+                        'recommendations': recommendations.get(category_key, [])[:3]
+                    })
+                
+                # Sort by priority (HIGH first)
+                priority_order = {'HIGH': 0, 'MEDIUM': 1, 'LOW': 2}
+                improvement_items.sort(key=lambda x: priority_order.get(x['priority'], 3))
+                
+                for item in improvement_items:
+                    # Category header with priority
+                    priority_data = [[
+                        f"{item['category']}",
+                        f"PRIORITY: {item['priority']}",
+                        f"+{item['gap']} POINTS"
+                    ]]
+                    
+                    priority_table = Table(priority_data, colWidths=[2*inch, 1.5*inch, 1*inch])
+                    priority_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (0, 0), HexColor('#f8fafc')),
+                        ('BACKGROUND', (1, 0), (1, 0), item['priority_bg']),
+                        ('BACKGROUND', (2, 0), (2, 0), item['priority_color']),
+                        ('TEXTCOLOR', (0, 0), (1, 0), HexColor('#1f2937')),
+                        ('TEXTCOLOR', (1, 0), (1, 0), item['priority_color']),
+                        ('TEXTCOLOR', (2, 0), (2, 0), colors.white),
+                        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, -1), 10),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('GRID', (0, 0), (-1, -1), 1, HexColor('#e2e8f0')),
+                        ('TOPPADDING', (0, 0), (-1, -1), 6),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 6)
+                    ]))
+                    story.append(priority_table)
+                    story.append(Spacer(1, 6))
+                    
+                    # Recommendations
+                    for rec in item['recommendations']:
+                        story.append(Paragraph(f"• {rec}", bullet_style))
+                    story.append(Spacer(1, 12))
 
             # Detailed Analysis - Enhanced to capture all analysis content with modern sections
             story.append(Paragraph("📋 COMPREHENSIVE ATS ANALYSIS", header_style))
