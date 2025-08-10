@@ -5340,91 +5340,373 @@ Before submitting, verify:
   - Candidate Reality: Manual document review required
   - Gap Impact: Unable to validate qualification requirements"""
         
-        # Generate PDF using reportlab
+        # Generate comprehensive professional PDF using reportlab
         from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import letter, A4
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
         from reportlab.lib.units import inch
+        from reportlab.lib.colors import HexColor, black, red, green, blue, orange
+        from reportlab.lib import colors
         import os
+        import re
         
         # Create unique filename
-        pdf_filename = f"rejection_reasons_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
+        pdf_filename = f"rejection_analysis_report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
         pdf_path = f"/tmp/{pdf_filename}"
         
-        # Create PDF document
-        doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+        # Create PDF document with margins
+        doc = SimpleDocTemplate(pdf_path, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch, leftMargin=0.75*inch, rightMargin=0.75*inch)
         styles = getSampleStyleSheet()
         story = []
         
-        # Title
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=18,
-            spaceAfter=20,
-            textColor='darkred'
-        )
-        story.append(Paragraph("Candidate Rejection Reasons Analysis", title_style))
-        story.append(Spacer(1, 12))
+        # Define comprehensive PDF styles
+        def create_styles():
+            title_style = ParagraphStyle(
+                'ReportTitle',
+                parent=styles['Title'],
+                fontSize=20,
+                spaceAfter=24,
+                textColor=HexColor('#DC2626'),
+                alignment=1,  # Center alignment
+                fontName='Helvetica-Bold'
+            )
+            
+            section_header_style = ParagraphStyle(
+                'SectionHeader',
+                parent=styles['Heading1'],
+                fontSize=14,
+                spaceAfter=12,
+                spaceBefore=16,
+                textColor=HexColor('#1F2937'),
+                fontName='Helvetica-Bold',
+                leftIndent=0,
+                borderWidth=0,
+                borderColor=HexColor('#E5E7EB'),
+                borderPadding=8
+            )
+            
+            subsection_style = ParagraphStyle(
+                'Subsection',
+                parent=styles['Heading2'],
+                fontSize=12,
+                spaceAfter=8,
+                spaceBefore=10,
+                textColor=HexColor('#374151'),
+                fontName='Helvetica-Bold'
+            )
+            
+            body_style = ParagraphStyle(
+                'BodyText',
+                parent=styles['Normal'],
+                fontSize=10,
+                spaceAfter=6,
+                leading=12,
+                textColor=HexColor('#111827')
+            )
+            
+            bullet_style = ParagraphStyle(
+                'BulletList',
+                parent=styles['Normal'],
+                fontSize=10,
+                spaceAfter=4,
+                leftIndent=20,
+                bulletIndent=10,
+                leading=12
+            )
+            
+            critical_style = ParagraphStyle(
+                'Critical',
+                parent=styles['Normal'],
+                fontSize=10,
+                spaceAfter=6,
+                textColor=HexColor('#DC2626'),
+                fontName='Helvetica-Bold'
+            )
+            
+            return title_style, section_header_style, subsection_style, body_style, bullet_style, critical_style
         
-        # Job details
-        current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-        story.append(Paragraph(f"<b>Position:</b> {job_title}", styles['Normal']))
-        story.append(Paragraph(f"<b>Generated on:</b> {current_time} UTC", styles['Normal']))
+        title_style, section_header_style, subsection_style, body_style, bullet_style, critical_style = create_styles()
+        
+        # Parse rejection reasons for structured content
+        def parse_rejection_reasons(text):
+            sections = {
+                'technical_gaps': [],
+                'experience_gaps': [],
+                'education_gaps': [],
+                'other_gaps': [],
+                'all_reasons': []
+            }
+            
+            lines = text.split('\n')
+            current_reason = None
+            
+            for line in lines:
+                line = line.strip()
+                if line.startswith('•') or line.startswith('-'):
+                    # Extract main rejection reason
+                    reason_match = re.search(r'[•-]\s*\*\*([^*]+)\*\*:\s*(.+)', line)
+                    if reason_match:
+                        category = reason_match.group(1).strip()
+                        description = reason_match.group(2).strip()
+                        
+                        current_reason = {
+                            'category': category,
+                            'description': description,
+                            'required': '',
+                            'reality': '',
+                            'impact': ''
+                        }
+                        sections['all_reasons'].append(current_reason)
+                        
+                        # Categorize by type
+                        if any(tech in category.lower() for tech in ['programming', 'technical', 'framework', 'database', 'cloud', 'tool', 'api', 'testing', 'security']):
+                            sections['technical_gaps'].append(current_reason)
+                        elif any(exp in category.lower() for exp in ['experience', 'years', 'seniority', 'leadership', 'project']):
+                            sections['experience_gaps'].append(current_reason)
+                        elif any(edu in category.lower() for edu in ['education', 'degree', 'certification', 'qualification']):
+                            sections['education_gaps'].append(current_reason)
+                        else:
+                            sections['other_gaps'].append(current_reason)
+                
+                elif current_reason and line.startswith('-') and ':' in line:
+                    # Parse sub-points
+                    if 'required:' in line.lower():
+                        current_reason['required'] = line.split(':', 1)[1].strip()
+                    elif 'candidate reality:' in line.lower() or 'reality:' in line.lower():
+                        current_reason['reality'] = line.split(':', 1)[1].strip()
+                    elif 'gap impact:' in line.lower() or 'impact:' in line.lower():
+                        current_reason['impact'] = line.split(':', 1)[1].strip()
+            
+            return sections
+        
+        def calculate_hiring_score(sections):
+            total_gaps = len(sections['all_reasons'])
+            if total_gaps == 0:
+                return 8.0, "HIRE"
+            
+            # Weight different gap types
+            technical_weight = len(sections['technical_gaps']) * 0.4
+            experience_weight = len(sections['experience_gaps']) * 0.3
+            education_weight = len(sections['education_gaps']) * 0.2
+            other_weight = len(sections['other_gaps']) * 0.1
+            
+            total_weighted_score = technical_weight + experience_weight + education_weight + other_weight
+            score = max(1.0, 10.0 - min(total_weighted_score, 8.0))
+            
+            if score >= 7.0:
+                recommendation = "HIRE"
+            elif score >= 5.0:
+                recommendation = "HIRE WITH TRAINING"
+            else:
+                recommendation = "NOT RECOMMENDED"
+                
+            return score, recommendation
+        
+        # Parse the AI-generated rejection reasons
+        parsed_sections = parse_rejection_reasons(rejection_reasons_text)
+        hiring_score, hiring_recommendation = calculate_hiring_score(parsed_sections)
+        current_time = datetime.utcnow()
+        
+        # 📋 EXECUTIVE SUMMARY
+        story.append(Paragraph("📋 CANDIDATE REJECTION ANALYSIS REPORT", title_style))
         story.append(Spacer(1, 20))
         
-        # Job description
-        story.append(Paragraph("<b>Job Requirements:</b>", styles['Heading2']))
-        story.append(Paragraph(job_description, styles['Normal']))
+        story.append(Paragraph("📊 <b>EXECUTIVE SUMMARY</b>", section_header_style))
+        
+        # Executive summary table
+        summary_data = [
+            ['Position:', job_title],
+            ['Date:', current_time.strftime('%B %d, %Y')],
+            ['Overall Assessment:', f"Found {len(parsed_sections['all_reasons'])} critical gaps affecting job performance"],
+            ['Recommendation:', f"{hiring_recommendation} (Score: {hiring_score:.1f}/10)"]
+        ]
+        
+        summary_table = Table(summary_data, colWidths=[2*inch, 4*inch])
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), HexColor('#F9FAFB')),
+            ('TEXTCOLOR', (0, 0), (0, -1), HexColor('#374151')),
+            ('TEXTCOLOR', (1, 0), (1, -1), HexColor('#111827')),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('GRID', (0, 0), (-1, -1), 1, HexColor('#E5E7EB')),
+            ('ROWBACKGROUNDS', (0, 0), (-1, -1), [HexColor('#FFFFFF'), HexColor('#F9FAFB')])
+        ]))
+        
+        story.append(summary_table)
         story.append(Spacer(1, 20))
         
-        # Rejection reasons results
-        story.append(Paragraph("<b>Comprehensive Rejection Reasons:</b>", styles['Heading2']))
-        story.append(Spacer(1, 12))
+        # 🎯 JOB REQUIREMENTS OVERVIEW
+        story.append(Paragraph("🎯 <b>JOB REQUIREMENTS OVERVIEW</b>", section_header_style))
+        story.append(Paragraph(f"<b>Role:</b> {job_title}", body_style))
+        story.append(Paragraph("<b>Key Requirements:</b>", subsection_style))
         
-        # Format the rejection reasons text for PDF
-        rejection_lines = rejection_reasons_text.split('\n')
-        for line in rejection_lines:
+        # Extract top requirements from job description
+        job_lines = job_description.split('\n')[:7]  # First 7 lines/requirements
+        for line in job_lines:
             if line.strip():
-                if line.startswith('•'):
-                    # Main bullet point
-                    bullet_style = ParagraphStyle(
-                        'BulletPoint',
-                        parent=styles['Normal'],
-                        leftIndent=20,
-                        bulletIndent=10,
-                        spaceAfter=6,
-                        textColor='darkred'
-                    )
-                    story.append(Paragraph(line, bullet_style))
-                elif line.strip().startswith('-'):
-                    # Sub-point
-                    sub_style = ParagraphStyle(
-                        'SubPoint',
-                        parent=styles['Normal'],
-                        leftIndent=40,
-                        bulletIndent=30,
-                        spaceAfter=3,
-                        fontSize=10,
-                        textColor='black'
-                    )
-                    story.append(Paragraph(line, sub_style))
-                else:
-                    story.append(Paragraph(line, styles['Normal']))
-                    story.append(Spacer(1, 6))
+                story.append(Paragraph(f"• {line.strip()}", bullet_style))
+        
+        story.append(Spacer(1, 20))
+        
+        # ❌ CRITICAL REJECTION REASONS
+        story.append(Paragraph("❌ <b>CRITICAL REJECTION REASONS</b>", section_header_style))
+        
+        # Technical Skills Gaps
+        if parsed_sections['technical_gaps']:
+            story.append(Paragraph("<b>1. TECHNICAL SKILLS GAPS</b>", subsection_style))
+            
+            tech_data = [['Required', 'Candidate Has', 'Gap Impact', 'Severity']]
+            for reason in parsed_sections['technical_gaps'][:5]:  # Top 5 technical gaps
+                severity = "🔴 Critical" if "critical" in reason.get('impact', '').lower() else "🟠 High"
+                tech_data.append([
+                    reason.get('required', reason['description'])[:40] + "..." if len(reason.get('required', reason['description'])) > 40 else reason.get('required', reason['description']),
+                    reason.get('reality', 'NOT MENTIONED')[:30] + "..." if len(reason.get('reality', 'NOT MENTIONED')) > 30 else reason.get('reality', 'NOT MENTIONED'),
+                    reason.get('impact', 'Performance impact')[:40] + "..." if len(reason.get('impact', 'Performance impact')) > 40 else reason.get('impact', 'Performance impact'),
+                    severity
+                ])
+            
+            tech_table = Table(tech_data, colWidths=[1.5*inch, 1.2*inch, 1.8*inch, 1*inch])
+            tech_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), HexColor('#DC2626')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('GRID', (0, 0), (-1, -1), 1, HexColor('#E5E7EB')),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [HexColor('#FFFFFF'), HexColor('#FEF2F2')])
+            ]))
+            
+            story.append(tech_table)
+            story.append(Spacer(1, 15))
+        
+        # Experience Gaps
+        if parsed_sections['experience_gaps']:
+            story.append(Paragraph("<b>2. EXPERIENCE GAPS</b>", subsection_style))
+            
+            for reason in parsed_sections['experience_gaps'][:3]:
+                story.append(Paragraph(f"• <b>{reason['category']}:</b> {reason['description']}", bullet_style))
+                if reason.get('impact'):
+                    story.append(Paragraph(f"  💡 <b>Impact:</b> {reason['impact']}", body_style))
+            
+            story.append(Spacer(1, 15))
+        
+        # 📈 IMPROVEMENT RECOMMENDATIONS
+        story.append(Paragraph("📈 <b>IMPROVEMENT RECOMMENDATIONS</b>", section_header_style))
+        
+        story.append(Paragraph("<b>Immediate Actions (0-3 months)</b>", subsection_style))
+        immediate_actions = [
+            "🎯 Learn Core Technologies: Complete certification courses for missing technical skills",
+            "💻 Build Portfolio: Create 2-3 projects demonstrating required capabilities",
+            "📚 Skill Development: Focus on critical gap areas identified in technical skills"
+        ]
+        for action in immediate_actions:
+            story.append(Paragraph(action, bullet_style))
+        
+        story.append(Paragraph("<b>Short-term Development (3-6 months)</b>", subsection_style))
+        short_term_actions = [
+            "🏢 Professional Experience: Seek internships or projects in the domain area",
+            "🤖 Practical Application: Apply new skills to real-world scenarios",
+            "📖 Advanced Learning: Deep-dive into industry-specific technologies"
+        ]
+        for action in short_term_actions:
+            story.append(Paragraph(action, bullet_style))
+        
+        story.append(Paragraph("<b>Long-term Growth (6-12 months)</b>", subsection_style))
+        long_term_actions = [
+            "🎓 Certification: Complete relevant professional certifications",
+            "👥 Team Projects: Collaborate on enterprise-scale projects",
+            "🌍 Industry Experience: Develop domain-specific expertise"
+        ]
+        for action in long_term_actions:
+            story.append(Paragraph(action, bullet_style))
+        
+        story.append(Spacer(1, 20))
+        
+        # 🎯 HIRING DECISION MATRIX
+        story.append(Paragraph("🎯 <b>HIRING DECISION MATRIX</b>", section_header_style))
+        
+        matrix_data = [
+            ['Category', 'Weight', 'Score', 'Weighted Score'],
+            ['Technical Skills', '40%', f'{max(1, 10 - len(parsed_sections["technical_gaps"]))}/10', f'{max(0.4, 4.0 - len(parsed_sections["technical_gaps"]) * 0.4):.1f}'],
+            ['Experience', '30%', f'{max(1, 10 - len(parsed_sections["experience_gaps"]))}/10', f'{max(0.3, 3.0 - len(parsed_sections["experience_gaps"]) * 0.3):.1f}'],
+            ['Education', '20%', f'{max(1, 10 - len(parsed_sections["education_gaps"]))}/10', f'{max(0.2, 2.0 - len(parsed_sections["education_gaps"]) * 0.2):.1f}'],
+            ['Communication', '10%', f'{max(1, 10 - len(parsed_sections["other_gaps"]))}/10', f'{max(0.1, 1.0 - len(parsed_sections["other_gaps"]) * 0.1):.1f}'],
+            ['<b>TOTAL</b>', '<b>100%</b>', '', f'<b>{hiring_score:.1f}/10</b>']
+        ]
+        
+        matrix_table = Table(matrix_data, colWidths=[2*inch, 1*inch, 1*inch, 1.5*inch])
+        matrix_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), HexColor('#1F2937')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BACKGROUND', (0, -1), (-1, -1), HexColor('#FEF2F2')),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID', (0, 0), (-1, -1), 1, HexColor('#E5E7EB')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -2), [HexColor('#FFFFFF'), HexColor('#F9FAFB')])
+        ]))
+        
+        story.append(matrix_table)
+        story.append(Spacer(1, 20))
+        
+        # 💡 FINAL RECOMMENDATION
+        story.append(Paragraph("💡 <b>FINAL RECOMMENDATION</b>", section_header_style))
+        
+        if hiring_recommendation == "NOT RECOMMENDED":
+            rec_color = HexColor('#DC2626')
+            rec_symbol = "❌"
+        elif hiring_recommendation == "HIRE WITH TRAINING":
+            rec_color = HexColor('#F59E0B')
+            rec_symbol = "⚠️"
+        else:
+            rec_color = HexColor('#10B981')
+            rec_symbol = "✅"
+        
+        rec_style = ParagraphStyle(
+            'Recommendation',
+            parent=body_style,
+            fontSize=12,
+            textColor=rec_color,
+            fontName='Helvetica-Bold',
+            spaceAfter=10
+        )
+        
+        story.append(Paragraph(f"{rec_symbol} <b>{hiring_recommendation}</b>", rec_style))
+        
+        rationale_text = f"""<b>Rationale:</b> Analysis identified {len(parsed_sections['all_reasons'])} significant gaps between candidate qualifications and job requirements. 
+        The gaps span across technical skills ({len(parsed_sections['technical_gaps'])} gaps), experience levels ({len(parsed_sections['experience_gaps'])} gaps), 
+        and other qualifications ({len(parsed_sections['education_gaps']) + len(parsed_sections['other_gaps'])} gaps)."""
+        
+        if hiring_recommendation == "NOT RECOMMENDED":
+            rationale_text += " The gap between current skills and job requirements is too significant for immediate productivity."
+        elif hiring_recommendation == "HIRE WITH TRAINING":
+            rationale_text += " Could be suitable with focused training and mentorship in identified gap areas."
+        else:
+            rationale_text += " Candidate demonstrates strong potential with manageable skill gaps."
+        
+        story.append(Paragraph(rationale_text, body_style))
+        
+        if hiring_recommendation != "HIRE":
+            story.append(Paragraph("<b>Alternative Consideration:</b> Could be suitable for a junior position or with 3-6 months of targeted training in critical gap areas.", body_style))
+        
+        story.append(Spacer(1, 30))
         
         # Footer
-        story.append(Spacer(1, 30))
         footer_style = ParagraphStyle(
             'Footer',
             parent=styles['Normal'],
-            fontSize=10,
-            textColor='gray',
+            fontSize=9,
+            textColor=HexColor('#6B7280'),
             alignment=1  # Center alignment
         )
-        story.append(Paragraph("This comprehensive rejection analysis was generated using AI-powered gap analysis technology.", footer_style))
-        story.append(Paragraph("For questions or clarifications, please consult with HR or hiring manager.", footer_style))
+        story.append(Paragraph(f"Report generated by AI Resume Analysis System | {current_time.strftime('%B %d, %Y')} | Confidential", footer_style))
         
         # Build PDF
         doc.build(story)
