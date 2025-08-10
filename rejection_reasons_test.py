@@ -326,7 +326,7 @@ Responsibilities:
         try:
             # Test with invalid file format
             files = {
-                'resume_file': ('invalid.xyz', b'invalid content', 'application/octet-stream')
+                'resume': ('invalid.xyz', b'invalid content', 'application/octet-stream')
             }
             
             form_data = {
