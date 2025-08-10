@@ -6233,30 +6233,30 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                 story.append(breakdown_table)
                 story.append(Spacer(1, 20))
             
-            # Educational Background
+            # Educational Background with enhanced formatting
             if 'education' in sections:
                 story.append(Paragraph("🎓 EDUCATIONAL QUALIFICATIONS", header_style))
                 story.append(Spacer(1, 8))
                 education_content = sections['education'].replace('**', '').replace('*', '')
                 for line in education_content.split('\n'):
                     if line.strip():
-                        story.append(Paragraph(f"• {line.strip()}", normal_style))
+                        story.append(Paragraph(f"• {line.strip()}", bullet_style))
                 story.append(Spacer(1, 15))
             
-            # Work Experience
+            # Professional Experience with enhanced formatting
             if 'job_history' in sections:
                 story.append(Paragraph("💼 PROFESSIONAL EXPERIENCE", header_style))
                 story.append(Spacer(1, 8))
                 job_content = sections['job_history'].replace('**', '').replace('*', '')
                 if 'no formal job history' in job_content.lower():
-                    story.append(Paragraph("• No formal job history listed in resume", normal_style))
+                    story.append(Paragraph("• No formal job history listed in resume", bullet_style))
                 else:
                     for line in job_content.split('\n'):
                         if line.strip():
-                            story.append(Paragraph(f"• {line.strip()}", normal_style))
+                            story.append(Paragraph(f"• {line.strip()}", bullet_style))
                 story.append(Spacer(1, 15))
             
-            # Projects
+            # Key Projects with enhanced formatting
             if 'projects' in sections:
                 story.append(Paragraph("🚀 KEY PROJECTS", header_style))
                 story.append(Spacer(1, 8))
@@ -6268,20 +6268,20 @@ Note: Full AI analysis unavailable. Scores based on programmatic validation only
                         if '(' in line and ')' in line and ':' in line:
                             story.append(Paragraph(f"<b>• {line.strip()}</b>", subheader_style))
                         else:
-                            story.append(Paragraph(f"  {line.strip()}", normal_style))
+                            story.append(Paragraph(f"  → {line.strip()}", bullet_style))
                 story.append(Spacer(1, 15))
             
-            # Skills
+            # Skills & Competencies with enhanced formatting
             if 'skills' in sections:
                 story.append(Paragraph("⚡ SKILLS & COMPETENCIES", header_style))
                 story.append(Spacer(1, 8))
                 skills_content = sections['skills'].replace('**', '').replace('*', '')
                 for line in skills_content.split('\n'):
                     if line.strip():
-                        if line.startswith('Core Technical Skills:') or line.startswith('Specialized Tools:') or line.startswith('Soft Skills:') or line.startswith('Domain Expertise:'):
+                        if any(keyword in line for keyword in ['Core Technical Skills:', 'Specialized Tools:', 'Soft Skills:', 'Domain Expertise:']):
                             story.append(Paragraph(f"<b>{line.strip()}</b>", subheader_style))
                         else:
-                            story.append(Paragraph(f"• {line.strip()}", normal_style))
+                            story.append(Paragraph(f"• {line.strip()}", bullet_style))
                 story.append(Spacer(1, 15))
             
             # Scoring Explanation and Improvement Roadmap per Section
