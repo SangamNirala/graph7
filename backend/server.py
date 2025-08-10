@@ -5130,7 +5130,7 @@ async def get_resume_analyses():
         logging.error(f"Failed to fetch resume analyses: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch resume analyses")
 
-@api_router.get("/api/placement-preparation/resume-analysis/{analysis_id}/download")
+@api_router.get("/placement-preparation/resume-analysis/{analysis_id}/download")
 async def download_resume_analysis_pdf(analysis_id: str):
     """Download PDF report for specific analysis"""
     try:
