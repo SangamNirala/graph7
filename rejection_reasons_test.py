@@ -123,7 +123,7 @@ CERTIFICATIONS
             
             # Prepare FormData with file upload
             files = {
-                'resume_file': ('sarah_resume.txt', resume_content.encode('utf-8'), 'text/plain')
+                'resume': ('sarah_resume.txt', resume_content.encode('utf-8'), 'text/plain')
             }
             
             form_data = {
