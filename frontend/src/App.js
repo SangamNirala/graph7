@@ -3568,6 +3568,79 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
     }
   };
 
+  // Rejection Reasons Analysis Functions
+  const handleRejectionReasonsAnalysis = async () => {
+    // Validation
+    if (!analysisJobTitle.trim() || !analysisJobDescription.trim() || !analysisResumeFile) {
+      alert('Please fill in the job title, job description, and upload a resume before generating rejection reasons.');
+      return;
+    }
+
+    setRejectionLoading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('job_title', analysisJobTitle);
+      formData.append('job_description', analysisJobDescription);
+      formData.append('resume', analysisResumeFile);
+
+      const response = await fetch(`${API}/placement-preparation/rejection-reasons`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Add to results list
+        const newResult = {
+          id: data.rejection_id,
+          jobTitle: analysisJobTitle,
+          jobDescription: analysisJobDescription,
+          rejectionReasons: data.rejection_reasons,
+          pdfFilename: data.pdf_filename,
+          timestamp: new Date().toISOString()
+        };
+        
+        setRejectionResults(prev => [newResult, ...prev]);
+        setCurrentRejectionResult(newResult);
+        
+        // Show popup
+        setShowRejectionPopup(true);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to generate rejection reasons: ${errorData.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Rejection reasons analysis error:', err);
+      alert('Error generating rejection reasons. Please try again.');
+    } finally {
+      setRejectionLoading(false);
+    }
+  };
+
+  const downloadRejectionReasonsPDF = async (rejectionId, jobTitle) => {
+    try {
+      const response = await fetch(`${API}/placement-preparation/rejection-reasons/${rejectionId}/download`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rejection_reasons_${jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } else {
+        alert('Failed to download rejection reasons PDF');
+      }
+    } catch (err) {
+      console.error('Rejection reasons PDF download error:', err);
+      alert('Error downloading rejection reasons PDF');
+    }
+  };
+
   // Effect to load analyses when switching to analysis result tab
   React.useEffect(() => {
     if (activeTab === 'analysis-result') {
