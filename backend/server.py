@@ -5340,91 +5340,278 @@ Before submitting, verify:
   - Candidate Reality: Manual document review required
   - Gap Impact: Unable to validate qualification requirements"""
         
-        # Generate PDF using reportlab
+        # Generate Enhanced PDF using reportlab with improved formatting
         from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import letter, A4
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
         from reportlab.lib.units import inch
+        from reportlab.lib.colors import HexColor, black, white, red, darkred, darkblue, darkgreen, orange
+        from reportlab.lib import colors
         import os
+        import re
         
         # Create unique filename
         pdf_filename = f"rejection_reasons_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
         pdf_path = f"/tmp/{pdf_filename}"
         
-        # Create PDF document
-        doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+        # Create PDF document with margins
+        doc = SimpleDocTemplate(
+            pdf_path, 
+            pagesize=A4,
+            rightMargin=50,
+            leftMargin=50,
+            topMargin=50,
+            bottomMargin=50
+        )
         styles = getSampleStyleSheet()
         story = []
         
-        # Title
+        # Enhanced Title with background
         title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=18,
-            spaceAfter=20,
-            textColor='darkred'
+            'EnhancedTitle',
+            parent=styles['Title'],
+            fontSize=22,
+            spaceAfter=30,
+            spaceBefore=10,
+            textColor=white,
+            backColor=HexColor('#8B0000'),  # Dark red background
+            borderPadding=15,
+            alignment=1  # Center alignment
         )
-        story.append(Paragraph("Candidate Rejection Reasons Analysis", title_style))
-        story.append(Spacer(1, 12))
+        story.append(Paragraph("🚫 CANDIDATE REJECTION REASONS ANALYSIS", title_style))
+        story.append(Spacer(1, 20))
         
-        # Job details
+        # Job details in a styled box
         current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-        story.append(Paragraph(f"<b>Position:</b> {job_title}", styles['Normal']))
-        story.append(Paragraph(f"<b>Generated on:</b> {current_time} UTC", styles['Normal']))
+        job_info_style = ParagraphStyle(
+            'JobInfo',
+            parent=styles['Normal'],
+            fontSize=12,
+            spaceAfter=6,
+            textColor=darkblue,
+            backColor=HexColor('#F0F8FF'),  # Light blue background
+            borderPadding=10
+        )
+        
+        story.append(Paragraph(f"<b>📋 Position:</b> {job_title}", job_info_style))
+        story.append(Paragraph(f"<b>🕒 Generated on:</b> {current_time} UTC", job_info_style))
+        story.append(Spacer(1, 25))
+        
+        # Executive Summary Section
+        summary_title_style = ParagraphStyle(
+            'SummaryTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=15,
+            textColor=white,
+            backColor=HexColor('#2E8B57'),  # Sea green
+            borderPadding=8,
+            alignment=0
+        )
+        story.append(Paragraph("📊 EXECUTIVE SUMMARY", summary_title_style))
+        
+        # Parse rejection reasons to count gaps by severity
+        critical_count = len(re.findall(r'CRITICAL', rejection_reasons_text, re.IGNORECASE))
+        major_count = len(re.findall(r'MAJOR', rejection_reasons_text, re.IGNORECASE))
+        moderate_count = len(re.findall(r'MODERATE', rejection_reasons_text, re.IGNORECASE))
+        total_gaps = len(re.findall(r'• \*\*.*?\*\*:', rejection_reasons_text))
+        
+        summary_style = ParagraphStyle(
+            'Summary',
+            parent=styles['Normal'],
+            fontSize=11,
+            spaceAfter=8,
+            backColor=HexColor('#F5F5F5'),
+            borderPadding=8
+        )
+        
+        story.append(Paragraph(f"<b>Total Rejection Reasons Identified:</b> {total_gaps}", summary_style))
+        story.append(Paragraph(f"<b>🔴 Critical Issues:</b> {critical_count} | <b>🟠 Major Issues:</b> {major_count} | <b>🟡 Moderate Issues:</b> {moderate_count}", summary_style))
+        story.append(Paragraph("<b>Recommendation:</b> <font color='red'>REJECT</font> - Multiple critical gaps identified that prevent successful role performance.", summary_style))
         story.append(Spacer(1, 20))
         
-        # Job description
-        story.append(Paragraph("<b>Job Requirements:</b>", styles['Heading2']))
-        story.append(Paragraph(job_description, styles['Normal']))
+        # Job Requirements Section
+        job_req_title_style = ParagraphStyle(
+            'JobReqTitle',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceAfter=12,
+            textColor=white,
+            backColor=HexColor('#4682B4'),  # Steel blue
+            borderPadding=8
+        )
+        story.append(Paragraph("📋 JOB REQUIREMENTS", job_req_title_style))
+        
+        job_desc_style = ParagraphStyle(
+            'JobDesc',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=10,
+            backColor=HexColor('#F8F8FF'),  # Ghost white
+            borderPadding=10,
+            firstLineIndent=0
+        )
+        story.append(Paragraph(job_description, job_desc_style))
         story.append(Spacer(1, 20))
         
-        # Rejection reasons results
-        story.append(Paragraph("<b>Comprehensive Rejection Reasons:</b>", styles['Heading2']))
-        story.append(Spacer(1, 12))
+        # Main Analysis Section
+        analysis_title_style = ParagraphStyle(
+            'AnalysisTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=15,
+            textColor=white,
+            backColor=HexColor('#8B0000'),  # Dark red
+            borderPadding=8
+        )
+        story.append(Paragraph("🔍 COMPREHENSIVE REJECTION ANALYSIS", analysis_title_style))
+        story.append(Spacer(1, 10))
         
-        # Format the rejection reasons text for PDF
+        # Enhanced formatting for rejection reasons
         rejection_lines = rejection_reasons_text.split('\n')
+        current_category = ""
+        gap_counter = 1
+        
         for line in rejection_lines:
-            if line.strip():
-                if line.startswith('•'):
-                    # Main bullet point
-                    bullet_style = ParagraphStyle(
-                        'BulletPoint',
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Main rejection reason (bullet point)
+            if line.startswith('• **') and line.endswith('**:') or '**:' in line:
+                # Extract category and reason
+                main_bullet_style = ParagraphStyle(
+                    'MainBullet',
+                    parent=styles['Normal'],
+                    fontSize=12,
+                    spaceAfter=8,
+                    spaceBefore=15,
+                    leftIndent=10,
+                    textColor=white,
+                    backColor=HexColor('#DC143C'),  # Crimson
+                    borderPadding=8,
+                    fontName='Helvetica-Bold'
+                )
+                
+                # Clean up the formatting and add numbering
+                clean_line = line.replace('• **', '').replace('**:', '')
+                numbered_line = f"#{gap_counter}. {clean_line}"
+                story.append(Paragraph(numbered_line, main_bullet_style))
+                gap_counter += 1
+                
+            # Sub-points (Required, Candidate Reality, Gap Impact)
+            elif line.startswith('- '):
+                if 'Required:' in line:
+                    required_style = ParagraphStyle(
+                        'Required',
                         parent=styles['Normal'],
-                        leftIndent=20,
-                        bulletIndent=10,
-                        spaceAfter=6,
-                        textColor='darkred'
+                        fontSize=10,
+                        spaceAfter=4,
+                        leftIndent=25,
+                        textColor=HexColor('#8B0000'),  # Dark red
+                        fontName='Helvetica-Bold'
                     )
-                    story.append(Paragraph(line, bullet_style))
-                elif line.strip().startswith('-'):
-                    # Sub-point
+                    story.append(Paragraph(f"🎯 {line}", required_style))
+                    
+                elif 'Candidate Reality:' in line:
+                    reality_style = ParagraphStyle(
+                        'Reality',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        spaceAfter=4,
+                        leftIndent=25,
+                        textColor=HexColor('#4682B4'),  # Steel blue
+                        fontName='Helvetica-Bold'
+                    )
+                    story.append(Paragraph(f"👤 {line}", reality_style))
+                    
+                elif 'Gap Impact:' in line:
+                    impact_style = ParagraphStyle(
+                        'Impact',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        spaceAfter=4,
+                        leftIndent=25,
+                        textColor=HexColor('#FF4500'),  # Orange red
+                        fontName='Helvetica-Bold'
+                    )
+                    story.append(Paragraph(f"⚠️ {line}", impact_style))
+                    
+                else:
+                    # Other sub-points
                     sub_style = ParagraphStyle(
                         'SubPoint',
                         parent=styles['Normal'],
-                        leftIndent=40,
-                        bulletIndent=30,
+                        leftIndent=30,
                         spaceAfter=3,
                         fontSize=10,
-                        textColor='black'
+                        textColor=black
                     )
                     story.append(Paragraph(line, sub_style))
-                else:
-                    story.append(Paragraph(line, styles['Normal']))
-                    story.append(Spacer(1, 6))
+                    
+            # Section headers
+            elif line.startswith('**') and line.endswith('**') and ':' not in line:
+                section_style = ParagraphStyle(
+                    'SectionHeader',
+                    parent=styles['Heading3'],
+                    fontSize=13,
+                    spaceAfter=10,
+                    spaceBefore=15,
+                    textColor=HexColor('#2E8B57'),  # Sea green
+                    fontName='Helvetica-Bold'
+                )
+                clean_section = line.replace('**', '')
+                story.append(Paragraph(f"📂 {clean_section}", section_style))
+                
+            # Regular text
+            else:
+                if line:
+                    regular_style = ParagraphStyle(
+                        'Regular',
+                        parent=styles['Normal'],
+                        fontSize=10,
+                        spaceAfter=6,
+                        leftIndent=15
+                    )
+                    story.append(Paragraph(line, regular_style))
         
-        # Footer
+        # Enhanced Footer Section
         story.append(Spacer(1, 30))
+        
+        # Add a separator line
+        line_style = ParagraphStyle(
+            'Line',
+            parent=styles['Normal'],
+            fontSize=14,
+            alignment=1,
+            textColor=HexColor('#8B0000')
+        )
+        story.append(Paragraph("_" * 80, line_style))
+        story.append(Spacer(1, 15))
+        
+        footer_title_style = ParagraphStyle(
+            'FooterTitle',
+            parent=styles['Heading3'],
+            fontSize=12,
+            spaceAfter=8,
+            textColor=HexColor('#2E8B57'),
+            alignment=1,
+            fontName='Helvetica-Bold'
+        )
+        story.append(Paragraph("📝 ANALYSIS NOTES", footer_title_style))
+        
         footer_style = ParagraphStyle(
             'Footer',
             parent=styles['Normal'],
-            fontSize=10,
-            textColor='gray',
-            alignment=1  # Center alignment
+            fontSize=9,
+            textColor=HexColor('#666666'),
+            alignment=1,  # Center alignment
+            spaceAfter=4
         )
-        story.append(Paragraph("This comprehensive rejection analysis was generated using AI-powered gap analysis technology.", footer_style))
-        story.append(Paragraph("For questions or clarifications, please consult with HR or hiring manager.", footer_style))
+        story.append(Paragraph("🤖 This comprehensive rejection analysis was generated using advanced AI-powered gap analysis technology.", footer_style))
+        story.append(Paragraph("📞 For questions or clarifications, please consult with HR or the hiring manager.", footer_style))
+        story.append(Paragraph("⚡ Analysis considers technical skills, experience, qualifications, and cultural fit factors.", footer_style))
         
         # Build PDF
         doc.build(story)
