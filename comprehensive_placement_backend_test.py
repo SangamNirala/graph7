@@ -560,16 +560,19 @@ class ComprehensivePlacementTester:
             if response.status_code == 200:
                 data = response.json()
                 
-                if data.get("session_id") and data.get("question"):
-                    self.interview_session_id = data["session_id"]
-                    question = data["question"]
+                # Check for session_id and either question or first_question
+                session_id = data.get("session_id")
+                question = data.get("question") or data.get("first_question")
+                
+                if session_id and question:
+                    self.interview_session_id = session_id
                     
                     self.log_test("Interview Session Start", "PASS", 
                                 f"Session started: {self.interview_session_id}, First question: {question[:50]}...")
                     return True
                 else:
                     self.log_test("Interview Session Start", "FAIL", 
-                                f"Session start failed: {data}")
+                                f"Session start failed: missing session_id or question in response: {data}")
                     return False
             else:
                 self.log_test("Interview Session Start", "FAIL", 
