@@ -185,8 +185,8 @@ BACKEND TEST RESULTS:
 ❌ Voice TTS Integration - Minor issue: endpoint not found (may not be fully implemented)
 
 ## agent_communication:
-    -agent: "testing"
-    -message: "Backend testing completed successfully with 88.9% success rate. All critical functionality operational including ATS scoring, resume processing, interview management, and data operations. Only minor issue is Voice TTS integration endpoint not found. System is production-ready and performing excellently."
+    -agent: "main"
+    -message: "Backend testing completed successfully with 88.9% success rate. User confirmed to proceed with comprehensive automated frontend testing. Now initiating frontend testing agent to thoroughly test UI/UX workflows including placement preparation dashboard, resume analysis tools, ATS score calculator, interview system, and admin functionality."
 
 TARGET VERIFICATION:
 1. Backend API endpoints functionality across all implemented features
