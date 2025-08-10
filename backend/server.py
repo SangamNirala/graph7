@@ -5314,7 +5314,7 @@ Before submitting, verify:
         # Use Gemini API for analysis
         try:
             import google.generativeai as genai
-            genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+            genai.configure(api_key=GEMINI_API_KEY)
             
             model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(rejection_reasons_prompt)
