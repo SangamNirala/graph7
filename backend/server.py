@@ -5454,7 +5454,7 @@ Before submitting, verify:
         logging.error(f"Rejection reasons analysis error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to analyze rejection reasons: {str(e)}")
 
-@api_router.get("/placement-preparation/rejection-reasons")
+@api_router.get("/api/placement-preparation/rejection-reasons")
 async def get_rejection_reasons_analyses():
     """Get all rejection reasons analyses"""
     try:
