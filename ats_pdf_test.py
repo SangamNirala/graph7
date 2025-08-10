@@ -195,7 +195,7 @@ Preferred Qualifications:
                     self.analysis_text_length = len(analysis_text)
                     
                     # Validate response structure
-                    required_fields = ['ats_score', 'ats_id', 'analysis_text', 'pdf_generated']
+                    required_fields = ['ats_score', 'ats_id', 'analysis_text', 'pdf_filename']
                     missing_fields = [field for field in required_fields if field not in result]
                     
                     if missing_fields:
@@ -203,9 +203,9 @@ Preferred Qualifications:
                                     f"Missing required fields: {missing_fields}")
                         return False
                     
-                    if not result.get('pdf_generated', False):
+                    if not result.get('pdf_filename'):
                         self.log_test("ATS Score Calculation", "FAIL", 
-                                    "PDF generation flag is False")
+                                    "PDF filename is missing")
                         return False
                     
                     self.log_test("ATS Score Calculation", "PASS", 
