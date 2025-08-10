@@ -11,7 +11,7 @@ import tempfile
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://d608964e-3bc2-49ac-82ce-24fb220fc6c6.preview.emergentagent.com"
+BACKEND_URL = "https://882970a1-15c9-4eb2-9f43-a49f0b775561.preview.emergentagent.com"
 ATS_ENDPOINT = f"{BACKEND_URL}/api/placement-preparation/ats-score-calculate"
 
 def create_sample_resume_content():
