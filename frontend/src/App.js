@@ -5921,7 +5921,6 @@ function App() {
   const [validatedJob, setValidatedJob] = useState(null);
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
   
-  const [analysisJobTitle, setAnalysisJobTitle] = useState('');
   const [activeTab, setActiveTab] = useState('landing');
 
   // Clear global spoken texts when starting new sessions
