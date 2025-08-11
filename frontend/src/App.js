@@ -3469,11 +3469,12 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
   const fetchAllAnalyses = async () => {
     setAnalysesLoading(true);
     try {
-      // Fetch resume analyses, rejection reasons analyses, and technical interview questions analyses
-      const [resumeResponse, rejectionResponse, technicalResponse] = await Promise.all([
+      // Fetch resume analyses, rejection reasons analyses, technical interview questions analyses, and behavioral interview questions analyses
+      const [resumeResponse, rejectionResponse, technicalResponse, behavioralResponse] = await Promise.all([
         fetch(`${API}/placement-preparation/resume-analyses`).catch(() => null),
         fetch(`${API}/placement-preparation/rejection-reasons`).catch(() => null),
-        fetch(`${API}/placement-preparation/technical-interview-questions`).catch(() => null)
+        fetch(`${API}/placement-preparation/technical-interview-questions`).catch(() => null),
+        fetch(`${API}/placement-preparation/behavioral-interview-questions`).catch(() => null)
       ]);
 
       let allAnalyses = [];
@@ -3497,6 +3498,13 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
         const technicalData = await technicalResponse.json();
         const technicalAnalyses = technicalData.analyses || [];
         allAnalyses = [...allAnalyses, ...technicalAnalyses.map(analysis => ({...analysis, type: 'technical'}))];
+      }
+
+      // Add behavioral interview questions analyses if available
+      if (behavioralResponse && behavioralResponse.ok) {
+        const behavioralData = await behavioralResponse.json();
+        const behavioralAnalyses = behavioralData.analyses || [];
+        allAnalyses = [...allAnalyses, ...behavioralAnalyses.map(analysis => ({...analysis, type: 'behavioral'}))];
       }
 
       // Sort by creation date (newest first)
