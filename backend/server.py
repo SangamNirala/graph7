@@ -6262,6 +6262,796 @@ async def download_technical_interview_questions_pdf(analysis_id: str):
         logging.error(f"PDF download error: {e}")
         raise HTTPException(status_code=500, detail="Failed to download PDF")
 
+# Behavioral Interview Questions Endpoints
+@api_router.post("/placement-preparation/behavioral-interview-questions")
+async def generate_behavioral_interview_questions(
+    job_title: str = Form(...),
+    job_description: str = Form(...),
+    resume: UploadFile = File(...)
+):
+    """
+    Generate comprehensive behavioral interview questions using advanced LLM analysis
+    """
+    try:
+        # Validate file type
+        if not resume.filename.lower().endswith(('.pdf', '.doc', '.docx', '.txt')):
+            raise HTTPException(status_code=400, detail="Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files.")
+        
+        # Parse resume content
+        resume_content = ""
+        file_content = await resume.read()
+        
+        if resume.filename.lower().endswith('.txt'):
+            resume_content = file_content.decode('utf-8')
+        elif resume.filename.lower().endswith('.pdf'):
+            import PyPDF2
+            import io
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+            resume_content = ""
+            for page in pdf_reader.pages:
+                resume_content += page.extract_text() + "\n"
+        elif resume.filename.lower().endswith(('.doc', '.docx')):
+            import docx
+            import io
+            doc = docx.Document(io.BytesIO(file_content))
+            resume_content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+        
+        if not resume_content.strip():
+            raise HTTPException(status_code=400, detail="Could not extract text from the resume file")
+        
+        # Generate Behavioral Interview Questions using the comprehensive LLM prompt
+        behavioral_interview_prompt = f"""YOU ARE A MASTER BEHAVIORAL INTERVIEWER AND INDUSTRIAL PSYCHOLOGIST WITH 25+ YEARS OF EXPERIENCE IN EXECUTIVE ASSESSMENT, ORGANIZATIONAL BEHAVIOR ANALYSIS, AND PREDICTIVE HIRING SCIENCE. YOUR EXPERTISE SPANS FORTUNE 100 LEADERSHIP EVALUATION AND HIGH-GROWTH STARTUP CULTURAL INTEGRATION. YOU SPECIALIZE IN CREATING PSYCHOLOGICALLY SOPHISTICATED INTERVIEW QUESTIONS THAT PREDICT LONG-TERM PERFORMANCE, CULTURAL ALIGNMENT, AND LEADERSHIP POTENTIAL.
+
+ADVANCED INPUT ANALYSIS: 
+Candidate Resume: {resume_content}
+Job Description: {job_description}
+Target Role: {job_title}
+
+COMPREHENSIVE BEHAVIORAL ASSESSMENT FRAMEWORK:
+
+PHASE 1: PSYCHOLOGICAL AND PROFESSIONAL PROFILING
+
+Analyze career progression patterns for evidence of growth mindset and adaptability
+Extract leadership evolution from individual contributor to team influence roles
+Identify decision-making patterns under stress and uncertainty from career choices
+Map emotional intelligence indicators through collaborative experiences and conflict resolution
+Assess value alignment and cultural adaptability through organizational transitions
+Determine motivation drivers and intrinsic versus extrinsic reward orientation
+Evaluate communication sophistication and stakeholder management capability
+
+PHASE 2: ORGANIZATIONAL CONTEXT AND CULTURAL FIT MAPPING
+
+Decode company culture indicators from job description language and requirements
+Identify leadership style preferences and team dynamics expectations
+Determine collaboration complexity and cross-functional integration demands
+Map performance expectations and success metrics for behavioral alignment
+Assess change management requirements and organizational transformation involvement
+Evaluate innovation expectations and risk tolerance cultural factors
+
+PHASE 3: ADVANCED BEHAVIORAL QUESTION DESIGN Generate exactly 25 behavioral questions using enhanced STAR methodology with psychological depth assessment:
+
+LEADERSHIP INFLUENCE AND EXECUTIVE PRESENCE (Questions 1-5):
+
+Strategic leadership decisions with ambiguous information and competing priorities
+Team transformation and performance optimization through leadership intervention
+Organizational influence without formal authority and relationship capital building
+Complex stakeholder management with conflicting interests and political dynamics
+Leadership during crisis and organizational uncertainty with morale maintenance
+
+STRATEGIC THINKING AND DECISION EXCELLENCE (Questions 6-10):
+
+Multi-variable problem solving with incomplete information and time constraints
+Strategic decision-making with long-term consequences and stakeholder impact
+Innovation leadership and creative solution development under resource limitations
+Risk assessment and management in high-stakes business environments
+Learning integration from failures and strategic pivot decision-making
+
+ADVANCED COLLABORATION AND INFLUENCE MASTERY (Questions 11-15):
+
+Cross-functional leadership with diverse teams and competing organizational priorities
+Complex negotiation and consensus building with senior stakeholders
+Cultural bridge-building and team integration across organizational boundaries
+Difficult conversation navigation and relationship preservation under conflict
+Knowledge transfer and mentorship effectiveness with measurable impact demonstration
+
+RESILIENCE AND ADAPTIVE LEADERSHIP (Questions 16-20):
+
+Organizational change leadership with resistance management and culture transformation
+Personal and professional setback recovery with growth and learning integration
+High-pressure performance with multiple competing demands and resource constraints
+Skill acquisition and competency development in rapidly evolving technical landscapes
+Work-life integration and sustainable performance under demanding circumstances
+
+ROLE-SPECIFIC BEHAVIORAL EXCELLENCE (Questions 21-25):
+
+Industry-specific leadership challenges with sector knowledge and cultural understanding
+Position-unique competency demonstration with measurable business impact
+Organizational culture contribution and values-driven decision-making examples
+Future-focused leadership scenarios with vision development and team inspiration
+Strategic relationship building and professional network development for business outcomes
+
+ENHANCED QUESTION CONSTRUCTION METHODOLOGY: Each question must demonstrate advanced behavioral assessment science:
+
+Multi-layered psychological competency evaluation within single scenarios
+Authentic experience validation through detailed probing and consistency checking
+Cultural intelligence assessment through diverse stakeholder interaction examples
+Emotional intelligence evaluation through stress and conflict management scenarios
+Growth mindset demonstration through learning and adaptation evidence
+Values alignment verification through ethical decision-making and priority choices
+
+SOPHISTICATED STAR METHOD APPLICATION:
+
+Situation complexity analysis for decision-making sophistication assessment
+Task responsibility scope evaluation for leadership capacity and ownership demonstration
+Action methodology analysis for problem-solving approach and collaboration effectiveness
+Result measurement sophistication for business impact awareness and outcome orientation
+Reflection integration for learning capacity and continuous improvement evidence
+
+ADVANCED PROBING QUESTION STRATEGY:
+
+Motivation and decision-making driver exploration through alternative choice analysis
+Stakeholder impact assessment through perspective-taking and empathy demonstration
+Learning and growth evidence through challenge response and skill development
+Values consistency validation through ethical dilemma navigation and principle application
+Leadership influence measurement through team and organizational outcome attribution
+
+COMPREHENSIVE BEHAVIORAL EVALUATION MATRIX:
+
+Authentic experience validation versus rehearsed response identification
+Leadership potential assessment through influence and impact demonstration
+Cultural fit prediction through values alignment and organizational behavior patterns
+Performance sustainability evaluation through stress management and resilience evidence
+Growth trajectory analysis through learning velocity and adaptation capability
+Team dynamics contribution through collaboration effectiveness and relationship building
+Strategic thinking capability through complex problem-solving and decision-making quality
+
+QUESTION CONSTRUCTION RULES: ✅ Use STAR method (Situation, Task, Action, Result) framework ✅ Create specific scenarios relevant to candidate's background ✅ Focus on past behavior as predictor of future performance ✅ Include role-specific competencies from job description ✅ Avoid hypothetical "what would you do" questions ✅ Design questions that reveal authentic experiences, not rehearsed answers
+
+MANDATORY HTML OUTPUT FORMAT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Behavioral Interview Questions - [CANDIDATE NAME]</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: 'Calibri', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333333;
+            background: white;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 0.75in;
+        }}
+        
+        .header {{
+            text-align: center;
+            border-bottom: 2px solid #8e44ad;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }}
+        
+        .title {{
+            font-size: 20pt;
+            font-weight: bold;
+            color: #8e44ad;
+            margin-bottom: 10px;
+        }}
+        
+        .subtitle {{
+            font-size: 12pt;
+            color: #7f8c8d;
+            font-style: italic;
+        }}
+        
+        .interview-info {{
+            background: #f4f2f7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid #8e44ad;
+        }}
+        
+        .info-item {{
+            margin-bottom: 8px;
+            font-size: 10pt;
+        }}
+        
+        .info-label {{
+            font-weight: bold;
+            color: #8e44ad;
+        }}
+        
+        .category {{
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }}
+        
+        .category-title {{
+            font-size: 14pt;
+            font-weight: bold;
+            color: white;
+            background: #8e44ad;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+        }}
+        
+        .category-icon {{
+            margin-right: 10px;
+            font-size: 16pt;
+        }}
+        
+        .question-item {{
+            margin-bottom: 18px;
+            border-left: 3px solid #e74c3c;
+            padding-left: 15px;
+            background: #fefefe;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }}
+        
+        .question-number {{
+            font-size: 12pt;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 8px;
+        }}
+        
+        .competency-tag {{
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 8pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }}
+        
+        .question-text {{
+            font-size: 11pt;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }}
+        
+        .question-rationale {{
+            font-size: 9pt;
+            color: #7f8c8d;
+            font-style: italic;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border-left: 3px solid #bdc3c7;
+        }}
+        
+        .follow-up-probes {{
+            font-size: 10pt;
+            color: #27ae60;
+            background: #d5f4e6;
+            padding: 8px;
+            border-radius: 4px;
+        }}
+        
+        .probe-title {{
+            font-weight: bold;
+            margin-bottom: 5px;
+        }}
+        
+        .star-guide {{
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }}
+        
+        .star-title {{
+            font-size: 12pt;
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 10px;
+        }}
+        
+        .star-method {{
+            font-size: 10pt;
+            line-height: 1.4;
+        }}
+        
+        .star-item {{
+            margin-bottom: 5px;
+        }}
+        
+        .star-letter {{
+            font-weight: bold;
+            color: #856404;
+        }}
+        
+        .assessment-guide {{
+            margin-top: 30px;
+            border-top: 2px solid #8e44ad;
+            padding-top: 20px;
+        }}
+        
+        .guide-title {{
+            font-size: 14pt;
+            font-weight: bold;
+            color: #8e44ad;
+            margin-bottom: 15px;
+        }}
+        
+        .guide-section {{
+            margin-bottom: 15px;
+        }}
+        
+        .guide-subtitle {{
+            font-size: 11pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }}
+        
+        .guide-content {{
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #555555;
+        }}
+        
+        @media print {{
+            body {{ font-size: 10pt; padding: 0.5in; }}
+            .title {{ font-size: 16pt; }}
+            .category-title {{ font-size: 12pt; }}
+            .question-item {{ page-break-inside: avoid; margin-bottom: 15px; }}
+        }}
+        
+        @page {{
+            size: A4;
+            margin: 0.75in;
+        }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Behavioral Interview Questions</div>
+        <div class="subtitle">{job_title} Cultural Fit & Competency Assessment</div>
+    </div>
+    
+    <div class="interview-info">
+        <div class="info-item"><span class="info-label">Candidate:</span> [CANDIDATE NAME]</div>
+        <div class="info-item"><span class="info-label">Position:</span> {job_title}</div>
+        <div class="info-item"><span class="info-label">Experience Level:</span> [DETECTED LEVEL FROM RESUME]</div>
+        <div class="info-item"><span class="info-label">Key Competencies to Assess:</span> [PRIMARY BEHAVIORAL FOCUSES]</div>
+        <div class="info-item"><span class="info-label">Cultural Fit Factors:</span> [COMPANY/ROLE SPECIFIC TRAITS]</div>
+    </div>
+    
+    <div class="star-guide">
+        <div class="star-title">STAR Method Assessment Framework</div>
+        <div class="star-method">
+            <div class="star-item"><span class="star-letter">S</span>ituation: What was the context and background?</div>
+            <div class="star-item"><span class="star-letter">T</span>ask: What was your responsibility or goal?</div>
+            <div class="star-item"><span class="star-letter">A</span>ction: What specific steps did you take?</div>
+            <div class="star-item"><span class="star-letter">R</span>esult: What was the outcome and impact?</div>
+        </div>
+    </div>
+    
+    [GENERATE ALL 25 BEHAVIORAL QUESTIONS HERE WITH PROPER CATEGORIES - NO PLACEHOLDERS ALLOWED]
+    
+    <div class="assessment-guide">
+        <div class="guide-title">BEHAVIORAL ASSESSMENT GUIDE</div>
+        
+        <div class="guide-section">
+            <div class="guide-subtitle">Excellence Indicators:</div>
+            <div class="guide-content">
+                • [SPECIFIC BEHAVIORS THAT INDICATE HIGH PERFORMANCE FOR THIS ROLE]<br>
+                • [LEADERSHIP QUALITIES TO LOOK FOR BASED ON SENIORITY LEVEL]<br>
+                • [PROBLEM-SOLVING APPROACHES THAT ALIGN WITH COMPANY CULTURE]<br>
+                • [COMMUNICATION STYLES THAT FIT TEAM DYNAMICS]
+            </div>
+        </div>
+        
+        <div class="guide-section">
+            <div class="guide-subtitle">Warning Signs:</div>
+            <div class="guide-content">
+                • [BEHAVIORAL RED FLAGS FOR THIS SPECIFIC ROLE]<br>
+                • [CULTURAL MISALIGNMENT INDICATORS]<br>
+                • [RESPONSIBILITY AVOIDANCE PATTERNS]<br>
+                • [LACK OF GROWTH MINDSET OR LEARNING AGILITY]
+            </div>
+        </div>
+        
+        <div class="guide-section">
+            <div class="guide-subtitle">Scoring Framework:</div>
+            <div class="guide-content">
+                <strong>5 - Outstanding:</strong> [SPECIFIC CRITERIA FOR EXCEPTIONAL PERFORMANCE]<br>
+                <strong>4 - Strong:</strong> [CRITERIA FOR ABOVE-AVERAGE PERFORMANCE]<br>
+                <strong>3 - Adequate:</strong> [CRITERIA FOR MEETING BASIC REQUIREMENTS]<br>
+                <strong>2 - Below Standard:</strong> [CRITERIA INDICATING CONCERNS]<br>
+                <strong>1 - Inadequate:</strong> [CRITERIA FOR SIGNIFICANT GAPS]
+            </div>
+        </div>
+        
+        <div class="guide-section">
+            <div class="guide-subtitle">Candidate-Specific Focus Areas:</div>
+            <div class="guide-content">
+                Based on their resume, pay special attention to:<br>
+                • [SPECIFIC AREA 1 BASED ON THEIR BACKGROUND]<br>
+                • [SPECIFIC AREA 2 RELATED TO CAREER PROGRESSION]<br>
+                • [SPECIFIC AREA 3 REGARDING TECHNICAL-TO-LEADERSHIP TRANSITION]
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>
+
+**CRITICAL REQUIREMENTS:**
+1. Generate ALL 25 behavioral questions in a single response
+2. Each question must be specific to the job requirements and resume content using STAR methodology
+3. Include all 5 categories (Leadership, Strategic Thinking, Collaboration, Resilience, Role-Specific)
+4. Provide rationale and follow-up probes for each question
+5. Use proper HTML structure for PDF conversion
+6. NO placeholders or "TODO" comments - everything must be complete"""
+
+        # Use Gemini API for generating behavioral interview questions
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=GEMINI_API_KEY)
+            
+            # Use more detailed model configuration for better results
+            model = genai.GenerativeModel(
+                model_name='gemini-1.5-flash',
+                generation_config={
+                    'temperature': 0.7,
+                    'top_p': 0.8,
+                    'top_k': 40,
+                    'max_output_tokens': 8192,  # Increased for complete responses
+                }
+            )
+            response = model.generate_content(behavioral_interview_prompt)
+            
+            interview_questions_text = response.text
+            
+            # Extract HTML content from the response
+            import re
+            html_match = re.search(r'```html(.*?)```', interview_questions_text, re.DOTALL)
+            if html_match:
+                html_content = html_match.group(1).strip()
+                logging.info(f"Successfully extracted HTML content: {len(html_content)} characters")
+            else:
+                # If no HTML block found, check if the entire response is HTML
+                if '<html' in interview_questions_text.lower() and '</html>' in interview_questions_text.lower():
+                    html_content = interview_questions_text
+                    logging.info(f"Using full response as HTML: {len(html_content)} characters")
+                else:
+                    # Create proper HTML from text response if needed
+                    processed_text = interview_questions_text.replace('Question ', '<div class="question-block"><div class="question-number">Question ')
+                    processed_text = processed_text.replace('Rationale:', '</div><div class="rationale">Rationale:')
+                    processed_text = processed_text.replace('Follow-up:', '</div><div class="follow-up">Follow-up:')
+                    processed_text = processed_text.replace('\n\n', '</div></div>\n\n')
+                    
+                    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Behavioral Interview Questions - {job_title}</title>
+    <style>
+        body {{ font-family: 'Calibri', Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }}
+        .header {{ text-align: center; border-bottom: 3px solid #8e44ad; padding-bottom: 20px; margin-bottom: 30px; }}
+        .title {{ font-size: 24pt; font-weight: bold; color: #8e44ad; margin-bottom: 10px; }}
+        .subtitle {{ font-size: 14pt; color: #7f8c8d; font-style: italic; }}
+        .content {{ margin: 20px 0; font-size: 11pt; line-height: 1.4; }}
+        .question-block {{ margin-bottom: 20px; padding: 15px; border-left: 4px solid #8e44ad; background: #f8f9fa; }}
+        .question-number {{ font-weight: bold; color: #8e44ad; font-size: 12pt; }}
+        .question-text {{ margin: 8px 0; }}
+        .rationale {{ font-style: italic; color: #7f8c8d; margin: 5px 0; font-size: 10pt; }}
+        .follow-up {{ color: #27ae60; font-weight: 500; margin: 5px 0; font-size: 10pt; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Behavioral Interview Questions</div>
+        <div class="subtitle">{job_title} Cultural Fit & Competency Assessment</div>
+    </div>
+    <div class="content">
+        {processed_text}
+    </div>
+</body>
+</html>"""
+                    logging.info(f"Created HTML wrapper for text response: {len(html_content)} characters")
+                
+        except Exception as e:
+            logging.error(f"Gemini API error: {e}")
+            # Enhanced fallback HTML with better structure
+            html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Behavioral Interview Questions - {job_title}</title>
+    <style>
+        body {{ font-family: 'Calibri', Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }}
+        .header {{ text-align: center; border-bottom: 3px solid #8e44ad; padding-bottom: 20px; margin-bottom: 30px; }}
+        .title {{ font-size: 24pt; font-weight: bold; color: #8e44ad; margin-bottom: 10px; }}
+        .subtitle {{ font-size: 14pt; color: #7f8c8d; font-style: italic; }}
+        .error {{ background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+        .fallback {{ margin: 20px 0; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Behavioral Interview Questions</div>
+        <div class="subtitle">{job_title} Cultural Fit & Competency Assessment</div>
+    </div>
+    <div class="error">
+        <strong>AI Generation Error:</strong> Unable to generate automated behavioral interview questions due to API limitations.
+    </div>
+    <div class="fallback">
+        <strong>Recommended Action:</strong> Please conduct manual review of candidate qualifications and prepare role-specific behavioral questions based on the job requirements and resume content.
+        <br><br>
+        <strong>Key Areas to Focus On:</strong>
+        <ul>
+            <li>Leadership and influence demonstrated in previous roles</li>
+            <li>Problem-solving approach and decision-making under pressure</li>
+            <li>Collaboration and teamwork in complex organizational environments</li>
+            <li>Adaptability and resilience during organizational changes</li>
+            <li>Cultural fit and values alignment with company mission</li>
+        </ul>
+    </div>
+</body>
+</html>"""
+        
+        # Convert HTML to PDF using the same approach as technical questions
+        try:
+            # Generate PDF from HTML using weasyprint
+            import weasyprint
+            import uuid
+            
+            # Create unique filename
+            analysis_id = str(uuid.uuid4())
+            pdf_filename = f"behavioral_interview_questions_{analysis_id[:8]}.pdf"
+            pdf_path = f"/tmp/{pdf_filename}"
+            
+            # Convert HTML to PDF with proper styling
+            try:
+                weasyprint.HTML(string=html_content).write_pdf(pdf_path)
+                logging.info(f"Successfully generated PDF using weasyprint: {pdf_path}")
+            except Exception as weasy_error:
+                logging.warning(f"Weasyprint error: {weasy_error}, trying pdfkit fallback")
+                # Try pdfkit as fallback
+                import pdfkit
+                options = {
+                    'page-size': 'A4',
+                    'margin-top': '0.75in',
+                    'margin-right': '0.75in',
+                    'margin-bottom': '0.75in',
+                    'margin-left': '0.75in',
+                    'encoding': "UTF-8",
+                    'no-outline': None,
+                    'enable-local-file-access': None
+                }
+                pdfkit.from_string(html_content, pdf_path, options=options)
+                logging.info(f"Successfully generated PDF using pdfkit: {pdf_path}")
+                
+        except ImportError as import_error:
+            logging.warning(f"HTML to PDF libraries not available: {import_error}, using reportlab fallback")
+            # Final fallback to reportlab with HTML parsing
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import letter, A4
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from reportlab.lib.units import inch
+            from reportlab.lib.colors import HexColor, white, darkblue
+            import uuid
+            import re
+            from html import unescape
+            
+            # Create unique filename
+            analysis_id = str(uuid.uuid4())
+            pdf_filename = f"behavioral_interview_questions_{analysis_id[:8]}.pdf"
+            pdf_path = f"/tmp/{pdf_filename}"
+            
+            # Create PDF document
+            doc = SimpleDocTemplate(pdf_path, pagesize=A4, rightMargin=50, leftMargin=50, topMargin=50, bottomMargin=50)
+            styles = getSampleStyleSheet()
+            story = []
+            
+            # Title
+            title_style = ParagraphStyle(
+                'EnhancedTitle',
+                parent=styles['Title'],
+                fontSize=22,
+                spaceAfter=30,
+                spaceBefore=10,
+                textColor=white,
+                backColor=HexColor('#8e44ad'),
+                borderPadding=15,
+                alignment=1
+            )
+            story.append(Paragraph("🗣️ BEHAVIORAL INTERVIEW QUESTIONS", title_style))
+            story.append(Spacer(1, 20))
+            
+            # Job details
+            current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            job_info_style = ParagraphStyle(
+                'JobInfo',
+                parent=styles['Normal'],
+                fontSize=12,
+                spaceAfter=6,
+                textColor=darkblue,
+                backColor=HexColor('#f4f2f7'),
+                borderPadding=10
+            )
+            
+            story.append(Paragraph(f"<b>📋 Position:</b> {job_title}", job_info_style))
+            story.append(Paragraph(f"<b>🕒 Generated on:</b> {current_time} UTC", job_info_style))
+            story.append(Spacer(1, 25))
+            
+            # Parse HTML content and extract text for PDF
+            # Remove HTML tags but preserve structure
+            clean_text = re.sub(r'<style[^>]*>.*?</style>', '', html_content, flags=re.DOTALL)
+            clean_text = re.sub(r'<script[^>]*>.*?</script>', '', clean_text, flags=re.DOTALL)
+            clean_text = re.sub(r'<head[^>]*>.*?</head>', '', clean_text, flags=re.DOTALL)
+            clean_text = re.sub(r'<[^>]+>', ' ', clean_text)
+            clean_text = unescape(clean_text)
+            clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+            
+            # Split into paragraphs and create PDF content
+            content_style = ParagraphStyle('Content', parent=styles['Normal'], fontSize=11, spaceAfter=12, leftIndent=20)
+            
+            # Look for question patterns
+            question_blocks = []
+            lines = clean_text.split('\n')
+            current_block = []
+            
+            for line in lines:
+                line = line.strip()
+                if line:
+                    if 'Question' in line and ':' in line:
+                        if current_block:
+                            question_blocks.append(' '.join(current_block))
+                        current_block = [line]
+                    else:
+                        current_block.append(line)
+            
+            if current_block:
+                question_blocks.append(' '.join(current_block))
+            
+            # Add content to PDF
+            if question_blocks:
+                for i, block in enumerate(question_blocks[:25], 1):  # Limit to 25 questions max
+                    if block.strip():
+                        # Clean the text for safe PDF rendering
+                        safe_block = block.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                        safe_block = re.sub(r'\s+', ' ', safe_block).strip()
+                        
+                        if len(safe_block) > 500:  # Split very long blocks
+                            parts = [safe_block[i:i+500] for i in range(0, len(safe_block), 500)]
+                            for part in parts:
+                                if part.strip():
+                                    story.append(Paragraph(part, content_style))
+                                    story.append(Spacer(1, 8))
+                        else:
+                            story.append(Paragraph(safe_block, content_style))
+                            story.append(Spacer(1, 12))
+            else:
+                # Fallback content if no questions were parsed
+                fallback_content = """
+                This document contains behavioral interview questions generated for the specified role.
+                The questions are designed to assess cultural fit, leadership potential, and behavioral competency.
+                """
+                story.append(Paragraph(fallback_content, content_style))
+            
+            # Build PDF
+            try:
+                doc.build(story)
+                logging.info(f"Successfully generated PDF using reportlab fallback: {pdf_path}")
+            except Exception as build_error:
+                logging.error(f"PDF build error: {build_error}")
+                # Create minimal PDF as last resort
+                c = canvas.Canvas(pdf_path, pagesize=A4)
+                c.drawString(100, 750, f"Behavioral Interview Questions - {job_title}")
+                c.drawString(100, 720, f"Generated on: {current_time}")
+                c.drawString(100, 680, "Behavioral interview questions are available in the system.")
+                c.save()
+                logging.info(f"Created minimal fallback PDF: {pdf_path}")
+        
+        except Exception as pdf_error:
+            logging.error(f"PDF generation error: {pdf_error}")
+            # Create minimal PDF as final fallback
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import A4
+            import uuid
+            
+            analysis_id = str(uuid.uuid4())
+            pdf_filename = f"behavioral_interview_questions_{analysis_id[:8]}.pdf"
+            pdf_path = f"/tmp/{pdf_filename}"
+            
+            c = canvas.Canvas(pdf_path, pagesize=A4)
+            current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            c.drawString(100, 750, f"Behavioral Interview Questions - {job_title}")
+            c.drawString(100, 720, f"Generated on: {current_time}")
+            c.drawString(100, 680, "Error generating detailed questions. Please try again.")
+            c.save()
+            logging.info(f"Created error fallback PDF: {pdf_path}")
+        
+        # Store analysis in database
+        behavioral_analysis = BehavioralInterviewQuestionsAnalysis(
+            job_title=job_title,
+            job_description=job_description,
+            resume_content=resume_content,
+            interview_questions=interview_questions_text,
+            pdf_path=pdf_path
+        )
+        
+        # Insert into MongoDB
+        behavioral_analysis_dict = behavioral_analysis.dict()
+        await db.behavioral_interview_questions_analyses.insert_one(behavioral_analysis_dict)
+        
+        return {
+            "success": True,
+            "analysis_id": behavioral_analysis.id,
+            "interview_questions": interview_questions_text,
+            "pdf_filename": pdf_filename,
+            "message": "Behavioral interview questions generated successfully"
+        }
+        
+    except Exception as e:
+        logging.error(f"Behavioral interview questions generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate behavioral interview questions: {str(e)}")
+
+@api_router.get("/placement-preparation/behavioral-interview-questions")
+async def get_behavioral_interview_questions_analyses():
+    """Get all behavioral interview questions analyses"""
+    try:
+        analyses = await db.behavioral_interview_questions_analyses.find().to_list(1000)
+        # Convert ObjectId to string
+        for analysis in analyses:
+            if '_id' in analysis:
+                analysis['_id'] = str(analysis['_id'])
+        return {"analyses": analyses}
+    except Exception as e:
+        logging.error(f"Failed to fetch behavioral interview questions analyses: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch behavioral interview questions analyses")
+
+@api_router.get("/placement-preparation/behavioral-interview-questions/{analysis_id}/download")
+async def download_behavioral_interview_questions_pdf(analysis_id: str):
+    """Download PDF report for specific behavioral interview questions analysis"""
+    try:
+        analysis = await db.behavioral_interview_questions_analyses.find_one({"id": analysis_id})
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Behavioral interview questions analysis not found")
+        
+        pdf_path = analysis.get("pdf_path", "")
+        if not os.path.exists(pdf_path):
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            path=pdf_path,
+            media_type='application/pdf',
+            filename=f"behavioral_interview_questions_{analysis_id}.pdf"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"PDF download error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to download PDF")
+
 # Enhanced ATS Analysis Engine
 class EnhancedATSAnalyzer:
     """
