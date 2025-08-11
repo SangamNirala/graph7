@@ -101,8 +101,8 @@ class BehavioralInterviewTester:
             
             if response.status_code == 200:
                 data = response.json()
-                if data.get("success") and data.get("id"):
-                    self.analysis_id = data["id"]
+                if data.get("success") and data.get("analysis_id"):
+                    self.analysis_id = data["analysis_id"]
                     analysis_length = len(data.get("interview_questions", ""))
                     self.log_test("POST Behavioral Interview Questions", "PASS", 
                                 f"Analysis created successfully (ID: {self.analysis_id}, Length: {analysis_length} chars)")
