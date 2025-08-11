@@ -6480,7 +6480,7 @@ MANDATORY HTML OUTPUT FORMAT:
             font-size: 14pt;
             font-weight: bold;
             color: white;
-            background: #8e44ad;
+            background: #34495e;
             padding: 12px 15px;
             margin-bottom: 15px;
             border-radius: 5px;
@@ -6495,7 +6495,7 @@ MANDATORY HTML OUTPUT FORMAT:
         
         .question-item {{
             margin-bottom: 18px;
-            border-left: 3px solid #e74c3c;
+            border-left: 3px solid #3498db;
             padding-left: 15px;
             background: #fefefe;
             padding: 15px;
@@ -6506,13 +6506,13 @@ MANDATORY HTML OUTPUT FORMAT:
         .question-number {{
             font-size: 12pt;
             font-weight: bold;
-            color: #e74c3c;
+            color: #3498db;
             margin-bottom: 8px;
         }}
         
         .competency-tag {{
             display: inline-block;
-            background: #3498db;
+            background: #2c3e50;
             color: white;
             padding: 3px 10px;
             border-radius: 15px;
