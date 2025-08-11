@@ -3533,6 +3533,9 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
       } else if (analysis.type === 'technical') {
         response = await fetch(`${API}/placement-preparation/technical-interview-questions/${analysis.id}/download`);
         filename = `technical_interview_questions_${analysis.job_title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      } else if (analysis.type === 'behavioral') {
+        response = await fetch(`${API}/placement-preparation/behavioral-interview-questions/${analysis.id}/download`);
+        filename = `behavioral_interview_questions_${analysis.job_title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
       } else {
         alert('Unknown analysis type');
         return;
