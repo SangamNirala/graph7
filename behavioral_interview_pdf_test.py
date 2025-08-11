@@ -296,7 +296,7 @@ class BehavioralInterviewPDFTester:
                         break
                 
                 if found_analysis:
-                    behavioral_questions = found_analysis.get("behavioral_questions", "")
+                    behavioral_questions = found_analysis.get("interview_questions", "")
                     
                     # Count questions in the content
                     question_count = behavioral_questions.count("?")
