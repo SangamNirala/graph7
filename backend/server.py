@@ -6202,20 +6202,55 @@ Generate HTML that renders perfectly for PDF conversion with proper styling and 
             story.append(Paragraph(f"<b>🕒 Generated on:</b> {current_time} UTC", job_info_style))
             story.append(Spacer(1, 25))
             
-            # Parse questions from HTML (simplified parsing)
+            # Clean HTML content and extract text
+            import html
+            import re
+            
+            # Remove HTML tags and decode HTML entities
+            clean_text = re.sub(r'<[^>]+>', '', interview_questions_text)
+            clean_text = html.unescape(clean_text)
+            
+            # Parse questions from cleaned text
             question_pattern = r'Question (\d+):(.*?)(?=Question \d+:|$)'
-            questions = re.findall(question_pattern, interview_questions_text, re.DOTALL)
+            questions = re.findall(question_pattern, clean_text, re.DOTALL)
             
             if not questions:
-                # Fallback content
+                # Try alternative parsing patterns
+                alt_patterns = [
+                    r'(\d+)\.\s*(.*?)(?=\d+\.|$)',  # Numbered list format
+                    r'Q(\d+):(.*?)(?=Q\d+:|$)',     # Q1: format
+                    r'QUESTION\s*(\d+):(.*?)(?=QUESTION\s*\d+:|$)'  # QUESTION 1: format
+                ]
+                
+                for pattern in alt_patterns:
+                    questions = re.findall(pattern, clean_text, re.DOTALL | re.IGNORECASE)
+                    if questions:
+                        break
+            
+            if not questions:
+                # Fallback: split by common separators and create questions
                 content_style = ParagraphStyle('Content', parent=styles['Normal'], fontSize=11, spaceAfter=12)
-                story.append(Paragraph("Technical interview questions generation is in progress. Please review candidate qualifications manually.", content_style))
+                story.append(Paragraph("Technical Interview Questions", content_style))
+                story.append(Spacer(1, 10))
+                
+                # Split content into chunks and treat as questions
+                chunks = [chunk.strip() for chunk in clean_text.split('\n\n') if chunk.strip() and len(chunk.strip()) > 50]
+                for i, chunk in enumerate(chunks[:25], 1):
+                    if chunk:
+                        question_title = f"<b>Question {i}:</b>"
+                        story.append(Paragraph(question_title, content_style))
+                        # Escape any remaining problematic characters
+                        safe_content = chunk.replace('<', '&lt;').replace('>', '&gt;').replace('&', '&amp;')
+                        story.append(Paragraph(safe_content, content_style))
+                        story.append(Spacer(1, 10))
             else:
                 content_style = ParagraphStyle('Content', parent=styles['Normal'], fontSize=11, spaceAfter=12)
                 for i, (num, content) in enumerate(questions[:25]):  # Limit to 25 questions
                     question_title = f"<b>Question {num}:</b>"
                     story.append(Paragraph(question_title, content_style))
-                    story.append(Paragraph(content.strip(), content_style))
+                    # Clean and escape content
+                    safe_content = content.strip().replace('<', '&lt;').replace('>', '&gt;').replace('&', '&amp;')
+                    story.append(Paragraph(safe_content, content_style))
                     story.append(Spacer(1, 10))
             
             # Build PDF
