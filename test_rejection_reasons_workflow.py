@@ -9,7 +9,7 @@ import os
 from datetime import datetime
 
 # Get backend URL from environment
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://1df6fa45-a1cd-440f-b855-197dc27ed932.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://00a8e650-3105-4677-9117-76e2639bccac.preview.emergentagent.com')
 
 def test_rejection_reasons_workflow():
     """Test the complete rejection reasons workflow"""
