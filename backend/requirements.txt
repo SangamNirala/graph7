@@ -119,3 +119,4 @@ httplib2
 
 
 # PDF Generation Dependencies
+weasyprint>=62.3
