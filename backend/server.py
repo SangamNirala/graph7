@@ -6870,7 +6870,7 @@ MANDATORY HTML OUTPUT FORMAT:
             styles = getSampleStyleSheet()
             story = []
             
-            # Title
+            # Title - Using same styling as technical questions
             title_style = ParagraphStyle(
                 'EnhancedTitle',
                 parent=styles['Title'],
@@ -6878,14 +6878,14 @@ MANDATORY HTML OUTPUT FORMAT:
                 spaceAfter=30,
                 spaceBefore=10,
                 textColor=white,
-                backColor=HexColor('#8e44ad'),
+                backColor=HexColor('#2c3e50'),  # Same as technical questions
                 borderPadding=15,
                 alignment=1
             )
             story.append(Paragraph("🗣️ BEHAVIORAL INTERVIEW QUESTIONS", title_style))
             story.append(Spacer(1, 20))
             
-            # Job details
+            # Job details - Using same styling as technical questions
             current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             job_info_style = ParagraphStyle(
                 'JobInfo',
@@ -6893,7 +6893,7 @@ MANDATORY HTML OUTPUT FORMAT:
                 fontSize=12,
                 spaceAfter=6,
                 textColor=darkblue,
-                backColor=HexColor('#f4f2f7'),
+                backColor=HexColor('#ecf0f1'),  # Same as technical questions
                 borderPadding=10
             )
             
