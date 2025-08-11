@@ -5921,9 +5921,6 @@ function App() {
   const [validatedJob, setValidatedJob] = useState(null);
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
   
-  // Technical Interview Questions popup state
-  const [showTechnicalPopup, setShowTechnicalPopup] = useState(false);
-  const [technicalAnalysisId, setTechnicalAnalysisId] = useState(null);
   const [analysisJobTitle, setAnalysisJobTitle] = useState('');
   const [activeTab, setActiveTab] = useState('landing');
 
