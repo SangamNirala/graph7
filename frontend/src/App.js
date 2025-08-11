@@ -5001,6 +5001,49 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
           </div>
         </div>
       )}
+
+      {/* Behavioral Interview Questions Analysis Success Popup */}
+      {showBehavioralPopup && behavioralAnalysisId && (
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-cyan-900/90 to-teal-900/90 backdrop-blur-lg rounded-2xl border border-white/20 max-w-2xl w-full">
+            <div className="p-8 text-center">
+              <div className="text-6xl mb-4">🗣️</div>
+              <h2 className="text-3xl font-bold text-white mb-4">Behavioral Interview Questions Generated!</h2>
+              <p className="text-white/80 text-lg mb-6">
+                Your comprehensive behavioral interview questions have been successfully generated and are ready for download.
+              </p>
+              
+              <div className="bg-white/10 rounded-lg p-4 mb-6">
+                <p className="text-white/90 text-sm">
+                  <span className="font-semibold">Job Title:</span> {analysisJobTitle}
+                </p>
+              </div>
+              
+              <div className="space-x-4">
+                <button
+                  onClick={() => {
+                    setShowBehavioralPopup(false);
+                    setBehavioralAnalysisId(null);
+                    setActiveTab('analysis-result');
+                  }}
+                  className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-cyan-700 hover:to-teal-700 transition-all duration-300"
+                >
+                  View Results
+                </button>
+                <button
+                  onClick={() => {
+                    setShowBehavioralPopup(false);
+                    setBehavioralAnalysisId(null);
+                  }}
+                  className="bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold py-3 px-6 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-300"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
