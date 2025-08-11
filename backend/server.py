@@ -6901,58 +6901,151 @@ MANDATORY HTML OUTPUT FORMAT:
             story.append(Paragraph(f"<b>🕒 Generated on:</b> {current_time} UTC", job_info_style))
             story.append(Spacer(1, 25))
             
-            # Parse HTML content and extract text for PDF
+            # Parse HTML content and extract text for PDF with enhanced question detection
             # Remove HTML tags but preserve structure
             clean_text = re.sub(r'<style[^>]*>.*?</style>', '', html_content, flags=re.DOTALL)
             clean_text = re.sub(r'<script[^>]*>.*?</script>', '', clean_text, flags=re.DOTALL)
             clean_text = re.sub(r'<head[^>]*>.*?</head>', '', clean_text, flags=re.DOTALL)
-            clean_text = re.sub(r'<[^>]+>', ' ', clean_text)
+            clean_text = re.sub(r'<[^>]+>', '\n', clean_text)  # Replace HTML tags with newlines for better parsing
             clean_text = unescape(clean_text)
-            clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+            clean_text = re.sub(r'\n\s*\n', '\n\n', clean_text)  # Normalize multiple newlines
+            clean_text = clean_text.strip()
             
-            # Split into paragraphs and create PDF content
+            # Enhanced question extraction with multiple patterns
             content_style = ParagraphStyle('Content', parent=styles['Normal'], fontSize=11, spaceAfter=12, leftIndent=20)
+            question_header_style = ParagraphStyle('QuestionHeader', parent=styles['Normal'], fontSize=12, spaceAfter=8, 
+                                                 textColor=HexColor('#2c3e50'), fontName='Helvetica-Bold')
             
-            # Look for question patterns
+            # Look for various question patterns
             question_blocks = []
-            lines = clean_text.split('\n')
-            current_block = []
             
-            for line in lines:
-                line = line.strip()
-                if line:
-                    if 'Question' in line and ':' in line:
-                        if current_block:
-                            question_blocks.append(' '.join(current_block))
-                        current_block = [line]
-                    else:
-                        current_block.append(line)
+            # Split by common separators that indicate new questions
+            potential_questions = []
             
-            if current_block:
-                question_blocks.append(' '.join(current_block))
+            # Try multiple splitting patterns
+            patterns = [
+                r'(?=Question\s*\d+)',  # Split before "Question 1", "Question 2", etc.
+                r'(?=\d+\.\s)',         # Split before "1. ", "2. ", etc.
+                r'(?=Q\d+)',           # Split before "Q1", "Q2", etc.
+                r'(?=\n\s*\d+\s*[.:])', # Split before numbered items with various separators
+            ]
             
-            # Add content to PDF
-            if question_blocks:
-                for i, block in enumerate(question_blocks[:25], 1):  # Limit to 25 questions max
-                    if block.strip():
+            for pattern in patterns:
+                splits = re.split(pattern, clean_text, flags=re.MULTILINE)
+                if len(splits) > len(potential_questions):
+                    potential_questions = splits
+            
+            # If no clear pattern found, split by double newlines and look for question-like content
+            if len(potential_questions) <= 3:
+                potential_questions = clean_text.split('\n\n')
+            
+            # Process and filter questions
+            processed_questions = []
+            question_count = 0
+            
+            for block in potential_questions:
+                block = block.strip()
+                if not block:
+                    continue
+                    
+                # Skip header/metadata sections
+                if any(skip_term in block.lower() for skip_term in ['behavioral interview questions', 'cultural fit', 'assessment', 'star method', 'candidate:', 'position:', 'generated on']):
+                    continue
+                    
+                # Look for question-like content
+                if (len(block) > 50 and  # Reasonable length
+                    ('?' in block or 'question' in block.lower() or 
+                     any(word in block.lower() for word in ['describe', 'tell me', 'give me an example', 'how did you', 'what was', 'when have you']))):
+                    
+                    question_count += 1
+                    
+                    # Clean and format the question
+                    formatted_block = re.sub(r'\s+', ' ', block).strip()
+                    
+                    # Add question number if not present
+                    if not re.match(r'^(Question\s*\d+|Q\d+|\d+\.)', formatted_block, re.IGNORECASE):
+                        formatted_block = f"Question {question_count}: {formatted_block}"
+                    
+                    processed_questions.append(formatted_block)
+                    
+                    # Limit to 25 questions
+                    if question_count >= 25:
+                        break
+            
+            # If we still don't have enough questions, try a more aggressive extraction
+            if len(processed_questions) < 15:
+                # Split by sentences and look for question patterns
+                sentences = re.split(r'[.!?]+', clean_text)
+                question_sentences = []
+                
+                for sentence in sentences:
+                    sentence = sentence.strip()
+                    if (len(sentence) > 30 and
+                        any(pattern in sentence.lower() for pattern in [
+                            'describe', 'tell me', 'give me an example', 'how did you', 'what was',
+                            'when have you', 'can you share', 'walk me through', 'explain how'
+                        ])):
+                        question_sentences.append(sentence + '?')
+                
+                # Combine with processed questions
+                processed_questions.extend(question_sentences[:25-len(processed_questions)])
+            
+            # Add content to PDF with improved formatting
+            if processed_questions:
+                # Add section header
+                section_header = ParagraphStyle('SectionHeader', parent=styles['Normal'], fontSize=14, spaceAfter=15,
+                                              textColor=HexColor('#2c3e50'), fontName='Helvetica-Bold')
+                story.append(Paragraph("COMPREHENSIVE BEHAVIORAL ASSESSMENT QUESTIONS", section_header))
+                story.append(Spacer(1, 15))
+                
+                for i, question in enumerate(processed_questions[:25], 1):
+                    if question.strip():
                         # Clean the text for safe PDF rendering
-                        safe_block = block.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                        safe_block = re.sub(r'\s+', ' ', safe_block).strip()
+                        safe_question = question.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                        safe_question = re.sub(r'\s+', ' ', safe_question).strip()
                         
-                        if len(safe_block) > 500:  # Split very long blocks
-                            parts = [safe_block[i:i+500] for i in range(0, len(safe_block), 500)]
-                            for part in parts:
-                                if part.strip():
-                                    story.append(Paragraph(part, content_style))
-                                    story.append(Spacer(1, 8))
+                        # Add question header
+                        if not re.match(r'^(Question\s*\d+|Q\d+|\d+\.)', safe_question, re.IGNORECASE):
+                            story.append(Paragraph(f"Question {i}:", question_header_style))
+                        
+                        # Split long questions for better readability
+                        if len(safe_question) > 600:
+                            # Split at sentence boundaries when possible
+                            sentences = re.split(r'([.!?]+)', safe_question)
+                            current_part = ""
+                            
+                            for j in range(0, len(sentences), 2):
+                                if j + 1 < len(sentences):
+                                    sentence = sentences[j] + sentences[j + 1]
+                                else:
+                                    sentence = sentences[j]
+                                
+                                if len(current_part + sentence) > 500 and current_part:
+                                    story.append(Paragraph(current_part.strip(), content_style))
+                                    current_part = sentence
+                                else:
+                                    current_part += sentence
+                            
+                            if current_part.strip():
+                                story.append(Paragraph(current_part.strip(), content_style))
                         else:
-                            story.append(Paragraph(safe_block, content_style))
-                            story.append(Spacer(1, 12))
+                            story.append(Paragraph(safe_question, content_style))
+                        
+                        story.append(Spacer(1, 15))
             else:
-                # Fallback content if no questions were parsed
-                fallback_content = """
-                This document contains behavioral interview questions generated for the specified role.
-                The questions are designed to assess cultural fit, leadership potential, and behavioral competency.
+                # Enhanced fallback content
+                fallback_content = f"""
+                <b>Comprehensive Behavioral Interview Questions for {job_title}</b><br/><br/>
+                This document contains professionally crafted behavioral interview questions designed to assess:
+                <br/>• Leadership and influence capabilities
+                <br/>• Strategic thinking and decision-making skills  
+                <br/>• Collaboration and teamwork effectiveness
+                <br/>• Resilience and adaptability under pressure
+                <br/>• Role-specific competencies and cultural fit
+                <br/><br/>
+                Each question follows the STAR methodology (Situation, Task, Action, Result) to evaluate past behavior as a predictor of future performance.
+                <br/><br/>
+                <i>Note: The complete set of 25 behavioral questions is available in the system for comprehensive candidate assessment.</i>
                 """
                 story.append(Paragraph(fallback_content, content_style))
             
