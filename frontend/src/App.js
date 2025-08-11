@@ -4792,6 +4792,7 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                           {analysis.type === 'resume' && '🎯'}
                           {analysis.type === 'rejection' && '❌'}
                           {analysis.type === 'technical' && '💻'}
+                          {analysis.type === 'behavioral' && '🗣️'}
                           {' '}{analysis.job_title}
                         </h3>
                         <p className="text-gray-300 text-sm">
