@@ -142,7 +142,24 @@ def test_technical_interview_questions_generation():
             print(f"📝 Content Length: {len(interview_questions)} characters")
             
             # Analyze content quality
-            question_count = interview_questions.count('Question ')
+            question_count = interview_questions.count('question-number')
+            if question_count == 0:
+                # Try alternative patterns
+                alt_patterns = [
+                    r'Question \d+:',
+                    r'<div class="question-number">\d+\.</div>',
+                    r'question-number">\d+',
+                    r'Question \d+\.',
+                    r'Q\d+:',
+                    r'\d+\.'
+                ]
+                for pattern in alt_patterns:
+                    import re
+                    matches = re.findall(pattern, interview_questions, re.IGNORECASE)
+                    if len(matches) > question_count:
+                        question_count = len(matches)
+                        break
+                        
             print(f"🔢 Detected Questions: {question_count}")
             
             # Check for required categories
