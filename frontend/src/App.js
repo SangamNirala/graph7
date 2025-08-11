@@ -3463,10 +3463,11 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
   const fetchAllAnalyses = async () => {
     setAnalysesLoading(true);
     try {
-      // Fetch both resume analyses and rejection reasons analyses
-      const [resumeResponse, rejectionResponse] = await Promise.all([
+      // Fetch resume analyses, rejection reasons analyses, and technical interview questions analyses
+      const [resumeResponse, rejectionResponse, technicalResponse] = await Promise.all([
         fetch(`${API}/placement-preparation/resume-analyses`).catch(() => null),
-        fetch(`${API}/placement-preparation/rejection-reasons`).catch(() => null)
+        fetch(`${API}/placement-preparation/rejection-reasons`).catch(() => null),
+        fetch(`${API}/placement-preparation/technical-interview-questions`).catch(() => null)
       ]);
 
       let allAnalyses = [];
@@ -3483,6 +3484,13 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
         const rejectionData = await rejectionResponse.json();
         const rejectionAnalyses = rejectionData.analyses || [];
         allAnalyses = [...allAnalyses, ...rejectionAnalyses.map(analysis => ({...analysis, type: 'rejection'}))];
+      }
+
+      // Add technical interview questions analyses if available
+      if (technicalResponse && technicalResponse.ok) {
+        const technicalData = await technicalResponse.json();
+        const technicalAnalyses = technicalData.analyses || [];
+        allAnalyses = [...allAnalyses, ...technicalAnalyses.map(analysis => ({...analysis, type: 'technical'}))];
       }
 
       // Sort by creation date (newest first)
