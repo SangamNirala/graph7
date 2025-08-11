@@ -4506,7 +4506,7 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
               <div className="text-center py-8">
                 <div className="text-white text-lg">🔄 Loading analyses...</div>
               </div>
-            ) : allAnalyses.length === 0 && atsResults.length === 0 ? (
+            ) : allAnalyses.length === 0 && atsResults.length === 0 && rejectionResults.length === 0 && technicalResults.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-gray-400 mb-4">📄 No analyses available yet</div>
                 <p className="text-gray-300 mb-6">Start by analyzing a resume or calculating ATS scores in the Resume Analysis tab</p>
