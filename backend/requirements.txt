@@ -120,3 +120,4 @@ httplib2
 
 # PDF Generation Dependencies
 weasyprint>=62.3
+pyparsing==3.2.3
