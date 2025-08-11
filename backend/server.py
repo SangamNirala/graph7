@@ -6785,8 +6785,8 @@ MANDATORY HTML OUTPUT FORMAT:
     <title>Behavioral Interview Questions - {job_title}</title>
     <style>
         body {{ font-family: 'Calibri', Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }}
-        .header {{ text-align: center; border-bottom: 3px solid #8e44ad; padding-bottom: 20px; margin-bottom: 30px; }}
-        .title {{ font-size: 24pt; font-weight: bold; color: #8e44ad; margin-bottom: 10px; }}
+        .header {{ text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }}
+        .title {{ font-size: 24pt; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }}
         .subtitle {{ font-size: 14pt; color: #7f8c8d; font-style: italic; }}
         .error {{ background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0; }}
         .fallback {{ margin: 20px 0; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; }}
