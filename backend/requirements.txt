@@ -122,3 +122,4 @@ httplib2
 weasyprint>=62.3
 pyparsing==3.2.3
 google-api-python-client==2.178.0
+weasyprint==66.0
