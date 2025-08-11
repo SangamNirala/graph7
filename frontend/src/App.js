@@ -4823,6 +4823,7 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                         {analysis.type === 'resume' && 'Gap Analysis Preview'}
                         {analysis.type === 'rejection' && 'Rejection Reasons Preview'}
                         {analysis.type === 'technical' && 'Interview Questions Preview'}
+                        {analysis.type === 'behavioral' && 'Interview Questions Preview'}
                       </h4>
                       <div className="text-gray-300 text-sm max-h-32 overflow-y-auto">
                         {analysis.type === 'resume' && (
@@ -4839,6 +4840,11 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                           analysis.interview_questions?.length > 300
                             ? `${analysis.interview_questions.substring(0, 300)}...`
                             : analysis.interview_questions || 'Technical interview questions available in PDF'
+                        )}
+                        {analysis.type === 'behavioral' && (
+                          analysis.interview_questions?.length > 300
+                            ? `${analysis.interview_questions.substring(0, 300)}...`
+                            : analysis.interview_questions || 'Behavioral interview questions available in PDF'
                         )}
                       </div>
                     </div>
