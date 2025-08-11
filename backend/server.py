@@ -5177,6 +5177,15 @@ class TechnicalInterviewQuestionsAnalysis(BaseModel):
     pdf_path: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+class BehavioralInterviewQuestionsAnalysis(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_title: str
+    job_description: str
+    resume_content: str
+    interview_questions: str
+    pdf_path: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 @api_router.post("/placement-preparation/rejection-reasons")
 async def analyze_rejection_reasons(
     job_title: str = Form(...),
