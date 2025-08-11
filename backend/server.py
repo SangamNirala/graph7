@@ -6911,7 +6911,7 @@ MANDATORY HTML OUTPUT FORMAT:
             clean_text = re.sub(r'\n\s*\n', '\n\n', clean_text)  # Normalize multiple newlines
             clean_text = clean_text.strip()
             
-            # Enhanced question extraction with multiple patterns
+            # Enhanced question extraction with multiple patterns and improved formatting
             content_style = ParagraphStyle('Content', parent=styles['Normal'], fontSize=11, spaceAfter=12, leftIndent=20)
             question_header_style = ParagraphStyle('QuestionHeader', parent=styles['Normal'], fontSize=12, spaceAfter=8, 
                                                  textColor=HexColor('#2c3e50'), fontName='Helvetica-Bold')
@@ -6959,7 +6959,7 @@ MANDATORY HTML OUTPUT FORMAT:
                     
                     question_count += 1
                     
-                    # Clean and format the question
+                    # Clean and format the question with improved line breaks
                     formatted_block = re.sub(r'\s+', ' ', block).strip()
                     
                     # Add question number if not present
@@ -6990,7 +6990,7 @@ MANDATORY HTML OUTPUT FORMAT:
                 # Combine with processed questions
                 processed_questions.extend(question_sentences[:25-len(processed_questions)])
             
-            # Add content to PDF with improved formatting
+            # Add content to PDF with improved formatting and line breaks
             if processed_questions:
                 # Add section header
                 section_header = ParagraphStyle('SectionHeader', parent=styles['Normal'], fontSize=14, spaceAfter=15,
@@ -7008,43 +7008,63 @@ MANDATORY HTML OUTPUT FORMAT:
                         if not re.match(r'^(Question\s*\d+|Q\d+|\d+\.)', safe_question, re.IGNORECASE):
                             story.append(Paragraph(f"Question {i}:", question_header_style))
                         
-                        # Split long questions for better readability
-                        if len(safe_question) > 600:
-                            # Split at sentence boundaries when possible
-                            sentences = re.split(r'([.!?]+)', safe_question)
+                        # ENHANCED FORMATTING: Add proper line breaks after periods and question marks
+                        def format_text_with_breaks(text):
+                            """Add proper line breaks after sentences for better readability"""
+                            # Add line break after period followed by space and capital letter (new sentence)
+                            text = re.sub(r'(\.)(\s+)([A-Z])', r'\1<br/><br/>\3', text)
+                            # Add line break after question mark followed by space and capital letter
+                            text = re.sub(r'(\?)(\s+)([A-Z])', r'\1<br/><br/>\3', text)
+                            # Add line break after exclamation mark followed by space and capital letter
+                            text = re.sub(r'(\!)(\s+)([A-Z])', r'\1<br/><br/>\3', text)
+                            # Add line break after colon followed by space (for sub-points)
+                            text = re.sub(r'(:)(\s+)([A-Z])', r'\1<br/>\3', text)
+                            # Add line break before bullet points or dashes
+                            text = re.sub(r'(\s+)([-•*]\s+)', r'<br/>\2', text)
+                            return text
+                        
+                        # Apply enhanced formatting
+                        formatted_question = format_text_with_breaks(safe_question)
+                        
+                        # Split very long questions into multiple paragraphs for better readability
+                        if len(formatted_question) > 600:
+                            # Split at sentence boundaries when possible, maintaining line breaks
+                            sentences = re.split(r'(<br/>|<br/><br/>)', formatted_question)
                             current_part = ""
                             
-                            for j in range(0, len(sentences), 2):
-                                if j + 1 < len(sentences):
-                                    sentence = sentences[j] + sentences[j + 1]
-                                else:
-                                    sentence = sentences[j]
-                                
+                            for sentence in sentences:
+                                if sentence in ['<br/>', '<br/><br/>']:
+                                    current_part += sentence
+                                    continue
+                                    
                                 if len(current_part + sentence) > 500 and current_part:
-                                    story.append(Paragraph(current_part.strip(), content_style))
+                                    # Clean HTML tags for PDF rendering
+                                    clean_part = current_part.replace('<br/><br/>', '<br/><br/>').replace('<br/>', '<br/>')
+                                    story.append(Paragraph(clean_part.strip(), content_style))
+                                    story.append(Spacer(1, 8))
                                     current_part = sentence
                                 else:
                                     current_part += sentence
                             
                             if current_part.strip():
-                                story.append(Paragraph(current_part.strip(), content_style))
+                                clean_part = current_part.replace('<br/><br/>', '<br/><br/>').replace('<br/>', '<br/>')
+                                story.append(Paragraph(clean_part.strip(), content_style))
                         else:
-                            story.append(Paragraph(safe_question, content_style))
+                            # For shorter questions, apply the formatting directly
+                            story.append(Paragraph(formatted_question, content_style))
                         
-                        story.append(Spacer(1, 15))
+                        story.append(Spacer(1, 18))  # Increased spacing between questions
             else:
                 # Enhanced fallback content
                 fallback_content = f"""
                 <b>Comprehensive Behavioral Interview Questions for {job_title}</b><br/><br/>
-                This document contains professionally crafted behavioral interview questions designed to assess:
-                <br/>• Leadership and influence capabilities
-                <br/>• Strategic thinking and decision-making skills  
-                <br/>• Collaboration and teamwork effectiveness
-                <br/>• Resilience and adaptability under pressure
-                <br/>• Role-specific competencies and cultural fit
-                <br/><br/>
-                Each question follows the STAR methodology (Situation, Task, Action, Result) to evaluate past behavior as a predictor of future performance.
-                <br/><br/>
+                This document contains professionally crafted behavioral interview questions designed to assess:<br/>
+                • Leadership and influence capabilities<br/>
+                • Strategic thinking and decision-making skills<br/>  
+                • Collaboration and teamwork effectiveness<br/>
+                • Resilience and adaptability under pressure<br/>
+                • Role-specific competencies and cultural fit<br/><br/>
+                Each question follows the STAR methodology (Situation, Task, Action, Result) to evaluate past behavior as a predictor of future performance.<br/><br/>
                 <i>Note: The complete set of 25 behavioral questions is available in the system for comprehensive candidate assessment.</i>
                 """
                 story.append(Paragraph(fallback_content, content_style))
