@@ -4605,6 +4605,49 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                   </div>
                 ))}
                 
+                {/* Technical Interview Questions Results */}
+                {technicalResults.map((technicalResult) => (
+                  <div key={technicalResult.id} className="bg-gradient-to-r from-orange-900/50 to-yellow-900/50 rounded-lg p-6 border border-orange-400/30">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-white flex items-center">
+                          💻 Technical Interview Questions - {technicalResult.jobTitle}
+                        </h3>
+                        <p className="text-gray-300 text-sm">
+                          Generated: {new Date(technicalResult.timestamp).toLocaleDateString()} at{' '}
+                          {new Date(technicalResult.timestamp).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => downloadTechnicalInterviewQuestionsPDF(technicalResult.id, technicalResult.jobTitle)}
+                        className="bg-gradient-to-r from-orange-600 to-yellow-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-orange-700 hover:to-yellow-700 transition-all duration-300 flex items-center"
+                      >
+                        📄 Download Interview Questions
+                      </button>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-4 mb-4">
+                      <h4 className="text-lg font-semibold text-white mb-2">Job Requirements</h4>
+                      <p className="text-gray-300 text-sm">
+                        {technicalResult.jobDescription.length > 200 
+                          ? `${technicalResult.jobDescription.substring(0, 200)}...`
+                          : technicalResult.jobDescription
+                        }
+                      </p>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h4 className="text-lg font-semibold text-white mb-2">Interview Questions Preview</h4>
+                      <div className="text-gray-300 text-sm max-h-32 overflow-y-auto">
+                        {technicalResult.interviewQuestions?.length > 400 
+                          ? `${technicalResult.interviewQuestions.substring(0, 400)}...`
+                          : technicalResult.interviewQuestions || 'Comprehensive technical interview questions available in PDF download'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
                 {/* Regular Analysis Results */}
                 {allAnalyses.map((analysis) => (
                   <div key={analysis.id} className="bg-white/10 rounded-lg p-6 border border-white/20">
