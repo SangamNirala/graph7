@@ -121,3 +121,4 @@ httplib2
 # PDF Generation Dependencies
 weasyprint>=62.3
 pyparsing==3.2.3
+google-api-python-client==2.178.0
