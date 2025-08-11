@@ -6583,14 +6583,14 @@ MANDATORY HTML OUTPUT FORMAT:
         
         .assessment-guide {{
             margin-top: 30px;
-            border-top: 2px solid #8e44ad;
+            border-top: 2px solid #2c3e50;
             padding-top: 20px;
         }}
         
         .guide-title {{
             font-size: 14pt;
             font-weight: bold;
-            color: #8e44ad;
+            color: #2c3e50;
             margin-bottom: 15px;
         }}
         
