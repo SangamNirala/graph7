@@ -4500,10 +4500,11 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                           {technicalLoading ? '⏳ Generating...' : '💻 Technical Interview Questions'}
                         </button>
                         <button
-                          className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-cyan-700 hover:to-teal-700 transition-all duration-300 text-sm"
-                          onClick={() => {/* TODO: Add functionality */}}
+                          className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-cyan-700 hover:to-teal-700 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={handleBehavioralInterviewQuestionsAnalysis}
+                          disabled={behavioralLoading}
                         >
-                          🗣️ Behavioural Interview Questions
+                          {behavioralLoading ? '⏳ Generating...' : '🗣️ Behavioural Interview Questions'}
                         </button>
                       </div>
                     </div>
