@@ -6015,11 +6015,11 @@ You MUST generate exactly 25 technical questions distributed as follows:
 </body>
 </html>"""
         
-        # Convert HTML to PDF using weasyprint or similar
+        
+        # Convert HTML to PDF using weasyprint for better quality
         try:
             # Generate PDF from HTML using weasyprint
             import weasyprint
-            from io import BytesIO
             import uuid
             
             # Create unique filename
@@ -6027,20 +6027,39 @@ You MUST generate exactly 25 technical questions distributed as follows:
             pdf_filename = f"technical_interview_questions_{analysis_id[:8]}.pdf"
             pdf_path = f"/tmp/{pdf_filename}"
             
-            # Generate PDF from HTML
-            weasyprint.HTML(string=html_content).write_pdf(pdf_path)
-            
-        except ImportError:
-            # Fallback to reportlab if weasyprint is not available
-            logging.warning("weasyprint not available, using reportlab fallback")
+            # Convert HTML to PDF with proper styling
+            try:
+                weasyprint.HTML(string=html_content).write_pdf(pdf_path)
+                logging.info(f"Successfully generated PDF using weasyprint: {pdf_path}")
+            except Exception as weasy_error:
+                logging.warning(f"Weasyprint error: {weasy_error}, trying pdfkit fallback")
+                # Try pdfkit as fallback
+                import pdfkit
+                options = {
+                    'page-size': 'A4',
+                    'margin-top': '0.75in',
+                    'margin-right': '0.75in',
+                    'margin-bottom': '0.75in',
+                    'margin-left': '0.75in',
+                    'encoding': "UTF-8",
+                    'no-outline': None,
+                    'enable-local-file-access': None
+                }
+                pdfkit.from_string(html_content, pdf_path, options=options)
+                logging.info(f"Successfully generated PDF using pdfkit: {pdf_path}")
+                
+        except ImportError as import_error:
+            logging.warning(f"HTML to PDF libraries not available: {import_error}, using reportlab fallback")
+            # Final fallback to reportlab with HTML parsing
             from reportlab.pdfgen import canvas
             from reportlab.lib.pagesizes import letter, A4
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
             from reportlab.lib.units import inch
-            from reportlab.lib.colors import HexColor, black, white, darkblue
+            from reportlab.lib.colors import HexColor, white, darkblue
             import uuid
             import re
+            from html import unescape
             
             # Create unique filename
             analysis_id = str(uuid.uuid4())
@@ -6048,14 +6067,7 @@ You MUST generate exactly 25 technical questions distributed as follows:
             pdf_path = f"/tmp/{pdf_filename}"
             
             # Create PDF document
-            doc = SimpleDocTemplate(
-                pdf_path, 
-                pagesize=A4,
-                rightMargin=50,
-                leftMargin=50,
-                topMargin=50,
-                bottomMargin=50
-            )
+            doc = SimpleDocTemplate(pdf_path, pagesize=A4, rightMargin=50, leftMargin=50, topMargin=50, bottomMargin=50)
             styles = getSampleStyleSheet()
             story = []
             
@@ -6067,9 +6079,9 @@ You MUST generate exactly 25 technical questions distributed as follows:
                 spaceAfter=30,
                 spaceBefore=10,
                 textColor=white,
-                backColor=HexColor('#FF8C00'),  # Orange background
+                backColor=HexColor('#2c3e50'),
                 borderPadding=15,
-                alignment=1  # Center alignment
+                alignment=1
             )
             story.append(Paragraph("💻 TECHNICAL INTERVIEW QUESTIONS", title_style))
             story.append(Spacer(1, 20))
@@ -6082,7 +6094,7 @@ You MUST generate exactly 25 technical questions distributed as follows:
                 fontSize=12,
                 spaceAfter=6,
                 textColor=darkblue,
-                backColor=HexColor('#FFF8DC'),  # Light orange background
+                backColor=HexColor('#ecf0f1'),
                 borderPadding=10
             )
             
@@ -6090,75 +6102,93 @@ You MUST generate exactly 25 technical questions distributed as follows:
             story.append(Paragraph(f"<b>🕒 Generated on:</b> {current_time} UTC", job_info_style))
             story.append(Spacer(1, 25))
             
-            # Clean HTML content and extract text
-            import html
-            import re
+            # Parse HTML content and extract text for PDF
+            # Remove HTML tags but preserve structure
+            clean_text = re.sub(r'<style[^>]*>.*?</style>', '', html_content, flags=re.DOTALL)
+            clean_text = re.sub(r'<script[^>]*>.*?</script>', '', clean_text, flags=re.DOTALL)
+            clean_text = re.sub(r'<head[^>]*>.*?</head>', '', clean_text, flags=re.DOTALL)
+            clean_text = re.sub(r'<[^>]+>', ' ', clean_text)
+            clean_text = unescape(clean_text)
+            clean_text = re.sub(r'\s+', ' ', clean_text).strip()
             
-            # Remove HTML tags and decode HTML entities
-            clean_text = re.sub(r'<[^>]+>', '', interview_questions_text)
-            clean_text = html.unescape(clean_text)
+            # Split into paragraphs and create PDF content
+            content_style = ParagraphStyle('Content', parent=styles['Normal'], fontSize=11, spaceAfter=12, leftIndent=20)
             
-            # Parse questions from cleaned text
-            question_pattern = r'Question (\d+):(.*?)(?=Question \d+:|$)'
-            questions = re.findall(question_pattern, clean_text, re.DOTALL)
+            # Look for question patterns
+            question_blocks = []
+            lines = clean_text.split('\n')
+            current_block = []
             
-            if not questions:
-                # Try alternative parsing patterns
-                alt_patterns = [
-                    r'(\d+)\.\s*(.*?)(?=\d+\.|$)',  # Numbered list format
-                    r'Q(\d+):(.*?)(?=Q\d+:|$)',     # Q1: format
-                    r'QUESTION\s*(\d+):(.*?)(?=QUESTION\s*\d+:|$)'  # QUESTION 1: format
-                ]
-                
-                for pattern in alt_patterns:
-                    questions = re.findall(pattern, clean_text, re.DOTALL | re.IGNORECASE)
-                    if questions:
-                        break
+            for line in lines:
+                line = line.strip()
+                if line:
+                    if 'Question' in line and ':' in line:
+                        if current_block:
+                            question_blocks.append(' '.join(current_block))
+                        current_block = [line]
+                    else:
+                        current_block.append(line)
             
-            if not questions:
-                # Fallback: split by common separators and create questions
-                content_style = ParagraphStyle('Content', parent=styles['Normal'], fontSize=11, spaceAfter=12)
-                story.append(Paragraph("Technical Interview Questions", content_style))
-                story.append(Spacer(1, 10))
-                
-                # Split content into chunks and treat as questions
-                chunks = [chunk.strip() for chunk in clean_text.split('\n\n') if chunk.strip() and len(chunk.strip()) > 50]
-                for i, chunk in enumerate(chunks[:25], 1):
-                    if chunk:
-                        question_title = f"<b>Question {i}:</b>"
-                        story.append(Paragraph(question_title, content_style))
-                        # Escape any remaining problematic characters
-                        safe_content = chunk.replace('<', '&lt;').replace('>', '&gt;').replace('&', '&amp;')
-                        story.append(Paragraph(safe_content, content_style))
-                        story.append(Spacer(1, 10))
+            if current_block:
+                question_blocks.append(' '.join(current_block))
+            
+            # Add content to PDF
+            if question_blocks:
+                for i, block in enumerate(question_blocks[:25], 1):  # Limit to 25 questions max
+                    if block.strip():
+                        # Clean the text for safe PDF rendering
+                        safe_block = block.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                        safe_block = re.sub(r'\s+', ' ', safe_block).strip()
+                        
+                        if len(safe_block) > 500:  # Split very long blocks
+                            parts = [safe_block[i:i+500] for i in range(0, len(safe_block), 500)]
+                            for part in parts:
+                                if part.strip():
+                                    story.append(Paragraph(part, content_style))
+                                    story.append(Spacer(1, 8))
+                        else:
+                            story.append(Paragraph(safe_block, content_style))
+                            story.append(Spacer(1, 12))
             else:
-                content_style = ParagraphStyle('Content', parent=styles['Normal'], fontSize=11, spaceAfter=12)
-                for i, (num, content) in enumerate(questions[:25]):  # Limit to 25 questions
-                    question_title = f"<b>Question {num}:</b>"
-                    story.append(Paragraph(question_title, content_style))
-                    # Clean and escape content
-                    safe_content = content.strip().replace('<', '&lt;').replace('>', '&gt;').replace('&', '&amp;')
-                    story.append(Paragraph(safe_content, content_style))
-                    story.append(Spacer(1, 10))
+                # Fallback content if no questions were parsed
+                fallback_content = """
+                This document contains technical interview questions generated for the specified role.
+                The questions are designed to assess technical competency and role alignment.
+                """
+                story.append(Paragraph(fallback_content, content_style))
             
             # Build PDF
-            doc.build(story)
+            try:
+                doc.build(story)
+                logging.info(f"Successfully generated PDF using reportlab fallback: {pdf_path}")
+            except Exception as build_error:
+                logging.error(f"PDF build error: {build_error}")
+                # Create minimal PDF as last resort
+                c = canvas.Canvas(pdf_path, pagesize=A4)
+                c.drawString(100, 750, f"Technical Interview Questions - {job_title}")
+                c.drawString(100, 720, f"Generated on: {current_time}")
+                c.drawString(100, 680, "Technical interview questions are available in the system.")
+                c.save()
+                logging.info(f"Created minimal fallback PDF: {pdf_path}")
         
         except Exception as pdf_error:
             logging.error(f"PDF generation error: {pdf_error}")
-            # Create a simple text-based PDF as final fallback
+            # Create minimal PDF as final fallback
             from reportlab.pdfgen import canvas
-            from reportlab.lib.pagesizes import letter
+            from reportlab.lib.pagesizes import A4
+            import uuid
             
             analysis_id = str(uuid.uuid4())
             pdf_filename = f"technical_interview_questions_{analysis_id[:8]}.pdf"
             pdf_path = f"/tmp/{pdf_filename}"
             
-            c = canvas.Canvas(pdf_path, pagesize=letter)
+            c = canvas.Canvas(pdf_path, pagesize=A4)
+            current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             c.drawString(100, 750, f"Technical Interview Questions - {job_title}")
-            c.drawString(100, 720, f"Generated on: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
-            c.drawString(100, 680, "Interview questions generation in progress...")
+            c.drawString(100, 720, f"Generated on: {current_time}")
+            c.drawString(100, 680, "Error generating detailed questions. Please try again.")
             c.save()
+            logging.info(f"Created error fallback PDF: {pdf_path}")
         
         # Store analysis in database
         technical_analysis = TechnicalInterviewQuestionsAnalysis(
