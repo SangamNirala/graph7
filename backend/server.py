@@ -5910,7 +5910,16 @@ You MUST generate exactly 25 technical questions distributed as follows:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
             
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            # Use more detailed model configuration for better results
+            model = genai.GenerativeModel(
+                model_name='gemini-1.5-flash',
+                generation_config={
+                    'temperature': 0.7,
+                    'top_p': 0.8,
+                    'top_k': 40,
+                    'max_output_tokens': 8192,  # Increased for complete responses
+                }
+            )
             response = model.generate_content(technical_interview_prompt)
             
             interview_questions_text = response.text
@@ -5920,41 +5929,89 @@ You MUST generate exactly 25 technical questions distributed as follows:
             html_match = re.search(r'```html(.*?)```', interview_questions_text, re.DOTALL)
             if html_match:
                 html_content = html_match.group(1).strip()
+                logging.info(f"Successfully extracted HTML content: {len(html_content)} characters")
             else:
-                # If no HTML block found, use the entire response as HTML
-                html_content = interview_questions_text
-                
-        except Exception as e:
-            logging.error(f"Gemini API error: {e}")
-            # Fallback HTML if Gemini fails
-            html_content = f"""<!DOCTYPE html>
+                # If no HTML block found, check if the entire response is HTML
+                if '<html' in interview_questions_text.lower() and '</html>' in interview_questions_text.lower():
+                    html_content = interview_questions_text
+                    logging.info(f"Using full response as HTML: {len(html_content)} characters")
+                else:
+                    # Create proper HTML from text response if needed
+                    # Process text to create proper HTML structure
+                    processed_text = interview_questions_text.replace('Question ', '<div class="question-block"><div class="question-number">Question ')
+                    processed_text = processed_text.replace('Context:', '</div><div class="context">Context:')
+                    processed_text = processed_text.replace('Follow-up:', '</div><div class="follow-up">Follow-up:')
+                    processed_text = processed_text.replace('\n\n', '</div></div>\n\n')
+                    
+                    html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Technical Interview Questions</title>
+    <title>Technical Interview Questions - {job_title}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
-        .header {{ text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }}
-        .title {{ font-size: 24pt; font-weight: bold; color: #333; }}
-        .question-item {{ margin-bottom: 20px; padding: 15px; border-left: 4px solid #007bff; }}
-        .question-number {{ font-weight: bold; color: #007bff; }}
+        body {{ font-family: 'Calibri', Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }}
+        .header {{ text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }}
+        .title {{ font-size: 24pt; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }}
+        .subtitle {{ font-size: 14pt; color: #7f8c8d; font-style: italic; }}
+        .content {{ margin: 20px 0; font-size: 11pt; line-height: 1.4; }}
+        .question-block {{ margin-bottom: 20px; padding: 15px; border-left: 4px solid #3498db; background: #f8f9fa; }}
+        .question-number {{ font-weight: bold; color: #3498db; font-size: 12pt; }}
+        .question-text {{ margin: 8px 0; }}
+        .context {{ font-style: italic; color: #7f8c8d; margin: 5px 0; font-size: 10pt; }}
+        .follow-up {{ color: #27ae60; font-weight: 500; margin: 5px 0; font-size: 10pt; }}
     </style>
 </head>
 <body>
     <div class="header">
         <div class="title">Technical Interview Questions</div>
-        <div>Position: {job_title}</div>
+        <div class="subtitle">{job_title} Position Assessment</div>
     </div>
-    
-    <div class="question-item">
-        <div class="question-number">Question 1:</div>
-        <div>Manual technical interview question generation required due to API limitations.</div>
-        <div><em>Context: Unable to generate automated questions.</em></div>
-        <div><strong>Follow-up:</strong> Please review candidate background manually.</div>
+    <div class="content">
+        {processed_text}
     </div>
-    
-    <p><em>Note: Technical interview questions could not be automatically generated. Please conduct manual review of candidate qualifications.</em></p>
+</body>
+</html>"""
+                    logging.info(f"Created HTML wrapper for text response: {len(html_content)} characters")
+                
+        except Exception as e:
+            logging.error(f"Gemini API error: {e}")
+            # Enhanced fallback HTML with better structure
+            html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Interview Questions - {job_title}</title>
+    <style>
+        body {{ font-family: 'Calibri', Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }}
+        .header {{ text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }}
+        .title {{ font-size: 24pt; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }}
+        .subtitle {{ font-size: 14pt; color: #7f8c8d; font-style: italic; }}
+        .error {{ background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+        .fallback {{ margin: 20px 0; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Technical Interview Questions</div>
+        <div class="subtitle">{job_title} Position Assessment</div>
+    </div>
+    <div class="error">
+        <strong>AI Generation Error:</strong> Unable to generate automated technical interview questions due to API limitations.
+    </div>
+    <div class="fallback">
+        <strong>Recommended Action:</strong> Please conduct manual review of candidate qualifications and prepare role-specific technical questions based on the job requirements and resume content.
+        <br><br>
+        <strong>Key Areas to Focus On:</strong>
+        <ul>
+            <li>Technical skills mentioned in resume vs job requirements</li>
+            <li>Problem-solving approach and methodology</li>
+            <li>Experience with relevant technologies and frameworks</li>
+            <li>System design and architecture understanding</li>
+            <li>Code quality and best practices knowledge</li>
+        </ul>
+    </div>
 </body>
 </html>"""
         
