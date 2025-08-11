@@ -7139,24 +7139,44 @@ MANDATORY HTML OUTPUT FORMAT:
                         # Apply enhanced formatting to the question
                         formatted_question = format_text_with_breaks(question_text)
                         
-                        # Clean HTML entities for safe PDF rendering but restore our formatting tags
-                        safe_question = formatted_question.replace('&lt;br/&gt;', '<br/>').replace('&lt;b&gt;', '<b>').replace('&lt;/b&gt;', '</b>')
-                        safe_question = safe_question.replace('&lt;i&gt;', '<i>').replace('&lt;/i&gt;', '</i>')
+                        # Clean and safely format the question text for PDF rendering
+                        # Remove any malformed HTML tags and clean the content
+                        clean_question = re.sub(r'<[^>]*>', '', formatted_question)  # Remove all HTML tags first
+                        clean_question = re.sub(r'\s+', ' ', clean_question).strip()  # Normalize whitespace
                         
-                        # Split content by formatting for proper styling
-                        content_parts = safe_question.split('<br/>')
-                        for i, part in enumerate(content_parts):
-                            if part.strip():
-                                if i == 0:  # First part is usually the main question
-                                    story.append(Paragraph(part.strip(), question_content_style))
-                                elif 'Assessment Focus:' in part:
-                                    story.append(Paragraph(part.strip(), assessment_style))
-                                elif 'Follow-up Probes:' in part:
-                                    story.append(Paragraph(part.strip(), assessment_style))
-                                elif part.strip().startswith('•'):
-                                    story.append(Paragraph(part.strip(), probes_style))
-                                else:
-                                    story.append(Paragraph(part.strip(), question_content_style))
+                        # Now apply safe formatting without HTML tags for reportlab
+                        # Split content by logical sections for proper styling
+                        content_parts = clean_question.split('Assessment Focus:')
+                        
+                        # Main question part
+                        main_question = content_parts[0].strip()
+                        if main_question:
+                            story.append(Paragraph(main_question, question_content_style))
+                        
+                        # Assessment and probes part
+                        if len(content_parts) > 1:
+                            remaining_content = content_parts[1].strip()
+                            
+                            # Split assessment from probes
+                            if 'Follow-up Probes:' in remaining_content:
+                                assessment_and_probes = remaining_content.split('Follow-up Probes:', 1)
+                                
+                                # Assessment section
+                                if assessment_and_probes[0].strip():
+                                    story.append(Paragraph(f"Assessment Focus: {assessment_and_probes[0].strip()}", assessment_style))
+                                
+                                # Probes section
+                                if len(assessment_and_probes) > 1 and assessment_and_probes[1].strip():
+                                    story.append(Paragraph("Follow-up Probes:", assessment_style))
+                                    # Split individual probes
+                                    probes = assessment_and_probes[1].strip()
+                                    probe_lines = [line.strip() for line in probes.split('•') if line.strip()]
+                                    for probe in probe_lines:
+                                        if probe:
+                                            story.append(Paragraph(f"• {probe}", probes_style))
+                            else:
+                                # Just assessment, no probes
+                                story.append(Paragraph(f"Assessment Focus: {remaining_content}", assessment_style))
                         
                         # Add extra spacing between questions
                         story.append(Spacer(1, 25))
