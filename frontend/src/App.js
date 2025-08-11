@@ -3504,15 +3504,32 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
     }
   };
 
-  const downloadAnalysisPDF = async (analysisId, jobTitle) => {
+  const downloadAnalysisPDF = async (analysis) => {
     try {
-      const response = await fetch(`${API}/placement-preparation/resume-analysis/${analysisId}/download`);
+      let response;
+      let filename;
+
+      // Determine the correct endpoint and filename based on analysis type
+      if (analysis.type === 'resume') {
+        response = await fetch(`${API}/placement-preparation/resume-analysis/${analysis.id}/download`);
+        filename = `resume_analysis_${analysis.job_title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      } else if (analysis.type === 'rejection') {
+        response = await fetch(`${API}/placement-preparation/rejection-reasons/${analysis.id}/download`);
+        filename = `rejection_reasons_${analysis.job_title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      } else if (analysis.type === 'technical') {
+        response = await fetch(`${API}/placement-preparation/technical-interview-questions/${analysis.id}/download`);
+        filename = `technical_interview_questions_${analysis.job_title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      } else {
+        alert('Unknown analysis type');
+        return;
+      }
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `resume_analysis_${jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
