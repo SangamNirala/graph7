@@ -4611,7 +4611,10 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h3 className="text-xl font-bold text-white flex items-center">
-                          🎯 {analysis.job_title}
+                          {analysis.type === 'resume' && '🎯'}
+                          {analysis.type === 'rejection' && '❌'}
+                          {analysis.type === 'technical' && '💻'}
+                          {' '}{analysis.job_title}
                         </h3>
                         <p className="text-gray-300 text-sm">
                           Created: {new Date(analysis.created_at).toLocaleDateString()} at{' '}
