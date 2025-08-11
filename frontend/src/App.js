@@ -3782,6 +3782,80 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
     }
   };
 
+  // Behavioral Interview Questions Analysis Functions
+  const handleBehavioralInterviewQuestionsAnalysis = async () => {
+    // Validation
+    if (!analysisJobTitle.trim() || !analysisJobDescription.trim() || !analysisResumeFile) {
+      alert('Please fill in the job title, job description, and upload a resume before generating behavioral interview questions.');
+      return;
+    }
+
+    setBehavioralLoading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('job_title', analysisJobTitle);
+      formData.append('job_description', analysisJobDescription);
+      formData.append('resume', analysisResumeFile);
+
+      const response = await fetch(`${API}/placement-preparation/behavioral-interview-questions`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Add to results list
+        const newResult = {
+          id: data.analysis_id,
+          jobTitle: analysisJobTitle,
+          jobDescription: analysisJobDescription,
+          interviewQuestions: data.interview_questions,
+          pdfFilename: data.pdf_filename,
+          timestamp: new Date().toISOString()
+        };
+        
+        setBehavioralResults(prev => [newResult, ...prev]);
+        setBehavioralAnalysisId(data.analysis_id);
+        
+        // Show popup
+        setShowBehavioralPopup(true);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to generate behavioral interview questions: ${errorData.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Behavioral interview questions analysis error:', err);
+      alert('Error generating behavioral interview questions. Please try again.');
+    } finally {
+      setBehavioralLoading(false);
+    }
+  };
+
+  const downloadBehavioralInterviewQuestionsPDF = async (analysisId, jobTitle) => {
+    try {
+      const response = await fetch(`${API}/placement-preparation/behavioral-interview-questions/${analysisId}/download`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `behavioral_interview_questions_${jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        alert('Failed to download behavioral interview questions PDF');
+      }
+    } catch (err) {
+      console.error('Behavioral interview questions PDF download error:', err);
+      alert('Error downloading behavioral interview questions PDF');
+    }
+  };
+
   // Effect to load analyses when switching to analysis result tab
   React.useEffect(() => {
     if (activeTab === 'analysis-result') {
