@@ -5942,7 +5942,6 @@ function App() {
               </div>
             </div>
           )}
-        </div>
         </AccessibilityProvider>
       </I18nProvider>
     </PWAProvider>
