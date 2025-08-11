@@ -7012,155 +7012,158 @@ MANDATORY HTML OUTPUT FORMAT:
                 story.append(Paragraph("COMPREHENSIVE BEHAVIORAL ASSESSMENT QUESTIONS", section_header))
                 story.append(Spacer(1, 15))
                 
-                for i, question in enumerate(processed_questions[:25], 1):
-                    if question.strip():
-                        # Clean the text for safe PDF rendering
-                        safe_question = question.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                        safe_question = re.sub(r'\s+', ' ', safe_question).strip()
+                # Create enhanced styles for better formatting
+                question_number_style = ParagraphStyle('QuestionNumber', parent=styles['Normal'], fontSize=12, spaceAfter=4,
+                                                     textColor=HexColor('#2c3e50'), fontName='Helvetica-Bold')
+                question_content_style = ParagraphStyle('QuestionContent', parent=styles['Normal'], fontSize=11, spaceAfter=6,
+                                                       leftIndent=20, rightIndent=20, alignment=0)
+                assessment_style = ParagraphStyle('Assessment', parent=styles['Normal'], fontSize=10, spaceAfter=4,
+                                                leftIndent=30, rightIndent=20, textColor=HexColor('#555555'))
+                probes_style = ParagraphStyle('Probes', parent=styles['Normal'], fontSize=10, spaceAfter=8,
+                                            leftIndent=40, rightIndent=20, textColor=HexColor('#27ae60'))
+                subsection_header_style = ParagraphStyle('SubsectionHeader', parent=styles['Normal'], fontSize=13, spaceAfter=10, spaceBefore=20,
+                                                       textColor=HexColor('#2c3e50'), fontName='Helvetica-Bold', backColor=HexColor('#ecf0f1'), borderPadding=8)
+                
+                # ENHANCED FORMATTING: Add proper line breaks and structure formatting
+                def format_text_with_breaks(text):
+                    """Add proper line breaks and structure for better readability"""
+                    
+                    # First, identify and separate different parts of the question
+                    # Look for "Assesses" pattern which indicates the assessment section
+                    assessment_pattern = r'(\?\s*)(Assesses [^.]*\.)'
+                    assessment_match = re.search(assessment_pattern, text)
+                    
+                    # Look for "Follow-up Probes" pattern
+                    probes_pattern = r'(Follow-up Probes?:\s*)(.*?)$'
+                    probes_match = re.search(probes_pattern, text, re.DOTALL)
+                    
+                    # Separate question, assessment, and probes
+                    if assessment_match:
+                        question_text = text[:assessment_match.start(2)].strip()
                         
-                        # Add question header
-                        if not re.match(r'^(Question\s*\d+|Q\d+|\d+\.)', safe_question, re.IGNORECASE):
-                            story.append(Paragraph(f"Question {i}:", question_header_style))
-                        
-                        # ENHANCED FORMATTING: Add proper line breaks and structure formatting
-                        def format_text_with_breaks(text):
-                            """Add proper line breaks and structure for better readability"""
+                        if probes_match:
+                            assessment_text = text[assessment_match.start(2):probes_match.start(1)].strip()
+                            probes_text = text[probes_match.start():]
+                        else:
+                            assessment_text = text[assessment_match.start(2):].strip()
+                            probes_text = ""
+                    else:
+                        # If no clear assessment pattern, just split on question marks
+                        parts = text.split('?', 1)
+                        if len(parts) > 1:
+                            question_text = parts[0] + '?'
+                            remaining = parts[1].strip()
                             
-                            # First, identify and separate different parts of the question
-                            # Look for "Assesses" pattern which indicates the assessment section
-                            assessment_pattern = r'(\?\s*)(Assesses [^.]*\.)'
-                            assessment_match = re.search(assessment_pattern, text)
-                            
-                            # Look for "Follow-up Probes" pattern
-                            probes_pattern = r'(Follow-up Probes?:\s*)(.*?)$'
-                            probes_match = re.search(probes_pattern, text, re.DOTALL)
-                            
-                            # Separate question, assessment, and probes
-                            if assessment_match:
-                                question_text = text[:assessment_match.start(2)].strip()
-                                
-                                if probes_match:
-                                    assessment_text = text[assessment_match.start(2):probes_match.start(1)].strip()
-                                    probes_text = text[probes_match.start():]
-                                else:
-                                    assessment_text = text[assessment_match.start(2):].strip()
-                                    probes_text = ""
+                            if probes_match:
+                                assessment_text = remaining[:probes_match.start(1) - len(parts[0]) - 1].strip()
+                                probes_text = remaining[probes_match.start(1) - len(parts[0]) - 1:]
                             else:
-                                # If no clear assessment pattern, just split on question marks
-                                parts = text.split('?', 1)
-                                if len(parts) > 1:
-                                    question_text = parts[0] + '?'
-                                    remaining = parts[1].strip()
-                                    
-                                    if probes_match:
-                                        assessment_text = remaining[:probes_match.start(1) - len(parts[0]) - 1].strip()
-                                        probes_text = remaining[probes_match.start(1) - len(parts[0]) - 1:]
-                                    else:
-                                        assessment_text = remaining
-                                        probes_text = ""
-                                else:
-                                    question_text = text
-                                    assessment_text = ""
-                                    probes_text = ""
+                                assessment_text = remaining
+                                probes_text = ""
+                        else:
+                            question_text = text
+                            assessment_text = ""
+                            probes_text = ""
+                    
+                    # Format each section with proper breaks
+                    formatted_parts = []
+                    
+                    # 1. Format the main question
+                    if question_text:
+                        # Add line breaks after periods and question marks within the question
+                        q = re.sub(r'(\.)(\s+)([A-Z][a-z])', r'\1<br/><br/>\3', question_text)
+                        q = re.sub(r'(\?)(\s+)([A-Z][a-z])', r'\1<br/><br/>\3', q)
+                        formatted_parts.append(f'<b>{q.strip()}</b>')
+                    
+                    # 2. Format the assessment section
+                    if assessment_text:
+                        # Clean up assessment text
+                        assessment_clean = assessment_text.replace('Assesses ', '').strip()
+                        if assessment_clean:
+                            formatted_parts.append(f'<br/><i><b>Assessment Focus:</b> {assessment_clean}</i>')
+                    
+                    # 3. Format the follow-up probes section
+                    if probes_text:
+                        probes_clean = probes_text.replace('Follow-up Probes:', '').replace('Follow-up Probe:', '').strip()
+                        
+                        # Split probes by question marks for better formatting
+                        if probes_clean:
+                            # Split individual probe questions
+                            probe_questions = re.split(r'(\?\s*)', probes_clean)
+                            formatted_probes = []
+                            current_probe = ""
                             
-                            # Format each section with proper breaks
-                            formatted_parts = []
-                            
-                            # 1. Format the main question
-                            if question_text:
-                                # Add line breaks after periods and question marks within the question
-                                q = re.sub(r'(\.)(\s+)([A-Z][a-z])', r'\1<br/><br/>\3', question_text)
-                                q = re.sub(r'(\?)(\s+)([A-Z][a-z])', r'\1<br/><br/>\3', q)
-                                formatted_parts.append(f'<b>{q.strip()}</b>')
-                            
-                            # 2. Format the assessment section
-                            if assessment_text:
-                                # Clean up assessment text
-                                assessment_clean = assessment_text.replace('Assesses ', '').strip()
-                                if assessment_clean:
-                                    formatted_parts.append(f'<br/><i><b>Assessment Focus:</b> {assessment_clean}</i>')
-                            
-                            # 3. Format the follow-up probes section
-                            if probes_text:
-                                probes_clean = probes_text.replace('Follow-up Probes:', '').replace('Follow-up Probe:', '').strip()
-                                
-                                # Split probes by question marks for better formatting
-                                if probes_clean:
-                                    # Split individual probe questions
-                                    probe_questions = re.split(r'(\?\s*)', probes_clean)
-                                    formatted_probes = []
-                                    current_probe = ""
-                                    
-                                    for part in probe_questions:
-                                        if part.strip() == '?' or part.strip() == '? ':
-                                            current_probe += '?'
-                                            if current_probe.strip():
-                                                formatted_probes.append(f'• {current_probe.strip()}')
-                                                current_probe = ""
-                                        else:
-                                            current_probe += part
-                                    
-                                    # Add any remaining probe
+                            for part in probe_questions:
+                                if part.strip() == '?' or part.strip() == '? ':
+                                    current_probe += '?'
                                     if current_probe.strip():
                                         formatted_probes.append(f'• {current_probe.strip()}')
-                                    
-                                    if formatted_probes:
-                                        formatted_parts.append('<br/><b>Follow-up Probes:</b>')
-                                        for probe in formatted_probes:
-                                            formatted_parts.append(f'<br/>{probe}')
+                                        current_probe = ""
+                                else:
+                                    current_probe += part
                             
-                            # Join all parts with proper spacing
-                            return '<br/>'.join(formatted_parts)
+                            # Add any remaining probe
+                            if current_probe.strip():
+                                formatted_probes.append(f'• {current_probe.strip()}')
+                            
+                            if formatted_probes:
+                                formatted_parts.append('<br/><b>Follow-up Probes:</b>')
+                                for probe in formatted_probes:
+                                    formatted_parts.append(f'<br/>{probe}')
+                    
+                    # Join all parts with proper spacing
+                    return '<br/>'.join(formatted_parts)
+                
+                current_section = ""
+                for item in processed_questions[:25]:
+                    # Handle both tuple and string formats for backward compatibility
+                    if isinstance(item, tuple):
+                        question_num, question_text = item
+                    else:
+                        question_num = processed_questions.index(item) + 1
+                        question_text = item
+                    
+                    # Check if we need to add a section header before this question
+                    for header_index, header_text in section_headers:
+                        if header_index <= question_num <= header_index + 6:  # Section applies to next few questions
+                            if header_text != current_section:
+                                story.append(Paragraph(f"📋 {header_text.upper()}", subsection_header_style))
+                                story.append(Spacer(1, 10))
+                                current_section = header_text
+                            break
+                    
+                    if question_text.strip():
+                        # Add question number
+                        story.append(Paragraph(f"Question {question_num:02d}.", question_number_style))
                         
-                        # Also create function to detect and extract section headers
-                        def extract_section_headers(text_blocks):
-                            """Extract section headers from question blocks"""
-                            headers = []
-                            section_patterns = [
-                                r'\b(Leadership\s+.*?Excellence|Strategic\s+Thinking.*?Excellence|Advanced\s+Collaboration.*?Mastery|Resilience.*?Leadership|Role-Specific.*?Excellence)\b',
-                                r'\b(Leadership|Strategic|Collaboration|Resilience|Role-Specific)\b\s+(.*?)\n',
-                            ]
-                            
-                            for i, block in enumerate(text_blocks):
-                                for pattern in section_patterns:
-                                    match = re.search(pattern, block, re.IGNORECASE)
-                                    if match and len(block.strip()) < 100:  # Likely a header if short
-                                        headers.append((i, match.group(0).strip()))
-                                        break
-                            
-                            return headers
+                        # Clean the text for safe PDF rendering
+                        safe_question = question_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                        safe_question = re.sub(r'\s+', ' ', safe_question).strip()
                         
-                        # Apply enhanced formatting
+                        # Apply enhanced formatting to the question
                         formatted_question = format_text_with_breaks(safe_question)
                         
-                        # Split very long questions into multiple paragraphs for better readability
-                        if len(formatted_question) > 600:
-                            # Split at sentence boundaries when possible, maintaining line breaks
-                            sentences = re.split(r'(<br/>|<br/><br/>)', formatted_question)
-                            current_part = ""
-                            
-                            for sentence in sentences:
-                                if sentence in ['<br/>', '<br/><br/>']:
-                                    current_part += sentence
-                                    continue
-                                    
-                                if len(current_part + sentence) > 500 and current_part:
-                                    # Clean HTML tags for PDF rendering
-                                    clean_part = current_part.replace('<br/><br/>', '<br/><br/>').replace('<br/>', '<br/>')
-                                    story.append(Paragraph(clean_part.strip(), content_style))
-                                    story.append(Spacer(1, 8))
-                                    current_part = sentence
-                                else:
-                                    current_part += sentence
-                            
-                            if current_part.strip():
-                                clean_part = current_part.replace('<br/><br/>', '<br/><br/>').replace('<br/>', '<br/>')
-                                story.append(Paragraph(clean_part.strip(), content_style))
-                        else:
-                            # For shorter questions, apply the formatting directly
-                            story.append(Paragraph(formatted_question, content_style))
+                        # Clean HTML entities for safe PDF rendering but restore our formatting tags
+                        safe_question = formatted_question.replace('&lt;br/&gt;', '<br/>').replace('&lt;b&gt;', '<b>').replace('&lt;/b&gt;', '</b>')
+                        safe_question = safe_question.replace('&lt;i&gt;', '<i>').replace('&lt;/i&gt;', '</i>')
                         
-                        story.append(Spacer(1, 18))  # Increased spacing between questions
+                        # Split content by formatting for proper styling
+                        content_parts = safe_question.split('<br/>')
+                        for i, part in enumerate(content_parts):
+                            if part.strip():
+                                if i == 0:  # First part is usually the main question
+                                    story.append(Paragraph(part.strip(), question_content_style))
+                                elif 'Assessment Focus:' in part:
+                                    story.append(Paragraph(part.strip(), assessment_style))
+                                elif 'Follow-up Probes:' in part:
+                                    story.append(Paragraph(part.strip(), assessment_style))
+                                elif part.strip().startswith('•'):
+                                    story.append(Paragraph(part.strip(), probes_style))
+                                else:
+                                    story.append(Paragraph(part.strip(), question_content_style))
+                        
+                        # Add extra spacing between questions
+                        story.append(Spacer(1, 25))
             else:
                 # Enhanced fallback content
                 fallback_content = f"""
