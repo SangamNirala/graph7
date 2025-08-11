@@ -3156,6 +3156,12 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
   const [showTechnicalPopup, setShowTechnicalPopup] = useState(false);
   const [technicalAnalysisId, setTechnicalAnalysisId] = useState(null);
   
+  // Behavioral Interview Questions state
+  const [behavioralLoading, setBehavioralLoading] = useState(false);
+  const [behavioralResults, setBehavioralResults] = useState([]);
+  const [showBehavioralPopup, setShowBehavioralPopup] = useState(false);
+  const [behavioralAnalysisId, setBehavioralAnalysisId] = useState(null);
+  
   // Analysis Result state
   const [allAnalyses, setAllAnalyses] = useState([]);
   const [analysesLoading, setAnalysesLoading] = useState(false);
