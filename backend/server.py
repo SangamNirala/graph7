@@ -6751,12 +6751,12 @@ MANDATORY HTML OUTPUT FORMAT:
     <title>Behavioral Interview Questions - {job_title}</title>
     <style>
         body {{ font-family: 'Calibri', Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }}
-        .header {{ text-align: center; border-bottom: 3px solid #8e44ad; padding-bottom: 20px; margin-bottom: 30px; }}
-        .title {{ font-size: 24pt; font-weight: bold; color: #8e44ad; margin-bottom: 10px; }}
+        .header {{ text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }}
+        .title {{ font-size: 24pt; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }}
         .subtitle {{ font-size: 14pt; color: #7f8c8d; font-style: italic; }}
         .content {{ margin: 20px 0; font-size: 11pt; line-height: 1.4; }}
-        .question-block {{ margin-bottom: 20px; padding: 15px; border-left: 4px solid #8e44ad; background: #f8f9fa; }}
-        .question-number {{ font-weight: bold; color: #8e44ad; font-size: 12pt; }}
+        .question-block {{ margin-bottom: 20px; padding: 15px; border-left: 4px solid #3498db; background: #f8f9fa; }}
+        .question-number {{ font-weight: bold; color: #3498db; font-size: 12pt; }}
         .question-text {{ margin: 8px 0; }}
         .rationale {{ font-style: italic; color: #7f8c8d; margin: 5px 0; font-size: 10pt; }}
         .follow-up {{ color: #27ae60; font-weight: 500; margin: 5px 0; font-size: 10pt; }}
