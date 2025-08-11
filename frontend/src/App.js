@@ -3666,6 +3666,80 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
     }
   };
 
+  // Technical Interview Questions Analysis Functions
+  const handleTechnicalInterviewQuestionsAnalysis = async () => {
+    // Validation
+    if (!analysisJobTitle.trim() || !analysisJobDescription.trim() || !analysisResumeFile) {
+      alert('Please fill in the job title, job description, and upload a resume before generating technical interview questions.');
+      return;
+    }
+
+    setTechnicalLoading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('job_title', analysisJobTitle);
+      formData.append('job_description', analysisJobDescription);
+      formData.append('resume', analysisResumeFile);
+
+      const response = await fetch(`${API}/placement-preparation/technical-interview-questions`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Add to results list
+        const newResult = {
+          id: data.analysis_id,
+          jobTitle: analysisJobTitle,
+          jobDescription: analysisJobDescription,
+          interviewQuestions: data.interview_questions,
+          pdfFilename: data.pdf_filename,
+          timestamp: new Date().toISOString()
+        };
+        
+        setTechnicalResults(prev => [newResult, ...prev]);
+        setTechnicalAnalysisId(data.analysis_id);
+        
+        // Show popup
+        setShowTechnicalPopup(true);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to generate technical interview questions: ${errorData.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Technical interview questions analysis error:', err);
+      alert('Error generating technical interview questions. Please try again.');
+    } finally {
+      setTechnicalLoading(false);
+    }
+  };
+
+  const downloadTechnicalInterviewQuestionsPDF = async (analysisId, jobTitle) => {
+    try {
+      const response = await fetch(`${API}/placement-preparation/technical-interview-questions/${analysisId}/download`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `technical_interview_questions_${jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        alert('Failed to download technical interview questions PDF');
+      }
+    } catch (err) {
+      console.error('Technical interview questions PDF download error:', err);
+      alert('Error downloading technical interview questions PDF');
+    }
+  };
+
   // Effect to load analyses when switching to analysis result tab
   React.useEffect(() => {
     if (activeTab === 'analysis-result') {
