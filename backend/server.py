@@ -5688,6 +5688,618 @@ async def download_rejection_reasons_pdf(rejection_id: str):
         logging.error(f"PDF download error: {e}")
         raise HTTPException(status_code=500, detail="Failed to download PDF")
 
+# Technical Interview Questions Endpoints
+@api_router.post("/placement-preparation/technical-interview-questions")
+async def generate_technical_interview_questions(
+    job_title: str = Form(...),
+    job_description: str = Form(...),
+    resume: UploadFile = File(...)
+):
+    """
+    Generate comprehensive technical interview questions using advanced LLM analysis
+    """
+    try:
+        # Validate file type
+        if not resume.filename.lower().endswith(('.pdf', '.doc', '.docx', '.txt')):
+            raise HTTPException(status_code=400, detail="Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files.")
+        
+        # Parse resume content
+        resume_content = ""
+        file_content = await resume.read()
+        
+        if resume.filename.lower().endswith('.txt'):
+            resume_content = file_content.decode('utf-8')
+        elif resume.filename.lower().endswith('.pdf'):
+            import PyPDF2
+            import io
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+            resume_content = ""
+            for page in pdf_reader.pages:
+                resume_content += page.extract_text() + "\n"
+        elif resume.filename.lower().endswith(('.doc', '.docx')):
+            import docx
+            import io
+            doc = docx.Document(io.BytesIO(file_content))
+            resume_content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+        
+        if not resume_content.strip():
+            raise HTTPException(status_code=400, detail="Could not extract text from the resume file")
+        
+        # Generate Technical Interview Questions using the comprehensive LLM prompt
+        technical_interview_prompt = f"""YOU ARE A MASTER TECHNICAL INTERVIEWER WITH 20+ YEARS OF EXPERIENCE ACROSS FORTUNE 500 COMPANIES AND HIGH-GROWTH STARTUPS. YOU POSSESS DEEP EXPERTISE IN SOFTWARE ARCHITECTURE, SYSTEM DESIGN, AND TECHNICAL LEADERSHIP ASSESSMENT. YOUR SPECIALTY IS CREATING LASER-FOCUSED, PREDICTIVE INTERVIEW QUESTIONS THAT REVEAL TRUE TECHNICAL COMPETENCY AND CULTURAL FIT WITHIN 60 MINUTES.
+
+ADVANCED INPUT ANALYSIS:
+Candidate Resume: {resume_content}
+Job Description: {job_description}
+Target Role: {job_title}
+
+COMPREHENSIVE ASSESSMENT METHODOLOGY:
+
+PHASE 1: DEEP CANDIDATE PROFILING
+
+Analyze technical skill progression and learning velocity from career timeline
+Identify project complexity evolution and technical decision-making patterns
+Extract evidence of innovation, technical leadership, and problem-solving sophistication
+Map candidate's expertise against current industry standards and emerging technologies
+Assess technical communication ability through project descriptions and achievements
+Determine optimal challenge level based on demonstrated competency rather than stated years
+
+PHASE 2: ROLE-SPECIFIC TECHNICAL REQUIREMENT MATRIX
+
+Deconstruct job description into must-have versus nice-to-have technical competencies
+Identify critical technical decisions the role will require in first 90 days
+Map technical challenges specific to company size, industry vertical, and technology maturity
+Determine technical collaboration requirements and architectural decision-making scope
+Assess technical mentorship and knowledge transfer expectations
+
+PHASE 3: INTELLIGENT QUESTION ARCHITECTURE 
+
+Generate exactly 25 technical questions with sophisticated difficulty calibration and progressive complexity assessment:
+
+FOUNDATIONAL MASTERY ASSESSMENT (Questions 1-5):
+
+Core technical concepts that form the foundation for all other competencies
+Fundamental principles that reveal depth of understanding versus surface-level knowledge
+Industry best practices and standards that indicate professional maturity
+Basic architectural thinking and system design intuition
+Technical terminology precision and conceptual clarity
+
+APPLIED TECHNICAL COMPETENCY (Questions 6-12):
+
+Real-world scenario resolution requiring technical judgment and trade-off analysis
+Code quality assessment through debugging and optimization challenges
+System integration and data flow design problems
+Performance bottleneck identification and resolution strategies
+Security consideration integration and threat model thinking
+Scalability challenges and solution architecture decisions
+Technology selection justification and comparative analysis
+
+EXPERIENCE-DEPTH VALIDATION (Questions 13-18):
+
+Detailed exploration of candidate's most complex technical achievements
+Technology stack mastery demonstrated through specific implementation challenges
+Problem-solving methodology and debugging approach analysis
+Technical decision justification and alternative solution evaluation
+Lessons learned integration and knowledge application to new contexts
+Technical risk assessment and mitigation strategy development
+
+ADVANCED ARCHITECTURAL THINKING (Questions 19-23):
+
+Multi-system integration and distributed architecture challenges
+Performance optimization across multiple layers of technology stack
+Technical innovation and creative solution development under constraints
+Cross-functional technical communication and stakeholder management
+Technical debt assessment and strategic refactoring decision-making
+Emerging technology adoption and implementation risk evaluation
+
+EXPERT-LEVEL ROLE ALIGNMENT (Questions 24-25):
+
+Position-specific technical leadership and decision-making scenarios
+Industry trend awareness and strategic technology adoption perspectives
+Technical vision development and long-term architectural planning
+Complex stakeholder management involving technical and business considerations
+
+ENHANCED QUESTION QUALITY FRAMEWORK: 
+Each question must demonstrate sophisticated assessment design:
+
+Direct correlation between question complexity and role requirements
+Multiple correct answer paths to assess thinking flexibility
+Built-in follow-up question triggers based on initial response quality
+Technical depth probes that reveal true understanding versus memorized knowledge
+Cross-domain integration assessment combining multiple technical areas
+Real-world application relevance with specific business impact consideration
+Cultural and collaborative dimension integration within technical scenarios
+
+ADVANCED FOLLOW-UP QUESTION STRATEGY:
+
+Depth escalation questions that probe understanding boundaries
+Alternative approach exploration to assess solution flexibility
+Trade-off analysis questions that reveal decision-making sophistication
+Scaling and evolution questions that test architectural thinking
+Collaboration and communication probes within technical contexts
+Learning and adaptation assessment through hypothetical constraint changes
+
+COMPREHENSIVE ASSESSMENT CRITERIA:
+
+Technical accuracy and conceptual understanding depth
+Problem-solving methodology and structured thinking approach
+Communication clarity and technical explanation effectiveness
+Innovation potential and creative solution development capability
+Collaborative technical leadership and mentorship readiness
+Business impact awareness and technical decision justification ability
+Continuous learning evidence and technology adaptation flexibility
+
+**QUESTION QUALITY STANDARDS:**
+✅ Each question must be directly relevant to the job requirements
+✅ Include specific technical concepts mentioned in candidate's resume
+✅ Provide context for why the question matters for the role
+✅ Include multiple difficulty levels to assess depth of knowledge
+✅ Avoid generic questions - make them role and candidate specific
+✅ Include follow-up probes to assess deeper understanding
+
+**MANDATORY HTML OUTPUT FORMAT:**
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Interview Questions - [CANDIDATE NAME]</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: 'Calibri', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333333;
+            background: white;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 0.75in;
+        }}
+        
+        .header {{
+            text-align: center;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }}
+        
+        .title {{
+            font-size: 20pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }}
+        
+        .subtitle {{
+            font-size: 12pt;
+            color: #7f8c8d;
+            font-style: italic;
+        }}
+        
+        .interview-info {{
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }}
+        
+        .info-item {{
+            margin-bottom: 8px;
+            font-size: 10pt;
+        }}
+        
+        .info-label {{
+            font-weight: bold;
+            color: #2c3e50;
+        }}
+        
+        .category {{
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }}
+        
+        .category-title {{
+            font-size: 14pt;
+            font-weight: bold;
+            color: #2c3e50;
+            background: #34495e;
+            color: white;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }}
+        
+        .question-item {{
+            margin-bottom: 15px;
+            border-left: 3px solid #3498db;
+            padding-left: 15px;
+        }}
+        
+        .question-number {{
+            font-size: 12pt;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }}
+        
+        .question-text {{
+            font-size: 11pt;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }}
+        
+        .question-context {{
+            font-size: 9pt;
+            color: #7f8c8d;
+            font-style: italic;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }}
+        
+        .follow-up {{
+            font-size: 10pt;
+            color: #27ae60;
+            font-weight: 500;
+        }}
+        
+        .difficulty {{
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 8pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }}
+        
+        .basic {{ background: #2ecc71; color: white; }}
+        .intermediate {{ background: #f39c12; color: white; }}
+        .advanced {{ background: #e74c3c; color: white; }}
+        
+        .notes-section {{
+            margin-top: 30px;
+            border-top: 1px solid #bdc3c7;
+            padding-top: 20px;
+        }}
+        
+        .notes-title {{
+            font-size: 12pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }}
+        
+        .notes-content {{
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #555555;
+        }}
+        
+        @media print {{
+            body {{ font-size: 10pt; padding: 0.5in; }}
+            .title {{ font-size: 16pt; }}
+            .category-title {{ font-size: 12pt; }}
+            .question-item {{ page-break-inside: avoid; }}
+        }}
+        
+        @page {{
+            size: A4;
+            margin: 0.75in;
+        }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Technical Interview Questions</div>
+        <div class="subtitle">[TARGET ROLE] Position Assessment</div>
+    </div>
+    
+    <div class="interview-info">
+        <div class="info-item"><span class="info-label">Candidate:</span> [CANDIDATE NAME]</div>
+        <div class="info-item"><span class="info-label">Position:</span> [JOB ROLE]</div>
+        <div class="info-item"><span class="info-label">Experience Level:</span> [DETECTED LEVEL]</div>
+        <div class="info-item"><span class="info-label">Key Technologies:</span> [PRIMARY TECH STACK]</div>
+        <div class="info-item"><span class="info-label">Interview Focus:</span> [MAIN ASSESSMENT AREAS]</div>
+    </div>
+    
+    <div class="category">
+        <div class="category-title">FOUNDATIONAL KNOWLEDGE (Questions 1-5)</div>
+        
+        <div class="question-item">
+            <div class="question-number">Question 1:</div>
+            <div class="difficulty basic">BASIC</div>
+            <div class="question-text">[SPECIFIC FOUNDATIONAL QUESTION BASED ON ROLE REQUIREMENTS]</div>
+            <div class="question-context">Context: This assesses fundamental understanding of [CONCEPT] which is critical for [SPECIFIC JOB FUNCTION]</div>
+            <div class="follow-up">Follow-up: [PROBE QUESTION TO ASSESS DEPTH]</div>
+        </div>
+        
+        <!-- REPEAT FOR QUESTIONS 2-5 -->
+        
+    </div>
+    
+    <div class="category">
+        <div class="category-title">PRACTICAL APPLICATION (Questions 6-12)</div>
+        
+        <div class="question-item">
+            <div class="question-number">Question 6:</div>
+            <div class="difficulty intermediate">INTERMEDIATE</div>
+            <div class="question-text">[PRACTICAL SCENARIO QUESTION]</div>
+            <div class="question-context">Context: Tests real-world problem-solving for [SPECIFIC WORK SITUATION]</div>
+            <div class="follow-up">Follow-up: [DEEPER PROBE INTO SOLUTION APPROACH]</div>
+        </div>
+        
+        <!-- REPEAT FOR QUESTIONS 7-12 -->
+        
+    </div>
+    
+    <!-- CONTINUE FOR ALL CATEGORIES -->
+    
+    <div class="notes-section">
+        <div class="notes-title">INTERVIEWER NOTES & ASSESSMENT GUIDE</div>
+        <div class="notes-content">
+            <strong>Key Evaluation Criteria:</strong><br>
+            • [SPECIFIC CRITERIA 1 BASED ON ROLE]<br>
+            • [SPECIFIC CRITERIA 2 BASED ON EXPERIENCE]<br>
+            • [SPECIFIC CRITERIA 3 BASED ON TECHNICAL REQUIREMENTS]<br><br>
+            
+            <strong>Red Flags to Watch For:</strong><br>
+            • [COMMON KNOWLEDGE GAPS FOR THIS ROLE]<br>
+            • [EXPERIENCE-SPECIFIC CONCERNS]<br><br>
+            
+            <strong>Strong Signal Indicators:</strong><br>
+            • [WHAT EXCELLENT ANSWERS SHOULD INCLUDE]<br>
+            • [SIGNS OF DEEP TECHNICAL COMPETENCE]
+        </div>
+    </div>
+    
+</body>
+</html>
+```
+
+ENHANCED INSTRUCTIONS:
+
+Analyze candidate's resume deeply to understand their technical background and experience level
+Create questions that directly relate to their stated experience and the job requirements
+Include specific technologies, frameworks, and methodologies mentioned in their resume
+Provide context for each question explaining why it's relevant to the role
+Include follow-up questions to probe deeper understanding
+Generate HTML that renders perfectly for PDF conversion with proper styling and page breaks"""
+
+        # Use Gemini API for generating interview questions
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=GEMINI_API_KEY)
+            
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(technical_interview_prompt)
+            
+            interview_questions_text = response.text
+            
+            # Extract HTML content from the response
+            import re
+            html_match = re.search(r'```html(.*?)```', interview_questions_text, re.DOTALL)
+            if html_match:
+                html_content = html_match.group(1).strip()
+            else:
+                # If no HTML block found, use the entire response as HTML
+                html_content = interview_questions_text
+                
+        except Exception as e:
+            logging.error(f"Gemini API error: {e}")
+            # Fallback HTML if Gemini fails
+            html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Interview Questions</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
+        .header {{ text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }}
+        .title {{ font-size: 24pt; font-weight: bold; color: #333; }}
+        .question-item {{ margin-bottom: 20px; padding: 15px; border-left: 4px solid #007bff; }}
+        .question-number {{ font-weight: bold; color: #007bff; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Technical Interview Questions</div>
+        <div>Position: {job_title}</div>
+    </div>
+    
+    <div class="question-item">
+        <div class="question-number">Question 1:</div>
+        <div>Manual technical interview question generation required due to API limitations.</div>
+        <div><em>Context: Unable to generate automated questions.</em></div>
+        <div><strong>Follow-up:</strong> Please review candidate background manually.</div>
+    </div>
+    
+    <p><em>Note: Technical interview questions could not be automatically generated. Please conduct manual review of candidate qualifications.</em></p>
+</body>
+</html>"""
+        
+        # Convert HTML to PDF using weasyprint or similar
+        try:
+            # Generate PDF from HTML using weasyprint
+            import weasyprint
+            from io import BytesIO
+            import uuid
+            
+            # Create unique filename
+            analysis_id = str(uuid.uuid4())
+            pdf_filename = f"technical_interview_questions_{analysis_id[:8]}.pdf"
+            pdf_path = f"/tmp/{pdf_filename}"
+            
+            # Generate PDF from HTML
+            weasyprint.HTML(string=html_content).write_pdf(pdf_path)
+            
+        except ImportError:
+            # Fallback to reportlab if weasyprint is not available
+            logging.warning("weasyprint not available, using reportlab fallback")
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import letter, A4
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+            from reportlab.lib.units import inch
+            from reportlab.lib.colors import HexColor, black, white, darkblue
+            import uuid
+            import re
+            
+            # Create unique filename
+            analysis_id = str(uuid.uuid4())
+            pdf_filename = f"technical_interview_questions_{analysis_id[:8]}.pdf"
+            pdf_path = f"/tmp/{pdf_filename}"
+            
+            # Create PDF document
+            doc = SimpleDocTemplate(
+                pdf_path, 
+                pagesize=A4,
+                rightMargin=50,
+                leftMargin=50,
+                topMargin=50,
+                bottomMargin=50
+            )
+            styles = getSampleStyleSheet()
+            story = []
+            
+            # Title
+            title_style = ParagraphStyle(
+                'EnhancedTitle',
+                parent=styles['Title'],
+                fontSize=22,
+                spaceAfter=30,
+                spaceBefore=10,
+                textColor=white,
+                backColor=HexColor('#FF8C00'),  # Orange background
+                borderPadding=15,
+                alignment=1  # Center alignment
+            )
+            story.append(Paragraph("💻 TECHNICAL INTERVIEW QUESTIONS", title_style))
+            story.append(Spacer(1, 20))
+            
+            # Job details
+            current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            job_info_style = ParagraphStyle(
+                'JobInfo',
+                parent=styles['Normal'],
+                fontSize=12,
+                spaceAfter=6,
+                textColor=darkblue,
+                backColor=HexColor('#FFF8DC'),  # Light orange background
+                borderPadding=10
+            )
+            
+            story.append(Paragraph(f"<b>📋 Position:</b> {job_title}", job_info_style))
+            story.append(Paragraph(f"<b>🕒 Generated on:</b> {current_time} UTC", job_info_style))
+            story.append(Spacer(1, 25))
+            
+            # Parse questions from HTML (simplified parsing)
+            question_pattern = r'Question (\d+):(.*?)(?=Question \d+:|$)'
+            questions = re.findall(question_pattern, interview_questions_text, re.DOTALL)
+            
+            if not questions:
+                # Fallback content
+                content_style = ParagraphStyle('Content', parent=styles['Normal'], fontSize=11, spaceAfter=12)
+                story.append(Paragraph("Technical interview questions generation is in progress. Please review candidate qualifications manually.", content_style))
+            else:
+                content_style = ParagraphStyle('Content', parent=styles['Normal'], fontSize=11, spaceAfter=12)
+                for i, (num, content) in enumerate(questions[:25]):  # Limit to 25 questions
+                    question_title = f"<b>Question {num}:</b>"
+                    story.append(Paragraph(question_title, content_style))
+                    story.append(Paragraph(content.strip(), content_style))
+                    story.append(Spacer(1, 10))
+            
+            # Build PDF
+            doc.build(story)
+        
+        except Exception as pdf_error:
+            logging.error(f"PDF generation error: {pdf_error}")
+            # Create a simple text-based PDF as final fallback
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import letter
+            
+            analysis_id = str(uuid.uuid4())
+            pdf_filename = f"technical_interview_questions_{analysis_id[:8]}.pdf"
+            pdf_path = f"/tmp/{pdf_filename}"
+            
+            c = canvas.Canvas(pdf_path, pagesize=letter)
+            c.drawString(100, 750, f"Technical Interview Questions - {job_title}")
+            c.drawString(100, 720, f"Generated on: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
+            c.drawString(100, 680, "Interview questions generation in progress...")
+            c.save()
+        
+        # Store analysis in database
+        technical_analysis = TechnicalInterviewQuestionsAnalysis(
+            job_title=job_title,
+            job_description=job_description,
+            resume_content=resume_content,
+            interview_questions=interview_questions_text,
+            pdf_path=pdf_path
+        )
+        
+        # Insert into MongoDB
+        technical_analysis_dict = technical_analysis.dict()
+        await db.technical_interview_questions_analyses.insert_one(technical_analysis_dict)
+        
+        return {
+            "success": True,
+            "analysis_id": technical_analysis.id,
+            "interview_questions": interview_questions_text,
+            "pdf_filename": pdf_filename,
+            "message": "Technical interview questions generated successfully"
+        }
+        
+    except Exception as e:
+        logging.error(f"Technical interview questions generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate technical interview questions: {str(e)}")
+
+@api_router.get("/placement-preparation/technical-interview-questions")
+async def get_technical_interview_questions_analyses():
+    """Get all technical interview questions analyses"""
+    try:
+        analyses = await db.technical_interview_questions_analyses.find().to_list(1000)
+        # Convert ObjectId to string
+        for analysis in analyses:
+            if '_id' in analysis:
+                analysis['_id'] = str(analysis['_id'])
+        return {"analyses": analyses}
+    except Exception as e:
+        logging.error(f"Failed to fetch technical interview questions analyses: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch technical interview questions analyses")
+
+@api_router.get("/placement-preparation/technical-interview-questions/{analysis_id}/download")
+async def download_technical_interview_questions_pdf(analysis_id: str):
+    """Download PDF report for specific technical interview questions analysis"""
+    try:
+        analysis = await db.technical_interview_questions_analyses.find_one({"id": analysis_id})
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Technical interview questions analysis not found")
+        
+        pdf_path = analysis.get("pdf_path", "")
+        if not os.path.exists(pdf_path):
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            path=pdf_path,
+            media_type='application/pdf',
+            filename=f"technical_interview_questions_{analysis_id}.pdf"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"PDF download error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to download PDF")
+
 # Enhanced ATS Analysis Engine
 class EnhancedATSAnalyzer:
     """
