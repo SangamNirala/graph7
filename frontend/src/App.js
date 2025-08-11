@@ -4740,6 +4740,49 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                   </div>
                 ))}
                 
+                {/* Behavioral Interview Questions Results */}
+                {behavioralResults.map((behavioralResult) => (
+                  <div key={behavioralResult.id} className="bg-gradient-to-r from-cyan-900/50 to-teal-900/50 rounded-lg p-6 border border-cyan-400/30">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-white flex items-center">
+                          🗣️ Behavioral Interview Questions - {behavioralResult.jobTitle}
+                        </h3>
+                        <p className="text-gray-300 text-sm">
+                          Generated: {new Date(behavioralResult.timestamp).toLocaleDateString()} at{' '}
+                          {new Date(behavioralResult.timestamp).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => downloadBehavioralInterviewQuestionsPDF(behavioralResult.id, behavioralResult.jobTitle)}
+                        className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-cyan-700 hover:to-teal-700 transition-all duration-300 flex items-center"
+                      >
+                        📄 Download Interview Questions
+                      </button>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-4 mb-4">
+                      <h4 className="text-lg font-semibold text-white mb-2">Job Requirements</h4>
+                      <p className="text-gray-300 text-sm">
+                        {behavioralResult.jobDescription.length > 200 
+                          ? `${behavioralResult.jobDescription.substring(0, 200)}...`
+                          : behavioralResult.jobDescription
+                        }
+                      </p>
+                    </div>
+                    
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h4 className="text-lg font-semibold text-white mb-2">Interview Questions Preview</h4>
+                      <div className="text-gray-300 text-sm max-h-32 overflow-y-auto">
+                        {behavioralResult.interviewQuestions?.length > 400 
+                          ? `${behavioralResult.interviewQuestions.substring(0, 400)}...`
+                          : behavioralResult.interviewQuestions || 'Comprehensive behavioral interview questions available in PDF download'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
                 {/* Regular Analysis Results */}
                 {allAnalyses.map((analysis) => (
                   <div key={analysis.id} className="bg-white/10 rounded-lg p-6 border border-white/20">
