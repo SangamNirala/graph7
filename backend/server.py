@@ -6939,16 +6939,34 @@ MANDATORY HTML OUTPUT FORMAT:
             if len(potential_questions) <= 3:
                 potential_questions = clean_text.split('\n\n')
             
-            # Process and filter questions
+            # Process and filter questions with enhanced section header detection
             processed_questions = []
+            section_headers = []
             question_count = 0
             
-            for block in potential_questions:
+            # First pass: identify section headers
+            section_header_patterns = [
+                r'(?i)(leadership|strategic\s+thinking|collaboration|resilience|role-specific).*?(excellence|mastery|leadership)',
+                r'(?i)^(leadership|strategic|collaboration|resilience|role-specific)\s*$'
+            ]
+            
+            for i, block in enumerate(potential_questions):
                 block = block.strip()
                 if not block:
                     continue
+                
+                # Check if this is a section header
+                is_header = False
+                for pattern in section_header_patterns:
+                    if re.search(pattern, block) and len(block) < 150 and not any(word in block.lower() for word in ['describe', 'tell me', 'give me', 'how did', 'what was']):
+                        section_headers.append((i, block.title()))
+                        is_header = True
+                        break
+                
+                if is_header:
+                    continue
                     
-                # Skip header/metadata sections
+                # Skip metadata sections
                 if any(skip_term in block.lower() for skip_term in ['behavioral interview questions', 'cultural fit', 'assessment', 'star method', 'candidate:', 'position:', 'generated on']):
                     continue
                     
@@ -6959,14 +6977,10 @@ MANDATORY HTML OUTPUT FORMAT:
                     
                     question_count += 1
                     
-                    # Clean and format the question with improved line breaks
+                    # Clean and format the question with improved structure
                     formatted_block = re.sub(r'\s+', ' ', block).strip()
                     
-                    # Add question number if not present
-                    if not re.match(r'^(Question\s*\d+|Q\d+|\d+\.)', formatted_block, re.IGNORECASE):
-                        formatted_block = f"Question {question_count}: {formatted_block}"
-                    
-                    processed_questions.append(formatted_block)
+                    processed_questions.append((question_count, formatted_block))
                     
                     # Limit to 25 questions
                     if question_count >= 25:
