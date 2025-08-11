@@ -18,7 +18,7 @@ import tempfile
 from typing import Dict, Any, Optional, List
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://9111a607-ad7c-4aad-8586-9dca4be775f2.preview.emergentagent.com/api"
+BASE_URL = "https://8c5405e6-7a83-4c01-9b79-b30a70cc758e.preview.emergentagent.com/api"
 
 class Phase2ScreeningTester:
     def __init__(self):
