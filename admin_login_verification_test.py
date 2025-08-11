@@ -11,7 +11,7 @@ import time
 from typing import Dict, Any
 
 # Backend URL from frontend .env
-BASE_URL = "https://00a8e650-3105-4677-9117-76e2639bccac.preview.emergentagent.com/api"
+BASE_URL = "https://b94cc3ff-5d98-441f-b706-13a2c963a6da.preview.emergentagent.com/api"
 
 class AdminLoginVerificationTester:
     def __init__(self):
