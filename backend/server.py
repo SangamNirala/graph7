@@ -5726,118 +5726,27 @@ async def generate_technical_interview_questions(
             raise HTTPException(status_code=400, detail="Could not extract text from the resume file")
         
         # Generate Technical Interview Questions using the comprehensive LLM prompt
-        technical_interview_prompt = f"""YOU ARE A MASTER TECHNICAL INTERVIEWER WITH 20+ YEARS OF EXPERIENCE ACROSS FORTUNE 500 COMPANIES AND HIGH-GROWTH STARTUPS. YOU POSSESS DEEP EXPERTISE IN SOFTWARE ARCHITECTURE, SYSTEM DESIGN, AND TECHNICAL LEADERSHIP ASSESSMENT. YOUR SPECIALTY IS CREATING LASER-FOCUSED, PREDICTIVE INTERVIEW QUESTIONS THAT REVEAL TRUE TECHNICAL COMPETENCY AND CULTURAL FIT WITHIN 60 MINUTES.
+        technical_interview_prompt = f"""YOU ARE A MASTER TECHNICAL INTERVIEWER WITH 20+ YEARS OF EXPERIENCE ACROSS FORTUNE 500 COMPANIES AND HIGH-GROWTH STARTUPS. YOU MUST GENERATE EXACTLY 25 COMPREHENSIVE TECHNICAL INTERVIEW QUESTIONS.
+
+CRITICAL REQUIREMENT: Generate ALL 25 questions in a single response. Do not use placeholders, comments, or abbreviated content. Every single question must be fully written out with complete content.
 
 ADVANCED INPUT ANALYSIS:
 Candidate Resume: {resume_content}
 Job Description: {job_description}
 Target Role: {job_title}
 
-COMPREHENSIVE ASSESSMENT METHODOLOGY:
-
-PHASE 1: DEEP CANDIDATE PROFILING
-
-Analyze technical skill progression and learning velocity from career timeline
-Identify project complexity evolution and technical decision-making patterns
-Extract evidence of innovation, technical leadership, and problem-solving sophistication
-Map candidate's expertise against current industry standards and emerging technologies
-Assess technical communication ability through project descriptions and achievements
-Determine optimal challenge level based on demonstrated competency rather than stated years
-
-PHASE 2: ROLE-SPECIFIC TECHNICAL REQUIREMENT MATRIX
-
-Deconstruct job description into must-have versus nice-to-have technical competencies
-Identify critical technical decisions the role will require in first 90 days
-Map technical challenges specific to company size, industry vertical, and technology maturity
-Determine technical collaboration requirements and architectural decision-making scope
-Assess technical mentorship and knowledge transfer expectations
-
 PHASE 3: INTELLIGENT QUESTION ARCHITECTURE 
 
-Generate exactly 25 technical questions with sophisticated difficulty calibration and progressive complexity assessment:
+You MUST generate exactly 25 technical questions distributed as follows:
+- FOUNDATIONAL MASTERY ASSESSMENT (Questions 1-5): 5 questions
+- APPLIED TECHNICAL COMPETENCY (Questions 6-12): 7 questions  
+- EXPERIENCE-DEPTH VALIDATION (Questions 13-18): 6 questions
+- ADVANCED ARCHITECTURAL THINKING (Questions 19-23): 5 questions
+- EXPERT-LEVEL ROLE ALIGNMENT (Questions 24-25): 2 questions
 
-FOUNDATIONAL MASTERY ASSESSMENT (Questions 1-5):
+**CRITICAL INSTRUCTION: You must generate complete HTML with ALL 25 questions. Do not use placeholders like "<!-- REPEAT FOR QUESTIONS 2-5 -->". Write out every single question in full.**
 
-Core technical concepts that form the foundation for all other competencies
-Fundamental principles that reveal depth of understanding versus surface-level knowledge
-Industry best practices and standards that indicate professional maturity
-Basic architectural thinking and system design intuition
-Technical terminology precision and conceptual clarity
-
-APPLIED TECHNICAL COMPETENCY (Questions 6-12):
-
-Real-world scenario resolution requiring technical judgment and trade-off analysis
-Code quality assessment through debugging and optimization challenges
-System integration and data flow design problems
-Performance bottleneck identification and resolution strategies
-Security consideration integration and threat model thinking
-Scalability challenges and solution architecture decisions
-Technology selection justification and comparative analysis
-
-EXPERIENCE-DEPTH VALIDATION (Questions 13-18):
-
-Detailed exploration of candidate's most complex technical achievements
-Technology stack mastery demonstrated through specific implementation challenges
-Problem-solving methodology and debugging approach analysis
-Technical decision justification and alternative solution evaluation
-Lessons learned integration and knowledge application to new contexts
-Technical risk assessment and mitigation strategy development
-
-ADVANCED ARCHITECTURAL THINKING (Questions 19-23):
-
-Multi-system integration and distributed architecture challenges
-Performance optimization across multiple layers of technology stack
-Technical innovation and creative solution development under constraints
-Cross-functional technical communication and stakeholder management
-Technical debt assessment and strategic refactoring decision-making
-Emerging technology adoption and implementation risk evaluation
-
-EXPERT-LEVEL ROLE ALIGNMENT (Questions 24-25):
-
-Position-specific technical leadership and decision-making scenarios
-Industry trend awareness and strategic technology adoption perspectives
-Technical vision development and long-term architectural planning
-Complex stakeholder management involving technical and business considerations
-
-ENHANCED QUESTION QUALITY FRAMEWORK: 
-Each question must demonstrate sophisticated assessment design:
-
-Direct correlation between question complexity and role requirements
-Multiple correct answer paths to assess thinking flexibility
-Built-in follow-up question triggers based on initial response quality
-Technical depth probes that reveal true understanding versus memorized knowledge
-Cross-domain integration assessment combining multiple technical areas
-Real-world application relevance with specific business impact consideration
-Cultural and collaborative dimension integration within technical scenarios
-
-ADVANCED FOLLOW-UP QUESTION STRATEGY:
-
-Depth escalation questions that probe understanding boundaries
-Alternative approach exploration to assess solution flexibility
-Trade-off analysis questions that reveal decision-making sophistication
-Scaling and evolution questions that test architectural thinking
-Collaboration and communication probes within technical contexts
-Learning and adaptation assessment through hypothetical constraint changes
-
-COMPREHENSIVE ASSESSMENT CRITERIA:
-
-Technical accuracy and conceptual understanding depth
-Problem-solving methodology and structured thinking approach
-Communication clarity and technical explanation effectiveness
-Innovation potential and creative solution development capability
-Collaborative technical leadership and mentorship readiness
-Business impact awareness and technical decision justification ability
-Continuous learning evidence and technology adaptation flexibility
-
-**QUESTION QUALITY STANDARDS:**
-✅ Each question must be directly relevant to the job requirements
-✅ Include specific technical concepts mentioned in candidate's resume
-✅ Provide context for why the question matters for the role
-✅ Include multiple difficulty levels to assess depth of knowledge
-✅ Avoid generic questions - make them role and candidate specific
-✅ Include follow-up probes to assess deeper understanding
-
-**MANDATORY HTML OUTPUT FORMAT:**
+**MANDATORY COMPLETE HTML OUTPUT:**
 
 ```html
 <!DOCTYPE html>
@@ -5845,14 +5754,8 @@ Continuous learning evidence and technology adaptation flexibility
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Technical Interview Questions - [CANDIDATE NAME]</title>
+    <title>Technical Interview Questions</title>
     <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-        
         body {{
             font-family: 'Calibri', 'Arial', sans-serif;
             font-size: 11pt;
@@ -5863,79 +5766,66 @@ Continuous learning evidence and technology adaptation flexibility
             margin: 0 auto;
             padding: 0.75in;
         }}
-        
         .header {{
             text-align: center;
             border-bottom: 2px solid #2c3e50;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }}
-        
         .title {{
             font-size: 20pt;
             font-weight: bold;
             color: #2c3e50;
             margin-bottom: 10px;
         }}
-        
         .subtitle {{
             font-size: 12pt;
             color: #7f8c8d;
             font-style: italic;
         }}
-        
         .interview-info {{
             background: #ecf0f1;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 25px;
         }}
-        
         .info-item {{
             margin-bottom: 8px;
             font-size: 10pt;
         }}
-        
         .info-label {{
             font-weight: bold;
             color: #2c3e50;
         }}
-        
         .category {{
             margin-bottom: 25px;
             page-break-inside: avoid;
         }}
-        
         .category-title {{
             font-size: 14pt;
             font-weight: bold;
-            color: #2c3e50;
-            background: #34495e;
             color: white;
+            background: #34495e;
             padding: 10px 15px;
             margin-bottom: 15px;
             border-radius: 5px;
         }}
-        
         .question-item {{
             margin-bottom: 15px;
             border-left: 3px solid #3498db;
             padding-left: 15px;
         }}
-        
         .question-number {{
             font-size: 12pt;
             font-weight: bold;
             color: #3498db;
             margin-bottom: 5px;
         }}
-        
         .question-text {{
             font-size: 11pt;
             line-height: 1.4;
             margin-bottom: 8px;
         }}
-        
         .question-context {{
             font-size: 9pt;
             color: #7f8c8d;
@@ -5945,13 +5835,11 @@ Continuous learning evidence and technology adaptation flexibility
             border-radius: 4px;
             margin-bottom: 5px;
         }}
-        
         .follow-up {{
             font-size: 10pt;
             color: #27ae60;
             font-weight: 500;
         }}
-        
         .difficulty {{
             display: inline-block;
             padding: 2px 8px;
@@ -5960,37 +5848,31 @@ Continuous learning evidence and technology adaptation flexibility
             font-weight: bold;
             margin-bottom: 8px;
         }}
-        
         .basic {{ background: #2ecc71; color: white; }}
         .intermediate {{ background: #f39c12; color: white; }}
         .advanced {{ background: #e74c3c; color: white; }}
-        
         .notes-section {{
             margin-top: 30px;
             border-top: 1px solid #bdc3c7;
             padding-top: 20px;
         }}
-        
         .notes-title {{
             font-size: 12pt;
             font-weight: bold;
             color: #2c3e50;
             margin-bottom: 10px;
         }}
-        
         .notes-content {{
             font-size: 10pt;
             line-height: 1.4;
             color: #555555;
         }}
-        
         @media print {{
             body {{ font-size: 10pt; padding: 0.5in; }}
             .title {{ font-size: 16pt; }}
             .category-title {{ font-size: 12pt; }}
             .question-item {{ page-break-inside: avoid; }}
         }}
-        
         @page {{
             size: A4;
             margin: 0.75in;
@@ -6000,79 +5882,28 @@ Continuous learning evidence and technology adaptation flexibility
 <body>
     <div class="header">
         <div class="title">Technical Interview Questions</div>
-        <div class="subtitle">[TARGET ROLE] Position Assessment</div>
+        <div class="subtitle">{job_title} Position Assessment</div>
     </div>
     
     <div class="interview-info">
-        <div class="info-item"><span class="info-label">Candidate:</span> [CANDIDATE NAME]</div>
-        <div class="info-item"><span class="info-label">Position:</span> [JOB ROLE]</div>
-        <div class="info-item"><span class="info-label">Experience Level:</span> [DETECTED LEVEL]</div>
-        <div class="info-item"><span class="info-label">Key Technologies:</span> [PRIMARY TECH STACK]</div>
-        <div class="info-item"><span class="info-label">Interview Focus:</span> [MAIN ASSESSMENT AREAS]</div>
+        <div class="info-item"><span class="info-label">Position:</span> {job_title}</div>
+        <div class="info-item"><span class="info-label">Experience Level:</span> [Based on resume analysis]</div>
+        <div class="info-item"><span class="info-label">Interview Focus:</span> Technical competency and role alignment</div>
     </div>
     
-    <div class="category">
-        <div class="category-title">FOUNDATIONAL KNOWLEDGE (Questions 1-5)</div>
-        
-        <div class="question-item">
-            <div class="question-number">Question 1:</div>
-            <div class="difficulty basic">BASIC</div>
-            <div class="question-text">[SPECIFIC FOUNDATIONAL QUESTION BASED ON ROLE REQUIREMENTS]</div>
-            <div class="question-context">Context: This assesses fundamental understanding of [CONCEPT] which is critical for [SPECIFIC JOB FUNCTION]</div>
-            <div class="follow-up">Follow-up: [PROBE QUESTION TO ASSESS DEPTH]</div>
-        </div>
-        
-        <!-- REPEAT FOR QUESTIONS 2-5 -->
-        
-    </div>
-    
-    <div class="category">
-        <div class="category-title">PRACTICAL APPLICATION (Questions 6-12)</div>
-        
-        <div class="question-item">
-            <div class="question-number">Question 6:</div>
-            <div class="difficulty intermediate">INTERMEDIATE</div>
-            <div class="question-text">[PRACTICAL SCENARIO QUESTION]</div>
-            <div class="question-context">Context: Tests real-world problem-solving for [SPECIFIC WORK SITUATION]</div>
-            <div class="follow-up">Follow-up: [DEEPER PROBE INTO SOLUTION APPROACH]</div>
-        </div>
-        
-        <!-- REPEAT FOR QUESTIONS 7-12 -->
-        
-    </div>
-    
-    <!-- CONTINUE FOR ALL CATEGORIES -->
-    
-    <div class="notes-section">
-        <div class="notes-title">INTERVIEWER NOTES & ASSESSMENT GUIDE</div>
-        <div class="notes-content">
-            <strong>Key Evaluation Criteria:</strong><br>
-            • [SPECIFIC CRITERIA 1 BASED ON ROLE]<br>
-            • [SPECIFIC CRITERIA 2 BASED ON EXPERIENCE]<br>
-            • [SPECIFIC CRITERIA 3 BASED ON TECHNICAL REQUIREMENTS]<br><br>
-            
-            <strong>Red Flags to Watch For:</strong><br>
-            • [COMMON KNOWLEDGE GAPS FOR THIS ROLE]<br>
-            • [EXPERIENCE-SPECIFIC CONCERNS]<br><br>
-            
-            <strong>Strong Signal Indicators:</strong><br>
-            • [WHAT EXCELLENT ANSWERS SHOULD INCLUDE]<br>
-            • [SIGNS OF DEEP TECHNICAL COMPETENCE]
-        </div>
-    </div>
+    [GENERATE ALL 25 QUESTIONS HERE WITH PROPER CATEGORIES - NO PLACEHOLDERS ALLOWED]
     
 </body>
 </html>
 ```
 
-ENHANCED INSTRUCTIONS:
-
-Analyze candidate's resume deeply to understand their technical background and experience level
-Create questions that directly relate to their stated experience and the job requirements
-Include specific technologies, frameworks, and methodologies mentioned in their resume
-Provide context for each question explaining why it's relevant to the role
-Include follow-up questions to probe deeper understanding
-Generate HTML that renders perfectly for PDF conversion with proper styling and page breaks"""
+**CRITICAL REQUIREMENTS:**
+1. Generate ALL 25 questions in a single response
+2. Each question must be specific to the job requirements and resume content
+3. Include difficulty levels (BASIC, INTERMEDIATE, ADVANCED) 
+4. Provide context and follow-up questions for each
+5. Use proper HTML structure for PDF conversion
+6. NO placeholders or "TODO" comments - everything must be complete"""
 
         # Use Gemini API for generating interview questions
         try:
