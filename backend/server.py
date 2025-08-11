@@ -7136,12 +7136,8 @@ MANDATORY HTML OUTPUT FORMAT:
                         # Add question number
                         story.append(Paragraph(f"Question {question_num:02d}.", question_number_style))
                         
-                        # Clean the text for safe PDF rendering
-                        safe_question = question_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                        safe_question = re.sub(r'\s+', ' ', safe_question).strip()
-                        
                         # Apply enhanced formatting to the question
-                        formatted_question = format_text_with_breaks(safe_question)
+                        formatted_question = format_text_with_breaks(question_text)
                         
                         # Clean HTML entities for safe PDF rendering but restore our formatting tags
                         safe_question = formatted_question.replace('&lt;br/&gt;', '<br/>').replace('&lt;b&gt;', '<b>').replace('&lt;/b&gt;', '</b>')
