@@ -4619,7 +4619,7 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                         </p>
                       </div>
                       <button
-                        onClick={() => downloadAnalysisPDF(analysis.id, analysis.job_title)}
+                        onClick={() => downloadAnalysisPDF(analysis)}
                         className="bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-300 flex items-center"
                       >
                         📄 Download PDF
