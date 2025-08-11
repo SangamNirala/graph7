@@ -4637,12 +4637,27 @@ const PlacementPreparationDashboard = ({ setCurrentPage }) => {
                     </div>
                     
                     <div className="bg-white/5 rounded-lg p-4">
-                      <h4 className="text-lg font-semibold text-white mb-2">Gap Analysis Preview</h4>
+                      <h4 className="text-lg font-semibold text-white mb-2">
+                        {analysis.type === 'resume' && 'Gap Analysis Preview'}
+                        {analysis.type === 'rejection' && 'Rejection Reasons Preview'}
+                        {analysis.type === 'technical' && 'Interview Questions Preview'}
+                      </h4>
                       <div className="text-gray-300 text-sm max-h-32 overflow-y-auto">
-                        {analysis.analysis_results?.analysis_text?.length > 300 
-                          ? `${analysis.analysis_results.analysis_text.substring(0, 300)}...`
-                          : analysis.analysis_results?.analysis_text || 'Analysis details available in PDF'
-                        }
+                        {analysis.type === 'resume' && (
+                          analysis.analysis_results?.analysis_text?.length > 300 
+                            ? `${analysis.analysis_results.analysis_text.substring(0, 300)}...`
+                            : analysis.analysis_results?.analysis_text || 'Analysis details available in PDF'
+                        )}
+                        {analysis.type === 'rejection' && (
+                          analysis.rejection_reasons?.length > 300
+                            ? `${analysis.rejection_reasons.substring(0, 300)}...`
+                            : analysis.rejection_reasons || 'Rejection reasons details available in PDF'
+                        )}
+                        {analysis.type === 'technical' && (
+                          analysis.interview_questions?.length > 300
+                            ? `${analysis.interview_questions.substring(0, 300)}...`
+                            : analysis.interview_questions || 'Technical interview questions available in PDF'
+                        )}
                       </div>
                     </div>
                   </div>
