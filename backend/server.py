@@ -6435,7 +6435,7 @@ MANDATORY HTML OUTPUT FORMAT:
         
         .header {{
             text-align: center;
-            border-bottom: 2px solid #8e44ad;
+            border-bottom: 2px solid #2c3e50;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }}
@@ -6443,7 +6443,7 @@ MANDATORY HTML OUTPUT FORMAT:
         .title {{
             font-size: 20pt;
             font-weight: bold;
-            color: #8e44ad;
+            color: #2c3e50;
             margin-bottom: 10px;
         }}
         
@@ -6454,11 +6454,11 @@ MANDATORY HTML OUTPUT FORMAT:
         }}
         
         .interview-info {{
-            background: #f4f2f7;
+            background: #ecf0f1;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 25px;
-            border-left: 4px solid #8e44ad;
+            border-left: 4px solid #2c3e50;
         }}
         
         .info-item {{
@@ -6468,7 +6468,7 @@ MANDATORY HTML OUTPUT FORMAT:
         
         .info-label {{
             font-weight: bold;
-            color: #8e44ad;
+            color: #2c3e50;
         }}
         
         .category {{
