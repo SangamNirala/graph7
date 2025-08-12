@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://9111a607-ad7c-4aad-8586-9dca4be775f2.preview.emergentagent.com/api"
+BACKEND_URL = "https://career-test.preview.emergentagent.com/api"
 SAMPLE_RESUME_PATH = "/app/sample_resume.txt"
 
 # Test data
