@@ -4839,8 +4839,11 @@ class GenerateAptitudeTokenRequest(BaseModel):
     candidate_restrictions: Dict[str, Any] = {}
 
 @api_router.post("/placement-preparation/generate-aptitude-token")
-async def generate_aptitude_test_token(req: GenerateAptitudeTokenRequest):
+async def generate_aptitude_test_token(req: GenerateAptitudeTokenRequest, request: Request):
     try:
+        # Basic rate limit to prevent abuse
+        ip = request.client.host if request.client else ""
+        check_rate_limit("gen_token", ip, limit=10, window_sec=60)
         cfg = await db.aptitude_configs.find_one({"id": req.config_id})
         if not cfg:
             raise HTTPException(status_code=404, detail="Config not found")
