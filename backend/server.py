@@ -4558,6 +4558,244 @@ async def admin_login(request: AdminLoginRequest):
     return {"success": True, "message": "Admin authenticated successfully"}
 
 # Placement Preparation Dedicated Endpoints
+
+# ===== Aptitude: AI Question Generation (Gemini) =====
+class AIQuestionGenerateRequest(BaseModel):
+    job_title: str = ""
+    job_description: str = ""
+    topic: str
+    subtopic: Optional[str] = None
+    difficulty: str = "medium"  # easy, medium, hard
+    question_type: str = "multiple_choice"  # multiple_choice, numerical_input, true_false
+    count: int = 5
+    curated_ratio: float = 0.0  # 0.0-1.0 of curated questions to mix in
+    randomize_options: bool = True
+
+AI_ALLOWED_TOPICS = set(TOPICS_SUBTOPICS.keys())
+AI_ALLOWED_TYPES = {"multiple_choice", "numerical_input", "true_false"}
+AI_ALLOWED_DIFFICULTY = {"easy", "medium", "hard"}
+
+
+def build_ai_question_prompt(req: AIQuestionGenerateRequest) -> str:
+    subtopics = TOPICS_SUBTOPICS.get(req.topic, [])
+    chosen_sub = req.subtopic if req.subtopic else (subtopics[0] if subtopics else "general")
+    schema_hint = {
+        "question_text": "string",
+        "question_type": req.question_type,
+        "options": ["string", "string", "string", "string"],
+        "correct_answer": "string",
+        "explanation": "string"
+    }
+    prompt = f"""
+You are an expert assessment designer. Create a high-quality aptitude question for placement tests.
+Return STRICT JSON ONLY, no prose, matching this schema: {json.dumps(schema_hint)}
+
+Constraints:
+- topic: {req.topic}
+- subtopic: {chosen_sub}
+- difficulty: {req.difficulty}
+- type: {req.question_type}
+- If type is multiple_choice, provide exactly 4 options and ensure correct_answer is one of the options.
+- Keep question_text concise and unambiguous. Provide a clear, educational explanation.
+
+Job context (use to tailor realism, but do NOT reference the company directly in the question):
+- Job Title: {req.job_title}
+- Job Description: {req.job_description[:1200]}
+"""
+    return prompt
+
+
+def _extract_json(text: str) -> dict:
+    try:
+        return json.loads(text)
+    except Exception:
+        # Try to extract JSON in code fences
+        import re
+        m = re.search(r"\{[\s\S]*\}", text)
+        if m:
+            try:
+                return json.loads(m.group(0))
+            except Exception:
+                pass
+        raise
+
+
+async def ai_generate_single_question(req: AIQuestionGenerateRequest) -> Optional[AptitudeQuestion]:
+    try:
+        if not GEMINI_API_KEY:
+            logging.error("GEMINI_API_KEY missing; cannot generate AI question")
+            return None
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = build_ai_question_prompt(req)
+        resp = model.generate_content(prompt)
+        data = _extract_json(resp.text)
+        # Normalize
+        qtype = data.get("question_type", req.question_type)
+        options = data.get("options") or []
+        if qtype == "multiple_choice":
+            # enforce list of strings and 4 options
+            options = [str(o) for o in options][:4]
+            while len(options) < 4:
+                options.append("None of the above")
+        question = AptitudeQuestion(
+            topic=req.topic,
+            subtopic=(req.subtopic or (TOPICS_SUBTOPICS[req.topic][0] if req.topic in TOPICS_SUBTOPICS else "general")),
+            difficulty=req.difficulty,
+            question_text=str(data.get("question_text", "")).strip(),
+            question_type=qtype,
+            options=options,
+            correct_answer=str(data.get("correct_answer", "")).strip(),
+            explanation=str(data.get("explanation", "")).strip(),
+            time_limit=_choose_time_limit(req.difficulty),
+            metadata={"source": "ai_gemini", "model": "gemini-1.5-flash"}
+        )
+        # Randomize options if requested
+        if req.randomize_options and question.question_type == "multiple_choice":
+            random.shuffle(question.options)
+            # ensure correct_answer still matches
+            if question.correct_answer not in question.options:
+                # Try to fix by replacing first option
+                if question.options:
+                    question.options[0] = question.correct_answer
+                    random.shuffle(question.options)
+        # Validate
+        check = validate_aptitude_question(question)
+        question.metadata["quality"] = check
+        if not check["valid"]:
+            # attempt auto-fix: ensure correct answer in options for MCQ
+            if question.question_type == "multiple_choice" and question.correct_answer not in question.options and question.options:
+                question.options[0] = question.correct_answer
+                question.metadata["quality"]["autofix"] = "inserted_correct_answer"
+                question.metadata["quality"]["valid_after_autofix"] = validate_aptitude_question(question)["valid"]
+        return question
+    except Exception as e:
+        logging.error(f"AI generation error: {e}")
+        return None
+
+
+async def _sample_curated(topic: str, subtopic: Optional[str], difficulty: str, n: int) -> List[dict]:
+    if n <= 0:
+        return []
+    filters = {"topic": topic, "difficulty": difficulty}
+    if subtopic:
+        filters["subtopic"] = subtopic
+    try:
+        pipeline = [{"$match": filters}, {"$sample": {"size": n}}]
+        docs = await db.aptitude_questions.aggregate(pipeline).to_list(length=None)
+        return docs
+    except Exception as e:
+        logging.error(f"Curated sample error: {e}")
+        return []
+
+
+@api_router.post("/admin/aptitude-questions/ai-generate")
+async def admin_ai_generate_questions(request: AIQuestionGenerateRequest):
+    try:
+        # Validate inputs
+        if request.topic not in AI_ALLOWED_TOPICS:
+            raise HTTPException(status_code=400, detail="Invalid topic")
+        if request.difficulty not in AI_ALLOWED_DIFFICULTY:
+            raise HTTPException(status_code=400, detail="Invalid difficulty")
+        if request.question_type not in AI_ALLOWED_TYPES:
+            raise HTTPException(status_code=400, detail="Invalid question type")
+        if request.count < 1 or request.count > 100:
+            raise HTTPException(status_code=400, detail="Count must be between 1 and 100")
+        if not GEMINI_API_KEY:
+            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+
+        curated_n = int(request.count * max(0.0, min(1.0, request.curated_ratio)))
+        ai_n = request.count - curated_n
+        inserted = 0
+        generated = 0
+        ai_questions: List[dict] = []
+
+        # Curated sample blending
+        curated_docs = await _sample_curated(request.topic, request.subtopic, request.difficulty, curated_n)
+
+        # AI generation loop
+        for _ in range(ai_n):
+            q = await ai_generate_single_question(request)
+            if q:
+                generated += 1
+                ai_questions.append(q.dict())
+
+        # Insert AI questions
+        if ai_questions:
+            try:
+                res = await db.aptitude_questions.insert_many(ai_questions)
+                inserted += len(res.inserted_ids)
+            except Exception as e:
+                logging.error(f"Insert AI questions failed: {e}")
+
+        result_docs = curated_docs + ai_questions
+        return {
+            "success": True,
+            "requested": request.count,
+            "ai_generated": generated,
+            "ai_inserted": inserted,
+            "curated_mixed": len(curated_docs),
+            "delivered": len(result_docs),
+            "topic": request.topic,
+            "difficulty": request.difficulty
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"AI generation endpoint error: {e}")
+        raise HTTPException(status_code=500, detail="AI generation failed")
+
+
+class AIQuestionRefineRequest(BaseModel):
+    question_id: str
+    instruction: str = "Improve clarity and strengthen distractors; keep correct answer unchanged."
+
+@api_router.post("/admin/aptitude-questions/ai-refine")
+async def admin_ai_refine_question(req: AIQuestionRefineRequest):
+    try:
+        doc = await db.aptitude_questions.find_one({"id": req.question_id})
+        if not doc:
+            raise HTTPException(status_code=404, detail="Question not found")
+        if not GEMINI_API_KEY:
+            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+        base = AptitudeQuestion(**{k: v for k, v in doc.items() if k != "_id"})
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"""
+Refine the following question according to the instruction.
+Return STRICT JSON ONLY with fields: question_text, options, correct_answer, explanation.
+Instruction: {req.instruction}
+
+Question:
+- topic: {base.topic}
+- subtopic: {base.subtopic}
+- difficulty: {base.difficulty}
+- type: {base.question_type}
+- question_text: {base.question_text}
+- options: {json.dumps(base.options)}
+- correct_answer: {base.correct_answer}
+- explanation: {base.explanation}
+"""
+        resp = model.generate_content(prompt)
+        data = _extract_json(resp.text)
+        # Apply refinement but preserve core fields
+        updated = {
+            "question_text": str(data.get("question_text", base.question_text)).strip(),
+            "options": [str(o) for o in (data.get("options") or base.options)],
+            "correct_answer": base.correct_answer,  # preserve
+            "explanation": str(data.get("explanation", base.explanation)).strip(),
+            "metadata": {**(base.metadata or {}), "refined_by": "ai_gemini", "refine_ts": datetime.utcnow().isoformat()}
+        }
+        # Validate updated question
+        candidate = AptitudeQuestion(**{**base.dict(), **updated})
+        check = validate_aptitude_question(candidate)
+        updated["metadata"]= {**updated["metadata"], "quality": check}
+        await db.aptitude_questions.update_one({"id": base.id}, {"$set": updated})
+        return {"success": True, "question_id": base.id, "quality": check}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"AI refine error: {e}")
+        raise HTTPException(status_code=500, detail="Refinement failed")
+
 @api_router.post("/admin/upload")
 async def placement_preparation_upload(resume: UploadFile = File(...)):
     """
