@@ -819,6 +819,85 @@ class BulkActionRequest(BaseModel):
     action: str  # add_tags, remove_tags, change_status, archive, delete
     parameters: Dict[str, Any] = {}  # action-specific parameters
 
+# ===== APTITUDE TEST MODELS (PHASE 1 - PART 1) =====
+
+class AptitudeQuestion(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    topic: str  # "numerical_reasoning", "logical_reasoning", "verbal_comprehension", "spatial_reasoning"
+    subtopic: str  # "arithmetic", "sequences", "reading_comprehension", "pattern_recognition", etc.
+    difficulty: str  # "easy", "medium", "hard"
+    question_text: str
+    question_type: str  # "multiple_choice", "numerical_input", "true_false"
+    options: List[str]  # For multiple choice questions
+    correct_answer: str
+    explanation: str
+    time_limit: int = 120  # seconds
+    metadata: Dict[str, Any] = {}
+    usage_count: int = 0
+    success_rate: float = 0.0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AptitudeTestConfig(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_by: str
+    test_name: str
+    job_title: str = ""
+    job_description: str = ""
+    topics: List[str]  # Selected topics for the test
+    questions_per_topic: Dict[str, int]  # {"numerical_reasoning": 10, "logical_reasoning": 8}
+    difficulty_distribution: Dict[str, float]  # {"easy": 0.4, "medium": 0.4, "hard": 0.2}
+    total_time_limit: int = 3600  # seconds
+    adaptive_mode: bool = True
+    randomize_questions: bool = True
+    randomize_options: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AptitudeTestToken(BaseModel):
+    token: str = Field(default_factory=lambda: ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)))
+    config_id: str
+    expires_at: datetime
+    max_attempts: int = 1
+    used_count: int = 0
+    is_active: bool = True
+    candidate_restrictions: Dict[str, Any] = {}  # IP, browser requirements, etc.
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AptitudeTestSession(BaseModel):
+    session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    token: str
+    config_id: str
+    candidate_name: str = ""
+    candidate_email: str = ""
+    status: str = "not_started"  # "not_started", "in_progress", "completed", "expired", "abandoned"
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    current_question_index: int = 0
+    questions_sequence: List[str] = []  # Question IDs in order
+    answers: Dict[str, Any] = {}  # question_id -> answer_data
+    time_per_question: Dict[str, float] = {}  # question_id -> time_taken
+    adaptive_score: float = 0.0
+    ip_address: str = ""
+    user_agent: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AptitudeTestResult(BaseModel):
+    result_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
+    overall_score: float
+    percentage_score: float
+    topic_scores: Dict[str, Dict[str, Any]]  # topic -> {"score": X, "total": Y, "percentage": Z, "time": T}
+    difficulty_performance: Dict[str, Dict[str, Any]]  # difficulty -> performance stats
+    total_time_taken: int  # seconds
+    questions_attempted: int
+    questions_correct: int
+    strengths: List[str]
+    improvement_areas: List[str]
+    percentile_rank: float = 0.0
+    recommendations: List[str] = []
+    detailed_analysis: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class CreateTagRequest(BaseModel):
     name: str
     color: str = "#3B82F6"
