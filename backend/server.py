@@ -4969,10 +4969,21 @@ async def submit_answer(session_id: str, req: SubmitAnswerRequest):
         answers[qdoc["id"]] = {"answer": req.answer, "correct": is_correct}
         time_map = sess.get("time_per_question", {})
         time_map[qdoc["id"]] = float(req.time_taken or 0.0)
+        # CAT update ability and reliability
+        theta = float(sess.get("adaptive_score", 0.0))
+        se = float(sess.get("cat_se", 1.0))
+        b = _difficulty_to_value(qdoc.get("difficulty", "medium"))
+        theta_new, info = cat_update_ability(theta, b, is_correct)
+        # Update SE (approximate): SE ~ 1/sqrt(sum info)
+        info_sum = float(sess.get("cat_info_sum", 0.0)) + float(info)
+        se_new = 1.0 / max(1e-6, info_sum) ** 0.5
         new_idx = sess.get("current_question_index", 0) + 1
         status = sess.get("status", "in_progress")
-        if new_idx >= len(sess.get("questions_sequence", [])):
+        # Early stopping if reliability achieved
+        cfg = await db.aptitude_configs.find_one({"id": sess["config_id"]})
+        if cat_should_end(cfg, {**sess, "questions_sequence": (sess.get("questions_sequence") or []), "cat_se": se_new, "start_time": sess.get("start_time") }):
             status = "completed"
+        if status == "completed":
             end_time = datetime.utcnow()
         else:
             end_time = sess.get("end_time")
@@ -4983,10 +4994,13 @@ async def submit_answer(session_id: str, req: SubmitAnswerRequest):
                 "time_per_question": time_map,
                 "current_question_index": new_idx,
                 "status": status,
-                "end_time": end_time
+                "end_time": end_time,
+                "adaptive_score": theta_new,
+                "cat_se": se_new,
+                "cat_info_sum": info_sum
             }}
         )
-        return {"success": True, "correct": is_correct, "next_index": new_idx, "status": status}
+        return {"success": True, "correct": is_correct, "next_index": new_idx, "status": status, "cat_theta": theta_new, "cat_se": se_new}
     except HTTPException:
         raise
     except Exception as e:
