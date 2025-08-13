@@ -5010,8 +5010,10 @@ class SubmitAnswerRequest(BaseModel):
     time_taken: float = 0.0
 
 @api_router.post("/aptitude-test/answer/{session_id}")
-async def submit_answer(session_id: str, req: SubmitAnswerRequest):
+async def submit_answer(session_id: str, req: SubmitAnswerRequest, request: Request):
     try:
+        ip = request.client.host if request.client else ""
+        check_rate_limit("submit_answer", ip, limit=120, window_sec=60)
         sess = await db.aptitude_sessions.find_one({"session_id": session_id})
         if not sess:
             raise HTTPException(status_code=404, detail="Session not found")
