@@ -4920,8 +4920,10 @@ async def get_session_status(session_id: str):
         raise HTTPException(status_code=500, detail="Failed to get session")
 
 @api_router.get("/aptitude-test/question/{session_id}")
-async def get_next_question(session_id: str):
+async def get_next_question(session_id: str, request: Request):
     try:
+        ip = request.client.host if request.client else ""
+        check_rate_limit("next_question", ip, limit=120, window_sec=60)
         sess = await db.aptitude_sessions.find_one({"session_id": session_id})
         if not sess:
             raise HTTPException(status_code=404, detail="Session not found")
