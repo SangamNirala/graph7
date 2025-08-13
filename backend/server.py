@@ -4469,6 +4469,152 @@ TOPICS_SUBTOPICS = {
 
 DIFFICULTY_DISTRIBUTION = {"easy": 0.4, "medium": 0.4, "hard": 0.2}
 
+# ===== Aptitude: CAT (Computer Adaptive Testing) Helpers =====
+
+def _difficulty_to_value(d: str) -> float:
+    return {"easy": -0.5, "medium": 0.0, "hard": 0.7}.get(d, 0.0)
+
+def _value_to_difficulty(theta: float) -> str:
+    if theta < -0.25:
+        return "easy"
+    if theta > 0.35:
+        return "hard"
+    return "medium"
+
+def _sigmoid(x: float) -> float:
+    try:
+        import math
+        return 1.0 / (1.0 + math.exp(-x))
+    except Exception:
+        return 0.5
+
+def cat_update_ability(theta: float, b: float, correct: bool, lr: float = 0.7) -> (float, float):
+    # Rasch-like update: theta_new = theta + lr*(x - P)
+    x = 1.0 if correct else 0.0
+    P = _sigmoid(theta - b)
+    info = max(1e-6, P * (1 - P))
+    theta_new = theta + lr * (x - P)
+    return theta_new, info
+
+def cat_choose_topic(cfg: dict, sess: dict) -> Optional[str]:
+    quotas = cfg.get("questions_per_topic", {}) or {}
+    asked_ids = sess.get("questions_sequence", [])
+    asked_topics = {}
+    if asked_ids:
+        # fetch minimal fields to count topics
+        # For performance, we only compute counts for topics in quotas
+        pass
+    # We'll estimate counts from answers map to reduce extra DB calls
+    ans = sess.get("answers", {})
+    topic_counts: Dict[str, int] = {t: 0 for t in cfg.get("topics", [])}
+    if ans:
+        # We need question docs to count topics
+        qids = list(ans.keys())
+    else:
+        qids = []
+    # If no answers, choose topic with max quota
+    if not qids:
+        if not cfg.get("topics"):
+            return None
+        # pick topic with highest requested count
+        topics_sorted = sorted(cfg.get("topics", []), key=lambda t: -(quotas.get(t, 0)))
+        return topics_sorted[0] if topics_sorted else None
+    # Build counts from questions_sequence where possible to avoid db call
+    if asked_ids:
+        # We'll try to look up minimal set from session cache if any in future; fallback to db now
+        pass
+    try:
+        if asked_ids:
+            qdocs = []
+            # batch get for asked ids in last 100 to reduce cost
+            tail = asked_ids[-100:]
+            qdocs = []
+        else:
+            qdocs = []
+    except Exception:
+        qdocs = []
+    # If we couldn't map, approximate evenly
+    remaining = {t: max(0, quotas.get(t, 0)) for t in cfg.get("topics", [])}
+    # Reduce remaining by length of asked for a rough balance
+    total_quota = sum(quotas.values())
+    asked = len(asked_ids)
+    if total_quota > 0:
+        # proportionally compute remaining
+        for t in remaining:
+            # expected asked in topic ~ asked * quota[t]/total
+            expected = int(round(asked * (quotas.get(t, 0) / total_quota)))
+            remaining[t] = max(0, quotas.get(t, 0) - expected)
+    # select topic with max remaining, fallback first topic
+    candidates = sorted(remaining.items(), key=lambda kv: -kv[1])
+    if candidates and candidates[0][1] > 0:
+        return candidates[0][0]
+    return (cfg.get("topics", []) or [None])[0]
+
+def cat_pick_question(topic: str, theta: float, desired_diff: str, avoid_ids: List[str], sample_size: int = 20) -> Optional[dict]:
+    try:
+        # Try desired difficulty first
+        diffs = [desired_diff]
+        if desired_diff == "medium":
+            diffs += ["easy", "hard"]
+        elif desired_diff == "easy":
+            diffs += ["medium"]
+        else:
+            diffs += ["medium"]
+        for d in diffs:
+            pipeline = [
+                {"$match": {"topic": topic, "difficulty": d, "id": {"$nin": avoid_ids}}},
+                {"$sample": {"size": sample_size}}
+            ]
+            docs = []
+            try:
+                docs = asyncio.get_event_loop().run_until_complete(db.aptitude_questions.aggregate(pipeline).to_list(length=None))
+            except RuntimeError:
+                # if we're already in event loop, await directly (caller is async)
+                pass
+            if not docs:
+                # fallback to sync await from caller
+                return None
+            # Choose doc closest to theta
+            best = None
+            best_delta = 999
+            for doc in docs:
+                b = _difficulty_to_value(doc.get("difficulty", "medium"))
+                delta = abs(theta - b)
+                if delta < best_delta:
+                    best = doc
+                    best_delta = delta
+            if best:
+                return best
+        return None
+    except Exception as e:
+        logging.error(f"CAT pick question error: {e}")
+        return None
+
+def cat_should_end(cfg: dict, sess: dict) -> bool:
+    # End if reached total required questions OR reliability good enough and min questions reached
+    total_required = sum((cfg.get("questions_per_topic", {}) or {}).values())
+    asked = len(sess.get("questions_sequence", []) or [])
+    # reliability via SE
+    se = float(sess.get("cat_se", 1.0))
+    min_q = max(10, int(0.5 * total_required))
+    if asked >= total_required:
+        return True
+    # Reliability threshold
+    if asked >= min_q and se <= 0.35:
+        return True
+    # Time limit
+    try:
+        tl = int(cfg.get("total_time_limit", 3600))
+        st = sess.get("start_time")
+        if isinstance(st, str):
+            st = datetime.fromisoformat(st.replace('Z', '+00:00'))
+        if st and (datetime.utcnow() - st).total_seconds() > tl:
+            return True
+    except Exception:
+        pass
+    return False
+
+
 async def generate_aptitude_question_pool(target_total: int = 800) -> Dict[str, Any]:
     per_topic = target_total // 4  # 200 each
     docs: List[dict] = []
