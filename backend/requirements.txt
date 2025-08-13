@@ -38,17 +38,17 @@ httpx
 aiohttp
 openai
 # Advanced AI Analysis Dependencies
-librosa>=0.11.0
+#librosa>=0.11.0
 #opencv-python>=4.12.0
 # mediapipe>=0.10.14
 #tensorflow>=2.19.0
-scipy>=1.16.0
+#scipy>=1.16.0
 # ML and emotional intelligence dependencies
 textstat>=0.7.7
 #torch>=2.7.0
 #transformers>=4.53.0
 vaderSentiment>=3.3.2
-scikit-learn>=1.7.0
+#scikit-learn>=1.7.0
 # Additional dependencies for voice recording functionality
 lazy_loader
 safetensors>=0.4.3
@@ -90,7 +90,7 @@ Pillow>=10.0.0
 # Phase 2: AI-Powered Screening & Shortlisting Dependencies
 #spacy>=3.4.0
 nltk>=3.8.0
-spacy[transformers]>=3.4.0
+#spacy[transformers]>=3.4.0
 
 # Additional dependencies to resolve import issues
 markupsafe>=3.0.0
