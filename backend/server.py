@@ -5022,13 +5022,18 @@ async def submit_answer(session_id: str, req: SubmitAnswerRequest, request: Requ
             raise HTTPException(status_code=404, detail="Question not found")
         # Evaluate correctness
         is_correct = False
+        # Sanitize answer to string for consistency (store raw too)
+        raw_answer = req.answer
         if qdoc.get("question_type") in ["multiple_choice", "true_false"]:
-            is_correct = str(req.answer).strip() == str(qdoc.get("correct_answer")).strip()
+            is_correct = str(raw_answer).strip() == str(qdoc.get("correct_answer")).strip()
         elif qdoc.get("question_type") == "numerical_input":
             try:
-                is_correct = float(req.answer) == float(qdoc.get("correct_answer"))
+                is_correct = float(raw_answer) == float(qdoc.get("correct_answer"))
             except Exception:
                 is_correct = False
+        # Anti-cheat: suspiciously fast answers (<1s) flagged
+        if float(req.time_taken or 0) < 1.0:
+            await mark_anti_cheat_flag(session_id, "too_fast", {"question_id": qdoc["id"], "time": req.time_taken})
         # Update session answers and progress index
         answers = sess.get("answers", {})
         answers[qdoc["id"]] = {"answer": req.answer, "correct": is_correct}
