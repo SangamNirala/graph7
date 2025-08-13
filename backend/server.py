@@ -40,7 +40,7 @@ import gridfs
 # Import libraries for sentiment analysis and emotional intelligence
 import librosa
 import numpy as np
-import torch
+#import torch
 # from transformers import pipeline  # Commented out due to dependency issues
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 # from textstat import flesch_reading_ease  # Temporarily disabled due to dependency issues
