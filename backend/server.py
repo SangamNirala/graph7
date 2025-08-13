@@ -6071,6 +6071,7 @@ async def _sample_curated(topic: str, subtopic: Optional[str], difficulty: str, 
 
 @api_router.post("/admin/aptitude-questions/ai-generate")
 async def admin_ai_generate_questions(request: AIQuestionGenerateRequest):
+    """Enhanced AI question generation with job-contextual capabilities"""
     try:
         # Validate inputs
         if request.topic not in AI_ALLOWED_TOPICS:
@@ -6088,17 +6089,37 @@ async def admin_ai_generate_questions(request: AIQuestionGenerateRequest):
         ai_n = request.count - curated_n
         inserted = 0
         generated = 0
+        failed_quality = 0
         ai_questions: List[dict] = []
 
         # Curated sample blending
         curated_docs = await _sample_curated(request.topic, request.subtopic, request.difficulty, curated_n)
 
-        # AI generation loop
-        for _ in range(ai_n):
+        # Enhanced AI generation loop with quality control
+        attempts = 0
+        max_attempts = ai_n * 3  # Allow multiple attempts for quality
+        
+        while len(ai_questions) < ai_n and attempts < max_attempts:
+            attempts += 1
             q = await ai_generate_single_question(request)
+            
             if q:
                 generated += 1
-                ai_questions.append(q.dict())
+                # Check quality if using enhanced generation
+                if request.contextual_enhancement:
+                    quality_validation = q.metadata.get("quality_validation", {})
+                    if quality_validation.get("quality_score", 0) >= request.quality_threshold:
+                        ai_questions.append(q.dict())
+                    else:
+                        failed_quality += 1
+                        if failed_quality < ai_n * 2:  # Allow some failures
+                            continue
+                        else:
+                            # Accept lower quality if too many failures
+                            ai_questions.append(q.dict())
+                else:
+                    # Legacy mode - accept all valid questions
+                    ai_questions.append(q.dict())
 
         # Insert AI questions
         if ai_questions:
@@ -6108,22 +6129,175 @@ async def admin_ai_generate_questions(request: AIQuestionGenerateRequest):
             except Exception as e:
                 logging.error(f"Insert AI questions failed: {e}")
 
+        # Calculate quality metrics
+        if ai_questions:
+            avg_quality = sum(q.get("metadata", {}).get("quality_validation", {}).get("quality_score", 0.5) 
+                            for q in ai_questions) / len(ai_questions)
+            avg_relevance = sum(q.get("metadata", {}).get("job_relevance_score", 0.5) 
+                             for q in ai_questions) / len(ai_questions)
+        else:
+            avg_quality = 0.0
+            avg_relevance = 0.0
+
         result_docs = curated_docs + ai_questions
         return {
             "success": True,
             "requested": request.count,
             "ai_generated": generated,
             "ai_inserted": inserted,
+            "failed_quality_check": failed_quality,
             "curated_mixed": len(curated_docs),
             "delivered": len(result_docs),
             "topic": request.topic,
-            "difficulty": request.difficulty
+            "difficulty": request.difficulty,
+            "contextual_enhancement": request.contextual_enhancement,
+            "quality_metrics": {
+                "average_quality_score": round(avg_quality, 3),
+                "average_job_relevance": round(avg_relevance, 3),
+                "quality_threshold_used": request.quality_threshold
+            }
         }
     except HTTPException:
         raise
     except Exception as e:
         logging.error(f"AI generation endpoint error: {e}")
         raise HTTPException(status_code=500, detail="AI generation failed")
+
+
+@api_router.post("/admin/aptitude-questions/ai-generate-contextual")
+async def admin_ai_generate_contextual_questions(request: JobContextualGenerationRequest):
+    """Advanced job-contextual question generation across multiple topics"""
+    try:
+        if not GEMINI_API_KEY:
+            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+        
+        # Validate topics
+        for topic in request.topics:
+            if topic not in AI_ALLOWED_TOPICS:
+                raise HTTPException(status_code=400, detail=f"Invalid topic: {topic}")
+        
+        # Auto-detect industry if not provided
+        industry = request.company_industry or await detect_industry_context(
+            request.job_title, request.job_description
+        )
+        
+        # Extract job skills
+        skills = request.required_skills or await extract_job_skills(request.job_description)
+        
+        # Calculate questions per topic
+        if not request.questions_per_topic:
+            questions_per_topic = {topic: request.total_questions // len(request.topics) 
+                                 for topic in request.topics}
+            # Distribute remainder
+            remainder = request.total_questions % len(request.topics)
+            for i, topic in enumerate(request.topics[:remainder]):
+                questions_per_topic[topic] += 1
+        else:
+            questions_per_topic = request.questions_per_topic
+        
+        all_generated = []
+        generation_stats = {
+            "by_topic": {},
+            "by_difficulty": {"easy": 0, "medium": 0, "hard": 0},
+            "quality_metrics": {
+                "average_quality": 0.0,
+                "average_relevance": 0.0,
+                "high_quality_count": 0
+            }
+        }
+        
+        # Generate questions for each topic
+        for topic, count in questions_per_topic.items():
+            if count <= 0:
+                continue
+                
+            topic_questions = []
+            topic_stats = {"generated": 0, "inserted": 0, "failed_quality": 0}
+            
+            # Distribute difficulties for this topic
+            difficulties = []
+            for diff, ratio in request.difficulty_distribution.items():
+                diff_count = int(count * ratio)
+                difficulties.extend([diff] * diff_count)
+            
+            # Add remainder as medium difficulty
+            while len(difficulties) < count:
+                difficulties.append("medium")
+            
+            # Generate questions for each difficulty
+            for difficulty in difficulties:
+                gen_request = AIQuestionGenerateRequest(
+                    job_title=request.job_title,
+                    job_description=request.job_description,
+                    topic=topic,
+                    difficulty=difficulty,
+                    question_type="multiple_choice",  # Default to multiple choice
+                    count=1,
+                    contextual_enhancement=True,
+                    quality_threshold=request.quality_threshold,
+                    industry_focus=industry
+                )
+                
+                question = await ai_generate_contextual_question(gen_request)
+                if question:
+                    topic_stats["generated"] += 1
+                    generation_stats["by_difficulty"][difficulty] += 1
+                    
+                    # Check quality
+                    quality_score = question.metadata.get("quality_validation", {}).get("quality_score", 0.5)
+                    if quality_score >= request.quality_threshold:
+                        topic_questions.append(question.dict())
+                        generation_stats["quality_metrics"]["high_quality_count"] += 1
+                    else:
+                        topic_stats["failed_quality"] += 1
+                        # Still include if we're not too strict
+                        if len(topic_questions) < count * 0.8:  # Accept if we need more questions
+                            topic_questions.append(question.dict())
+            
+            # Insert topic questions
+            if topic_questions:
+                try:
+                    res = await db.aptitude_questions.insert_many(topic_questions)
+                    topic_stats["inserted"] = len(res.inserted_ids)
+                    all_generated.extend(topic_questions)
+                except Exception as e:
+                    logging.error(f"Insert questions for topic {topic} failed: {e}")
+            
+            generation_stats["by_topic"][topic] = topic_stats
+        
+        # Calculate final quality metrics
+        if all_generated:
+            qualities = [q.get("metadata", {}).get("quality_validation", {}).get("quality_score", 0.5) 
+                        for q in all_generated]
+            relevances = [q.get("metadata", {}).get("job_relevance_score", 0.5) 
+                         for q in all_generated]
+            
+            generation_stats["quality_metrics"]["average_quality"] = sum(qualities) / len(qualities)
+            generation_stats["quality_metrics"]["average_relevance"] = sum(relevances) / len(relevances)
+        
+        return {
+            "success": True,
+            "job_context": {
+                "job_title": request.job_title,
+                "detected_industry": industry,
+                "extracted_skills": skills[:10],
+                "experience_level": request.experience_level
+            },
+            "generation_summary": {
+                "total_requested": request.total_questions,
+                "total_generated": len(all_generated),
+                "questions_per_topic": questions_per_topic,
+                "difficulty_distribution": generation_stats["by_difficulty"]
+            },
+            "quality_analysis": generation_stats["quality_metrics"],
+            "detailed_stats": generation_stats["by_topic"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Contextual generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Contextual generation failed: {str(e)}")
 
 
 class AIQuestionRefineRequest(BaseModel):
