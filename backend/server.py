@@ -4870,6 +4870,8 @@ class ValidateTokenRequest(BaseModel):
 @api_router.post("/aptitude-test/validate-token")
 async def validate_token_and_start_test(req: ValidateTokenRequest, request: Request):
     try:
+        ip = request.client.host if request.client else ""
+        check_rate_limit("validate_token", ip, limit=60, window_sec=60)
         tok = await db.aptitude_tokens.find_one({"token": req.token, "is_active": True})
         if not tok:
             raise HTTPException(status_code=400, detail="Invalid or inactive token")
