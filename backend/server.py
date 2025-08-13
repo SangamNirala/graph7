@@ -4195,6 +4195,361 @@ async def startup_background_tasks():
 def generate_secure_token() -> str:
     return ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(16))
 
+# ===== Aptitude: Collections & Indexes =====
+async def ensure_aptitude_indexes():
+    try:
+        await db.aptitude_questions.create_index([("id", 1)], unique=True)
+        await db.aptitude_questions.create_index([("topic", 1)])
+        await db.aptitude_questions.create_index([("subtopic", 1)])
+        await db.aptitude_questions.create_index([("difficulty", 1)])
+        await db.aptitude_questions.create_index([("topic", 1), ("difficulty", 1)])
+        await db.aptitude_questions.create_index([("created_at", -1)])
+        await db.aptitude_questions.create_index([("success_rate", -1)])
+        # Configs/tokens/sessions/results
+        await db.aptitude_configs.create_index([("id", 1)], unique=True)
+        await db.aptitude_tokens.create_index([("token", 1)], unique=True)
+        await db.aptitude_tokens.create_index([("config_id", 1)])
+        await db.aptitude_sessions.create_index([("session_id", 1)], unique=True)
+        await db.aptitude_sessions.create_index([("token", 1)])
+        await db.aptitude_results.create_index([("result_id", 1)], unique=True)
+        await db.aptitude_results.create_index([("session_id", 1)])
+        logging.info("Aptitude indexes ensured")
+    except Exception as e:
+        logging.error(f"Failed creating aptitude indexes: {e}")
+
+# Extend startup tasks to ensure aptitude indexes too
+@app.on_event("startup")
+async def startup_aptitude_indexes():
+    await ensure_aptitude_indexes()
+
+# ===== Aptitude: Question Validation & Generation =====
+
+def validate_aptitude_question(q: AptitudeQuestion) -> Dict[str, Any]:
+    issues = []
+    if q.topic not in ["numerical_reasoning", "logical_reasoning", "verbal_comprehension", "spatial_reasoning"]:
+        issues.append("invalid_topic")
+    if q.difficulty not in ["easy", "medium", "hard"]:
+        issues.append("invalid_difficulty")
+    if q.question_type not in ["multiple_choice", "numerical_input", "true_false"]:
+        issues.append("invalid_question_type")
+    if q.question_type == "multiple_choice":
+        if not q.options or len(q.options) < 3:
+            issues.append("insufficient_options")
+        if q.correct_answer not in q.options:
+            issues.append("correct_answer_not_in_options")
+    if q.time_limit < 30 or q.time_limit > 600:
+        issues.append("time_limit_out_of_range")
+    # Basic quality metrics
+    quality = 1.0
+    if len(q.question_text) < 20:
+        quality -= 0.2
+    if q.question_type == "multiple_choice" and len(q.options) < 4:
+        quality -= 0.1
+    return {
+        "valid": len(issues) == 0,
+        "issues": issues,
+        "quality_score": round(max(0.0, min(1.0, quality)), 2)
+    }
+
+# Utility helpers
+def _choose_time_limit(difficulty: str) -> int:
+    return {"easy": 90, "medium": 120, "hard": 150}.get(difficulty, 120)
+
+def _mcq_options(correct: str, distractors: List[str]) -> List[str]:
+    opts = [correct] + distractors
+    random.shuffle(opts)
+    return opts
+
+# Generators per topic
+def _gen_numerical(subtopic: str, difficulty: str) -> AptitudeQuestion:
+    # Simple arithmetic/algebra/percentages/ratios/probability/statistics
+    if subtopic == "arithmetic":
+        a = random.randint(5, 40) if difficulty == "easy" else random.randint(20, 200)
+        b = random.randint(5, 40) if difficulty == "easy" else random.randint(20, 200)
+        op = random.choice(["+", "-", "×", "÷"])  
+        if op == "+":
+            ans = a + b
+        elif op == "-":
+            ans = a - b
+        elif op == "×":
+            ans = a * b
+        else:
+            b = b if b != 0 else 1
+            ans = round(a / b, 2)
+        qtext = f"Compute: {a} {op} {b}"
+        correct = str(ans)
+        distract = [str(ans + d) for d in [-2, 2, 5]]
+        options = _mcq_options(correct, distract)
+        return AptitudeQuestion(topic="numerical_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer=correct, explanation=f"Apply operator {op} to {a} and {b}.",
+                                time_limit=_choose_time_limit(difficulty))
+    if subtopic == "percentages":
+        base = random.randint(50, 300)
+        pct = random.choice([5,10,12.5,15,20,25,30])
+        inc = random.choice([True, False])
+        new_val = round(base * (1 + pct/100), 2) if inc else round(base * (1 - pct/100), 2)
+        qtext = f"A value of {base} undergoes a {'increase' if inc else 'decrease'} of {pct}%. What is the new value?"
+        correct = str(new_val)
+        options = _mcq_options(correct, [str(round(new_val*(1+x/100),2)) for x in [-5,5,10]])
+        return AptitudeQuestion(topic="numerical_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer=correct, explanation="New value = base × (1 ± pct/100).",
+                                time_limit=_choose_time_limit(difficulty))
+    if subtopic == "ratios":
+        x = random.randint(2, 9)
+        y = random.randint(2, 9)
+        total = random.randint(110, 300)
+        part_x = round(total * x/(x+y), 2)
+        qtext = f"In the ratio {x}:{y}, what is the first part of total {total}?"
+        correct = str(part_x)
+        options = _mcq_options(correct, [str(round(part_x*(1+delta),2)) for delta in [-0.1,0.1,0.2]])
+        return AptitudeQuestion(topic="numerical_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer=correct, explanation=f"First part = total × {x}/({x}+{y}).",
+                                time_limit=_choose_time_limit(difficulty))
+    if subtopic == "algebra":
+        m = random.randint(2, 9)
+        c = random.randint(1, 20)
+        x = random.randint(2, 10)
+        y = m*x + c
+        qtext = f"If y = {m}x + {c}, find y when x = {x}."
+        correct = str(y)
+        options = _mcq_options(correct, [str(y+d) for d in [-m, m, c]])
+        return AptitudeQuestion(topic="numerical_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer=correct, explanation="Substitute x and compute.",
+                                time_limit=_choose_time_limit(difficulty))
+    if subtopic == "probability":
+        n = random.randint(4, 8)
+        qtext = f"A fair die with {n} faces is rolled. What is the probability of getting a {random.randint(1,n)}?"
+        correct = f"1/{n}"
+        options = _mcq_options(correct, [f"1/{n-1}", f"2/{n}", f"{n-1}/{n}"])
+        return AptitudeQuestion(topic="numerical_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer=correct, explanation="Each face is equally likely.",
+                                time_limit=_choose_time_limit(difficulty))
+    # statistics
+    nums = [random.randint(10, 60) for _ in range(5 if difficulty=="easy" else 7)]
+    mean = round(sum(nums)/len(nums), 2)
+    qtext = f"Find the mean of the numbers: {', '.join(map(str, nums))}."
+    correct = str(mean)
+    options = _mcq_options(correct, [str(mean + d) for d in [-1, 1, 2]])
+    return AptitudeQuestion(topic="numerical_reasoning", subtopic="statistics", difficulty=difficulty,
+                            question_text=qtext, question_type="multiple_choice", options=options,
+                            correct_answer=correct, explanation="Mean = sum / count.",
+                            time_limit=_choose_time_limit(difficulty))
+
+def _gen_logical(subtopic: str, difficulty: str) -> AptitudeQuestion:
+    if subtopic == "sequences":
+        start = random.randint(1, 10)
+        step = random.randint(2, 9) if difficulty != "easy" else random.randint(1,5)
+        seq = [start + i*step for i in range(5)]
+        qtext = f"Find the next number in the sequence: {', '.join(map(str, seq))}, ?"
+        correct = str(seq[-1] + step)
+        options = _mcq_options(correct, [str(seq[-1] + d) for d in [step+1, step+2, step-1]])
+        return AptitudeQuestion(topic="logical_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer=correct, explanation="Arithmetic progression with constant difference.",
+                                time_limit=_choose_time_limit(difficulty))
+    if subtopic == "syllogisms":
+        qtext = "All A are B. Some B are C. Therefore, some A are C. True or False?"
+        correct = "False"
+        options = ["True", "False"]
+        return AptitudeQuestion(topic="logical_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="true_false", options=options,
+                                correct_answer=correct, explanation="Conclusion does not necessarily follow.",
+                                time_limit=_choose_time_limit(difficulty))
+    if subtopic == "coding_decoding":
+        word = random.choice(["CAT","DOG","CODE","JAVA","NODE"]) 
+        shift = random.randint(1, 5)
+        coded = ''.join(chr(((ord(ch)-65+shift)%26)+65) for ch in word)
+        qtext = f"In a code language, each letter is shifted by {shift}. What is the code for {word}?"
+        correct = coded
+        options = _mcq_options(correct, [word[::-1], ''.join(reversed(coded)), ''.join(chr(((ord(ch)-65+shift+1)%26)+65) for ch in word)])
+        return AptitudeQuestion(topic="logical_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer=correct, explanation="Caesar shift by given amount.",
+                                time_limit=_choose_time_limit(difficulty))
+    if subtopic == "blood_relations":
+        qtext = "Pointing to a photograph, John said, 'He is the son of my father's only son.' Who is the person?"
+        correct = "John's son"
+        options = _mcq_options(correct, ["John's father", "John", "John's brother"])
+        return AptitudeQuestion(topic="logical_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer=correct, explanation="Father's only son is John; the person is John's son.",
+                                time_limit=_choose_time_limit(difficulty))
+    # directions/logical_deduction generic
+    qtext = "If all squares are rectangles and some rectangles are rhombuses, which statement is certainly true?"
+    correct = "Some squares are rectangles."
+    options = _mcq_options(correct, ["Some squares are rhombuses.", "All rectangles are squares.", "No square is a rhombus."])
+    return AptitudeQuestion(topic="logical_reasoning", subtopic="logical_deduction", difficulty=difficulty,
+                            question_text=qtext, question_type="multiple_choice", options=options,
+                            correct_answer=correct, explanation="By definition, all squares are rectangles.",
+                            time_limit=_choose_time_limit(difficulty))
+
+def _gen_verbal(subtopic: str, difficulty: str) -> AptitudeQuestion:
+    synonyms = {
+        "abundant": ["plentiful", "scarce", "meager", "rare"],
+        "concise": ["brief", "verbose", "wordy", "lengthy"],
+        "mitigate": ["alleviate", "aggravate", "worsen", "intensify"],
+        "prudent": ["wise", "reckless", "rash", "careless"],
+        "candid": ["honest", "deceitful", "evasive", "coy"],
+    }
+    antonyms = {
+        "augment": ["decrease", "increase", "expand", "enlarge"],
+        "benevolent": ["malevolent", "kind", "charitable", "altruistic"],
+        "lucid": ["confusing", "clear", "obvious", "evident"],
+    }
+    if subtopic in ["synonyms_antonyms", "vocabulary"]:
+        if random.choice([True, False]):
+            word, opts = random.choice(list(synonyms.items()))
+            correct = opts[0]
+            options = _mcq_options(correct, opts)
+            qtext = f"Choose the synonym of '{word}'."
+        else:
+            word, opts = random.choice(list(antonyms.items()))
+            correct = opts[0]
+            options = _mcq_options(correct, opts)
+            qtext = f"Choose the antonym of '{word}'."
+        return AptitudeQuestion(topic="verbal_comprehension", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer=correct, explanation="Basic vocabulary assessment.",
+                                time_limit=_choose_time_limit(difficulty))
+    if subtopic == "grammar":
+        sentence = "He don't has any time."
+        options = _mcq_options("He doesn't have any time.", ["He don't have any time.", "He hasn't any time.", "He didn't has any time."])
+        return AptitudeQuestion(topic="verbal_comprehension", subtopic=subtopic, difficulty=difficulty,
+                                question_text=f"Choose the correct sentence: '{sentence}'",
+                                question_type="multiple_choice", options=options, correct_answer="He doesn't have any time.",
+                                explanation="Subject-verb agreement and correct verb form.", time_limit=_choose_time_limit(difficulty))
+    # sentence_correction / reading_comprehension simplified
+    passage = "A startup's growth depends on product-market fit and iterative improvements."
+    qtext = "According to the passage, what primarily influences a startup's growth?"
+    correct = "Product-market fit"
+    options = _mcq_options(correct, ["Marketing budget", "Team size", "Office location"])
+    return AptitudeQuestion(topic="verbal_comprehension", subtopic="reading_comprehension", difficulty=difficulty,
+                            question_text=qtext + f"\nPassage: {passage}", question_type="multiple_choice", options=options,
+                            correct_answer=correct, explanation="Stated explicitly in the passage.",
+                            time_limit=_choose_time_limit(difficulty))
+
+def _gen_spatial(subtopic: str, difficulty: str) -> AptitudeQuestion:
+    if subtopic == "pattern_recognition":
+        shapes = ["▲", "■", "●", "◆"]
+        seq = [random.choice(shapes) for _ in range(4)]
+        next_shape = random.choice(shapes)
+        qtext = f"Identify the next element in the pattern: {' '.join(seq)} ?"
+        correct = next_shape
+        options = _mcq_options(correct, random.sample(shapes, k=3))
+        return AptitudeQuestion(topic="spatial_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer=correct, explanation="Visual sequence continuation.",
+                                time_limit=_choose_time_limit(difficulty))
+    if subtopic == "analogies":
+        qtext = "Square is to Cube as Circle is to ____?"
+        options = _mcq_options("Sphere", ["Cylinder", "Cone", "Disk"])
+        return AptitudeQuestion(topic="spatial_reasoning", subtopic=subtopic, difficulty=difficulty,
+                                question_text=qtext, question_type="multiple_choice", options=options,
+                                correct_answer="Sphere", explanation="3D counterpart of a circle is a sphere.",
+                                time_limit=_choose_time_limit(difficulty))
+    # mirror_images / figure_matching text-based
+    qtext = "A figure is flipped horizontally (mirror image). Which property remains unchanged?"
+    options = _mcq_options("Area", ["Orientation", "Handedness", "Asymmetry"])
+    return AptitudeQuestion(topic="spatial_reasoning", subtopic="mirror_images", difficulty=difficulty,
+                            question_text=qtext, question_type="multiple_choice", options=options,
+                            correct_answer="Area", explanation="Area remains invariant under reflection.",
+                            time_limit=_choose_time_limit(difficulty))
+
+TOPICS_SUBTOPICS = {
+    "numerical_reasoning": ["arithmetic", "percentages", "ratios", "algebra", "probability", "statistics"],
+    "logical_reasoning": ["sequences", "syllogisms", "blood_relations", "coding_decoding", "logical_deduction"],
+    "verbal_comprehension": ["synonyms_antonyms", "grammar", "sentence_correction", "vocabulary", "reading_comprehension"],
+    "spatial_reasoning": ["pattern_recognition", "analogies", "mirror_images", "figure_matching", "paper_folding"]
+}
+
+DIFFICULTY_DISTRIBUTION = {"easy": 0.4, "medium": 0.4, "hard": 0.2}
+
+async def generate_aptitude_question_pool(target_total: int = 800) -> Dict[str, Any]:
+    per_topic = target_total // 4  # 200 each
+    docs: List[dict] = []
+    for topic, subtopics in TOPICS_SUBTOPICS.items():
+        topic_total = per_topic
+        # Counts by difficulty
+        counts = {
+            "easy": int(topic_total * DIFFICULTY_DISTRIBUTION["easy"]),
+            "medium": int(topic_total * DIFFICULTY_DISTRIBUTION["medium"]),
+            "hard": topic_total - int(topic_total * 0.4) - int(topic_total * 0.4)
+        }
+        # Spread across subtopics approximately equally
+        for difficulty, count in counts.items():
+            for i in range(count):
+                subtopic = subtopics[i % len(subtopics)]
+                if topic == "numerical_reasoning":
+                    q = _gen_numerical(subtopic, difficulty)
+                elif topic == "logical_reasoning":
+                    q = _gen_logical(subtopic, difficulty)
+                elif topic == "verbal_comprehension":
+                    q = _gen_verbal(subtopic, difficulty)
+                else:
+                    q = _gen_spatial(subtopic, difficulty)
+                # Validation & quality
+                check = validate_aptitude_question(q)
+                q.metadata["quality"] = check
+                docs.append(q.dict())
+    # Insert in chunks
+    inserted = 0
+    CHUNK = 200
+    for i in range(0, len(docs), CHUNK):
+        chunk = docs[i:i+CHUNK]
+        try:
+            res = await db.aptitude_questions.insert_many(chunk)
+            inserted += len(res.inserted_ids)
+        except Exception as e:
+            logging.error(f"Chunk insert failed: {e}")
+    return {"generated": len(docs), "inserted": inserted}
+
+# ===== Admin endpoint to seed questions =====
+class AptitudeSeedRequest(BaseModel):
+    force: bool = False
+    target_total: int = 800
+
+@api_router.post("/admin/aptitude-questions/seed")
+async def seed_aptitude_questions(req: AptitudeSeedRequest):
+    try:
+        current = await db.aptitude_questions.count_documents({})
+        if current >= req.target_total and not req.force:
+            return {"success": True, "message": f"Seed skipped. Existing questions: {current}"}
+        # If force: delete and reseed
+        if req.force and current > 0:
+            await db.aptitude_questions.delete_many({})
+        result = await generate_aptitude_question_pool(req.target_total)
+        final_count = await db.aptitude_questions.count_documents({})
+        return {
+            "success": True,
+            "generated": result["generated"],
+            "inserted": result["inserted"],
+            "total_in_db": final_count
+        }
+    except Exception as e:
+        logging.error(f"Seeding error: {e}")
+        raise HTTPException(status_code=500, detail=f"Seeding failed: {str(e)}")
+
+@api_router.get("/admin/aptitude-questions/stats")
+async def aptitude_questions_stats():
+    try:
+        total = await db.aptitude_questions.count_documents({})
+        by_topic = {}
+        for topic in TOPICS_SUBTOPICS.keys():
+            by_topic[topic] = await db.aptitude_questions.count_documents({"topic": topic})
+        by_difficulty = {}
+        for d in ["easy", "medium", "hard"]:
+            by_difficulty[d] = await db.aptitude_questions.count_documents({"difficulty": d})
+        return {"success": True, "total": total, "by_topic": by_topic, "by_difficulty": by_difficulty}
+    except Exception as e:
+        logging.error(f"Stats error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to compute stats")
+
+
 # Admin Routes
 @api_router.post("/admin/login")
 async def admin_login(request: AdminLoginRequest):
