@@ -5077,68 +5077,449 @@ async def submit_answer(session_id: str, req: SubmitAnswerRequest, request: Requ
         logging.error(f"Submit answer error: {e}")
         raise HTTPException(status_code=500, detail="Failed to submit answer")
 
+# ===== ANALYTICS & SCORING ENGINE (PHASE 1 - PART 1) =====
+
+async def calculate_percentile_rank(score: float, config_id: str = None) -> float:
+    """Calculate percentile rank based on all historical test results"""
+    try:
+        # Get all historical results for similar test configurations
+        query = {}
+        if config_id:
+            # Find sessions with same config to ensure fair comparison
+            sessions = await db.aptitude_sessions.find({"config_id": config_id}).to_list(length=None)
+            session_ids = [s["session_id"] for s in sessions]
+            if session_ids:
+                query["session_id"] = {"$in": session_ids}
+        
+        # Get all historical scores
+        all_results = await db.aptitude_results.find(query).to_list(length=None)
+        
+        if not all_results or len(all_results) < 2:
+            return 50.0  # Default percentile if insufficient data
+        
+        all_scores = [r.get("overall_score", 0) for r in all_results]
+        all_scores.sort()
+        
+        # Calculate percentile rank
+        scores_below = sum(1 for s in all_scores if s < score)
+        scores_equal = sum(1 for s in all_scores if s == score)
+        
+        # Use standard percentile rank formula
+        percentile = (scores_below + 0.5 * scores_equal) / len(all_scores) * 100
+        return round(percentile, 1)
+        
+    except Exception as e:
+        logging.error(f"Percentile calculation error: {e}")
+        return 50.0  # Default fallback
+
+
+async def analyze_time_management(session: Dict[str, Any], questions_map: Dict[str, Any]) -> Dict[str, Any]:
+    """Comprehensive time management analytics"""
+    try:
+        time_per_question = session.get("time_per_question", {})
+        total_time = session.get("total_time_taken", 0) or sum(time_per_question.values())
+        
+        if not time_per_question:
+            return {
+                "total_time_seconds": int(total_time),
+                "average_time_per_question": 0,
+                "time_efficiency_score": 50.0,
+                "time_distribution": {},
+                "rushed_questions": [],
+                "time_management_insights": ["Insufficient timing data available"]
+            }
+        
+        # Calculate timing statistics
+        times = list(time_per_question.values())
+        avg_time = sum(times) / len(times) if times else 0
+        
+        # Analyze time distribution by topic and difficulty
+        time_by_topic = {}
+        time_by_difficulty = {}
+        rushed_questions = []
+        
+        for qid, time_taken in time_per_question.items():
+            question = questions_map.get(qid)
+            if not question:
+                continue
+                
+            topic = question.get("topic", "unknown")
+            difficulty = question.get("difficulty", "medium")
+            time_limit = question.get("time_limit", 120)
+            
+            # Track time by topic
+            if topic not in time_by_topic:
+                time_by_topic[topic] = {"total_time": 0, "question_count": 0, "avg_time": 0}
+            time_by_topic[topic]["total_time"] += time_taken
+            time_by_topic[topic]["question_count"] += 1
+            time_by_topic[topic]["avg_time"] = time_by_topic[topic]["total_time"] / time_by_topic[topic]["question_count"]
+            
+            # Track time by difficulty
+            if difficulty not in time_by_difficulty:
+                time_by_difficulty[difficulty] = {"total_time": 0, "question_count": 0, "avg_time": 0}
+            time_by_difficulty[difficulty]["total_time"] += time_taken
+            time_by_difficulty[difficulty]["question_count"] += 1
+            time_by_difficulty[difficulty]["avg_time"] = time_by_difficulty[difficulty]["total_time"] / time_by_difficulty[difficulty]["question_count"]
+            
+            # Identify rushed questions (completed in less than 25% of time limit)
+            if time_taken < (time_limit * 0.25):
+                rushed_questions.append({
+                    "question_id": qid,
+                    "topic": topic,
+                    "difficulty": difficulty,
+                    "time_taken": time_taken,
+                    "time_limit": time_limit
+                })
+        
+        # Calculate time efficiency score (0-100)
+        # Based on optimal time usage (not too fast, not too slow)
+        efficiency_scores = []
+        for qid, time_taken in time_per_question.items():
+            question = questions_map.get(qid)
+            if question:
+                time_limit = question.get("time_limit", 120)
+                optimal_range = (time_limit * 0.4, time_limit * 0.8)  # 40-80% of time limit is optimal
+                
+                if optimal_range[0] <= time_taken <= optimal_range[1]:
+                    efficiency_scores.append(100)
+                elif time_taken < optimal_range[0]:
+                    # Too fast - potentially rushed
+                    efficiency_scores.append(max(0, 100 - (optimal_range[0] - time_taken) / optimal_range[0] * 50))
+                else:
+                    # Too slow
+                    efficiency_scores.append(max(0, 100 - (time_taken - optimal_range[1]) / time_limit * 60))
+        
+        time_efficiency_score = sum(efficiency_scores) / len(efficiency_scores) if efficiency_scores else 50.0
+        
+        # Generate time management insights
+        insights = []
+        if len(rushed_questions) > len(times) * 0.3:
+            insights.append("Consider spending more time on questions to improve accuracy")
+        if avg_time > 90:  # Average > 90 seconds
+            insights.append("Focus on time management - practice solving questions faster")
+        if time_efficiency_score > 80:
+            insights.append("Excellent time management - good balance of speed and thoroughness")
+        elif time_efficiency_score < 50:
+            insights.append("Time management needs improvement - practice pacing strategies")
+        
+        return {
+            "total_time_seconds": int(total_time),
+            "average_time_per_question": round(avg_time, 1),
+            "time_efficiency_score": round(time_efficiency_score, 1),
+            "time_by_topic": time_by_topic,
+            "time_by_difficulty": time_by_difficulty,
+            "rushed_questions": rushed_questions[:5],  # Top 5 most rushed
+            "time_management_insights": insights
+        }
+        
+    except Exception as e:
+        logging.error(f"Time management analysis error: {e}")
+        return {
+            "total_time_seconds": 0,
+            "average_time_per_question": 0,
+            "time_efficiency_score": 50.0,
+            "time_distribution": {},
+            "rushed_questions": [],
+            "time_management_insights": ["Error analyzing time management data"]
+        }
+
+
+async def generate_improvement_recommendations(
+    topic_scores: Dict[str, Dict[str, Any]], 
+    difficulty_performance: Dict[str, Dict[str, Any]],
+    time_analysis: Dict[str, Any],
+    percentile_rank: float
+) -> List[str]:
+    """Generate personalized improvement recommendations"""
+    recommendations = []
+    
+    try:
+        # Topic-based recommendations
+        weak_topics = [
+            topic for topic, scores in topic_scores.items() 
+            if scores.get("percentage", 0) < 60 and scores.get("total", 0) > 0
+        ]
+        
+        strong_topics = [
+            topic for topic, scores in topic_scores.items() 
+            if scores.get("percentage", 0) >= 80 and scores.get("total", 0) > 0
+        ]
+        
+        if weak_topics:
+            topic_names = {
+                "numerical_reasoning": "Numerical Reasoning",
+                "logical_reasoning": "Logical Reasoning", 
+                "verbal_comprehension": "Verbal Comprehension",
+                "spatial_reasoning": "Spatial Reasoning"
+            }
+            formatted_topics = [topic_names.get(t, t.replace("_", " ").title()) for t in weak_topics[:2]]
+            recommendations.append(f"Focus on improving {' and '.join(formatted_topics)} through targeted practice")
+        
+        # Difficulty-based recommendations
+        easy_perf = difficulty_performance.get("easy", {}).get("percentage", 0)
+        medium_perf = difficulty_performance.get("medium", {}).get("percentage", 0)
+        hard_perf = difficulty_performance.get("hard", {}).get("percentage", 0)
+        
+        if easy_perf < 80:
+            recommendations.append("Master fundamental concepts before attempting advanced problems")
+        elif medium_perf < 60:
+            recommendations.append("Practice medium-difficulty problems to build intermediate skills")
+        elif hard_perf < 40 and medium_perf > 70:
+            recommendations.append("Challenge yourself with more complex problems to reach advanced level")
+        
+        # Time management recommendations
+        time_efficiency = time_analysis.get("time_efficiency_score", 50)
+        if time_efficiency < 50:
+            recommendations.append("Improve time management by practicing with timer and learning quick solution techniques")
+        
+        rushed_count = len(time_analysis.get("rushed_questions", []))
+        if rushed_count > 3:
+            recommendations.append("Avoid rushing through questions - take time to understand before answering")
+        
+        # Percentile-based recommendations
+        if percentile_rank < 25:
+            recommendations.append("Focus on building strong foundational knowledge across all topic areas")
+        elif percentile_rank < 50:
+            recommendations.append("Continue consistent practice to reach above-average performance level")
+        elif percentile_rank < 75:
+            recommendations.append("Target specific weak areas to achieve top-tier performance")
+        else:
+            recommendations.append("Maintain current performance level and consider advanced problem-solving techniques")
+        
+        # Strong topics leverage
+        if strong_topics:
+            topic_names = {
+                "numerical_reasoning": "Numerical Reasoning",
+                "logical_reasoning": "Logical Reasoning", 
+                "verbal_comprehension": "Verbal Comprehension",
+                "spatial_reasoning": "Spatial Reasoning"
+            }
+            formatted_strong = [topic_names.get(t, t.replace("_", " ").title()) for t in strong_topics[:2]]
+            recommendations.append(f"Leverage your strength in {' and '.join(formatted_strong)} when tackling mixed problems")
+        
+        return recommendations[:6]  # Return top 6 recommendations
+        
+    except Exception as e:
+        logging.error(f"Recommendation generation error: {e}")
+        return ["Continue practicing regularly to improve your aptitude test performance"]
+
+
+async def generate_detailed_analysis(
+    session: Dict[str, Any], 
+    topic_scores: Dict[str, Dict[str, Any]], 
+    difficulty_performance: Dict[str, Dict[str, Any]],
+    time_analysis: Dict[str, Any],
+    percentile_rank: float
+) -> str:
+    """Generate comprehensive detailed analysis report"""
+    try:
+        analysis_parts = []
+        
+        # Overall performance analysis
+        overall_score = (session.get("questions_correct", 0) / max(1, session.get("questions_attempted", 1))) * 100
+        
+        if overall_score >= 80:
+            performance_level = "Excellent"
+            analysis_parts.append(f"Outstanding performance with {overall_score:.1f}% accuracy. You demonstrate strong aptitude across multiple areas.")
+        elif overall_score >= 60:
+            performance_level = "Good"
+            analysis_parts.append(f"Solid performance with {overall_score:.1f}% accuracy. You show good foundational knowledge with room for improvement.")
+        elif overall_score >= 40:
+            performance_level = "Average"
+            analysis_parts.append(f"Average performance with {overall_score:.1f}% accuracy. Focus on building stronger fundamental skills.")
+        else:
+            performance_level = "Needs Improvement"
+            analysis_parts.append(f"Performance of {overall_score:.1f}% indicates need for significant skill development across topic areas.")
+        
+        # Topic-wise detailed analysis
+        analysis_parts.append("**Topic-wise Performance:**")
+        topic_names = {
+            "numerical_reasoning": "Numerical Reasoning",
+            "logical_reasoning": "Logical Reasoning", 
+            "verbal_comprehension": "Verbal Comprehension",
+            "spatial_reasoning": "Spatial Reasoning"
+        }
+        
+        for topic, scores in topic_scores.items():
+            if scores.get("total", 0) > 0:
+                topic_name = topic_names.get(topic, topic.replace("_", " ").title())
+                percentage = scores.get("percentage", 0)
+                avg_time = scores.get("time", 0) / max(1, scores.get("total", 1))
+                
+                if percentage >= 75:
+                    level = "Strong"
+                elif percentage >= 50:
+                    level = "Moderate"
+                else:
+                    level = "Weak"
+                
+                analysis_parts.append(f"- {topic_name}: {level} ({percentage:.1f}%, avg. {avg_time:.1f}s per question)")
+        
+        # Difficulty progression analysis
+        analysis_parts.append("**Difficulty Progression:**")
+        easy_perf = difficulty_performance.get("easy", {}).get("percentage", 0)
+        medium_perf = difficulty_performance.get("medium", {}).get("percentage", 0)
+        hard_perf = difficulty_performance.get("hard", {}).get("percentage", 0)
+        
+        if easy_perf > medium_perf > hard_perf:
+            analysis_parts.append("Shows expected difficulty progression - strongest in easier questions with appropriate challenge scaling.")
+        elif medium_perf > easy_perf:
+            analysis_parts.append("Interestingly performs better on medium questions than easy ones - may benefit from more careful attention to detail.")
+        else:
+            analysis_parts.append(f"Difficulty performance pattern: Easy ({easy_perf:.1f}%), Medium ({medium_perf:.1f}%), Hard ({hard_perf:.1f}%)")
+        
+        # Percentile context
+        analysis_parts.append(f"**Comparative Performance:** Your score places you in the {percentile_rank:.1f}th percentile, meaning you performed better than {percentile_rank:.1f}% of test takers.")
+        
+        # Time management analysis
+        time_efficiency = time_analysis.get("time_efficiency_score", 50)
+        analysis_parts.append(f"**Time Management:** Time efficiency score of {time_efficiency:.1f}% indicates {'excellent' if time_efficiency > 80 else 'good' if time_efficiency > 60 else 'adequate' if time_efficiency > 40 else 'poor'} time management skills.")
+        
+        return " ".join(analysis_parts)
+        
+    except Exception as e:
+        logging.error(f"Detailed analysis generation error: {e}")
+        return "Comprehensive analysis could not be generated due to data processing error."
+
+
 @api_router.get("/aptitude-test/results/{session_id}")
 async def get_test_results(session_id: str):
+    """
+    Enhanced Analytics & Scoring Engine - Comprehensive performance calculation
+    with topic-wise analysis, time management analytics, percentile ranking, and improvement recommendations
+    """
     try:
-        # If results already computed
+        # If results already computed with comprehensive analytics
         existing = await db.aptitude_results.find_one({"session_id": session_id})
-        if existing:
+        if existing and existing.get("detailed_analysis") and existing.get("recommendations"):
             if "_id" in existing:
                 existing["_id"] = str(existing["_id"])
             return existing
-        # Compute quick results
+        
+        # Get session data
         sess = await db.aptitude_sessions.find_one({"session_id": session_id})
         if not sess:
             raise HTTPException(status_code=404, detail="Session not found")
+        
         cfg = await db.aptitude_configs.find_one({"id": sess["config_id"]})
         answers = sess.get("answers", {})
         total = len(sess.get("questions_sequence", []))
+        
+        if total == 0:
+            raise HTTPException(status_code=400, detail="No questions attempted")
+        
+        # Get question details
         correct_ids = [qid for qid, a in answers.items() if a.get("correct")]
         questions = await db.aptitude_questions.find({"id": {"$in": list(answers.keys())}}).to_list(length=None)
         questions_map = {q["id"]: q for q in questions}
+        
+        # === COMPREHENSIVE PERFORMANCE CALCULATION ===
+        
+        # Topic-wise and difficulty-wise analysis
         topic_scores: Dict[str, Dict[str, Any]] = {}
-        diff_perf: Dict[str, Dict[str, Any]] = {}
-        for qid, a in answers.items():
-            q = questions_map.get(qid)
-            if not q:
+        difficulty_performance: Dict[str, Dict[str, Any]] = {}
+        
+        for qid, answer_data in answers.items():
+            question = questions_map.get(qid)
+            if not question:
                 continue
-            t = q.get("topic")
-            d = q.get("difficulty")
-            topic_scores.setdefault(t, {"score": 0, "total": 0, "time": 0.0})
-            topic_scores[t]["total"] += 1
-            topic_scores[t]["time"] += float(sess.get("time_per_question", {}).get(qid, 0.0))
-            if a.get("correct"):
-                topic_scores[t]["score"] += 1
-            diff_perf.setdefault(d, {"score": 0, "total": 0})
-            diff_perf[d]["total"] += 1
-            if a.get("correct"):
-                diff_perf[d]["score"] += 1
-        # Final aggregates
+                
+            topic = question.get("topic", "unknown")
+            difficulty = question.get("difficulty", "medium")
+            time_taken = float(sess.get("time_per_question", {}).get(qid, 0.0))
+            
+            # Topic analysis
+            if topic not in topic_scores:
+                topic_scores[topic] = {"score": 0, "total": 0, "time": 0.0, "questions": []}
+            
+            topic_scores[topic]["total"] += 1
+            topic_scores[topic]["time"] += time_taken
+            topic_scores[topic]["questions"].append(qid)
+            
+            if answer_data.get("correct"):
+                topic_scores[topic]["score"] += 1
+            
+            # Difficulty analysis
+            if difficulty not in difficulty_performance:
+                difficulty_performance[difficulty] = {"score": 0, "total": 0, "avg_time": 0.0}
+            
+            difficulty_performance[difficulty]["total"] += 1
+            if answer_data.get("correct"):
+                difficulty_performance[difficulty]["score"] += 1
+        
+        # Calculate percentages and averages
+        for topic_data in topic_scores.values():
+            topic_data["percentage"] = round((topic_data["score"] / max(1, topic_data["total"])) * 100, 2)
+            topic_data["avg_time"] = round(topic_data["time"] / max(1, topic_data["total"]), 1)
+        
+        for diff_data in difficulty_performance.values():
+            diff_data["percentage"] = round((diff_data["score"] / max(1, diff_data["total"])) * 100, 2)
+        
+        # === TIME MANAGEMENT ANALYTICS ===
+        time_analysis = await analyze_time_management(sess, questions_map)
+        
+        # === PERCENTILE RANKING SYSTEM ===
         questions_correct = len(correct_ids)
-        percentage = (questions_correct / total * 100) if total > 0 else 0.0
-        strengths = sorted([t for t, s in topic_scores.items() if s["total"]>0], key=lambda x: -(topic_scores[x]["score"]/max(1,topic_scores[x]["total"])) )[:3]
-        improvement = sorted([t for t, s in topic_scores.items() if s["total"]>0], key=lambda x: (topic_scores[x]["score"]/max(1,topic_scores[x]["total"])) )[:3]
+        overall_score = (questions_correct / total * 100) if total > 0 else 0.0
+        percentile_rank = await calculate_percentile_rank(overall_score, sess.get("config_id"))
+        
+        # === IMPROVEMENT RECOMMENDATIONS GENERATION ===
+        recommendations = await generate_improvement_recommendations(
+            topic_scores, difficulty_performance, time_analysis, percentile_rank
+        )
+        
+        # === DETAILED ANALYSIS ===
+        detailed_analysis = await generate_detailed_analysis(
+            {**sess, "questions_correct": questions_correct, "questions_attempted": total},
+            topic_scores, difficulty_performance, time_analysis, percentile_rank
+        )
+        
+        # Determine strengths and improvement areas
+        strengths = sorted(
+            [t for t, s in topic_scores.items() if s["total"] > 0], 
+            key=lambda x: -(topic_scores[x]["score"] / max(1, topic_scores[x]["total"])) 
+        )[:3]
+        
+        improvement_areas = sorted(
+            [t for t, s in topic_scores.items() if s["total"] > 0], 
+            key=lambda x: (topic_scores[x]["score"] / max(1, topic_scores[x]["total"])) 
+        )[:3]
+        
+        # Create comprehensive result object
         result = AptitudeTestResult(
             session_id=session_id,
-            overall_score=percentage,
-            percentage_score=percentage,
-            topic_scores={k: {**v, "percentage": round((v["score"]/max(1,v["total"]))*100,2)} for k,v in topic_scores.items()},
-            difficulty_performance={k: {**v, "percentage": round((v["score"]/max(1,v["total"]))*100,2)} for k,v in diff_perf.items()},
-            total_time_taken=int(sum(sess.get("time_per_question", {}).values())),
+            overall_score=round(overall_score, 2),
+            percentage_score=round(overall_score, 2),
+            topic_scores=topic_scores,
+            difficulty_performance=difficulty_performance,
+            total_time_taken=int(time_analysis.get("total_time_seconds", 0)),
             questions_attempted=total,
             questions_correct=questions_correct,
             strengths=strengths,
-            improvement_areas=improvement,
-            recommendations=[],
-            detailed_analysis=""
+            improvement_areas=improvement_areas,
+            percentile_rank=percentile_rank,
+            recommendations=recommendations,
+            detailed_analysis=detailed_analysis
         )
-        await db.aptitude_results.insert_one(result.dict())
-        return result.dict()
+        
+        # Store enhanced results
+        result_dict = result.dict()
+        result_dict["time_management_analytics"] = time_analysis  # Additional analytics data
+        
+        # Update or insert result
+        await db.aptitude_results.update_one(
+            {"session_id": session_id},
+            {"$set": result_dict},
+            upsert=True
+        )
+        
+        return result_dict
+        
     except HTTPException:
         raise
     except Exception as e:
         logging.error(f"Get results error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get results")
+        raise HTTPException(status_code=500, detail="Failed to get comprehensive results")
 
 @api_router.get("/aptitude-test/results/{session_id}/pdf")
 async def download_results_pdf(session_id: str):
