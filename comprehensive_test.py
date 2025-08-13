@@ -7,7 +7,7 @@ import requests
 import json
 import time
 
-BASE_URL = 'https://career-test.preview.emergentagent.com/api'
+BASE_URL = 'https://aptitude-models.preview.emergentagent.com/api'
 
 def test_comprehensive_enhanced_features():
     session = requests.Session()

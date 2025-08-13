@@ -21,7 +21,7 @@ import re
 from typing import Dict, Any, Optional
 
 # Backend URL from frontend .env
-BASE_URL = "https://career-test.preview.emergentagent.com/api"
+BASE_URL = "https://aptitude-models.preview.emergentagent.com/api"
 
 class BacktickTTSTester:
     def __init__(self):

@@ -7,7 +7,7 @@ import requests
 import json
 
 # Backend URL
-BASE_URL = "https://career-test.preview.emergentagent.com/api"
+BASE_URL = "https://aptitude-models.preview.emergentagent.com/api"
 
 def test_simple_connection():
     """Test basic connection to backend"""
