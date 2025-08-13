@@ -4867,42 +4867,65 @@ async def get_next_question(session_id: str):
         cfg = await db.aptitude_configs.find_one({"id": sess["config_id"]})
         if not cfg:
             raise HTTPException(status_code=404, detail="Config not found")
-        # If first time, build sequence per config
-        if not sess.get("questions_sequence"):
-            sequence: List[str] = []
-            # For each topic, sample N questions by difficulty distribution
-            for topic in cfg.get("topics", []):
-                n_topic = int(cfg.get("questions_per_topic", {}).get(topic, 0))
-                if n_topic <= 0:
-                    continue
-                # Build difficulty splits
-                dd = cfg.get("difficulty_distribution", {"easy":0.4, "medium":0.4, "hard":0.2})
-                counts = {
-                    "easy": int(n_topic * dd.get("easy", 0.4)),
-                    "medium": int(n_topic * dd.get("medium", 0.4)),
-                    "hard": max(0, n_topic - int(n_topic*dd.get("easy",0.4)) - int(n_topic*dd.get("medium",0.4)))
-                }
-                for d, c in counts.items():
-                    if c <= 0:
-                        continue
-                    pipeline = [{"$match": {"topic": topic, "difficulty": d}}, {"$sample": {"size": c}}]
-                    docs = await db.aptitude_questions.aggregate(pipeline).to_list(length=None)
-                    sequence.extend([doc["id"] for doc in docs])
-            if cfg.get("randomize_questions", True):
-                random.shuffle(sequence)
-            await db.aptitude_sessions.update_one({"session_id": session_id}, {"$set": {"questions_sequence": sequence, "current_question_index": 0}})
-            sess["questions_sequence"] = sequence
-            sess["current_question_index"] = 0
-        # If completed
-        idx = sess.get("current_question_index", 0)
-        if idx >= len(sess.get("questions_sequence", [])):
+        # CAT state defaults
+        theta = float(sess.get("adaptive_score", 0.0))
+        se = float(sess.get("cat_se", 1.0))
+        asked_ids: List[str] = sess.get("questions_sequence", []) or []
+        # If we should end early due to CAT reliability/time
+        if cat_should_end(cfg, sess):
             return {"message": "no_more_questions"}
-        qid = sess["questions_sequence"][idx]
-        qdoc = await db.aptitude_questions.find_one({"id": qid})
-        if not qdoc:
-            # skip broken id
-            await db.aptitude_sessions.update_one({"session_id": session_id}, {"$inc": {"current_question_index": 1}})
-            return await get_next_question(session_id)
+        # On first call, pick first question adaptively (medium difficulty, topic with highest quota)
+        if not asked_ids:
+            topic = cat_choose_topic(cfg, sess)
+            desired_diff = _value_to_difficulty(theta)
+            qdoc = await db.aptitude_questions.find_one({"topic": topic, "difficulty": desired_diff})
+            if not qdoc:
+                # fallback any medium
+                qdoc = await db.aptitude_questions.find_one({"topic": topic})
+            if not qdoc:
+                raise HTTPException(status_code=404, detail="No questions available for configured topics")
+            asked_ids = [qdoc["id"]]
+            await db.aptitude_sessions.update_one({"session_id": session_id}, {"$set": {"questions_sequence": asked_ids, "current_question_index": 0, "adaptive_score": theta, "cat_se": se}})
+        # Determine current question
+        idx = int(sess.get("current_question_index", 0))
+        if idx >= len(asked_ids):
+            # Need to choose next adaptively
+            topic = cat_choose_topic(cfg, sess)
+            desired_diff = _value_to_difficulty(theta)
+            # sample avoid_ids from asked_ids
+            avoid_ids = asked_ids[-200:]
+            # choose one nearby difficulty
+            # prefer async await path
+            picked = None
+            for dtry in [desired_diff, _value_to_difficulty(theta+0.3), _value_to_difficulty(theta-0.3)]:
+                pipeline = [{"$match": {"topic": topic, "difficulty": dtry, "id": {"$nin": avoid_ids}}}, {"$sample": {"size": 25}}]
+                docs = await db.aptitude_questions.aggregate(pipeline).to_list(length=None)
+                if docs:
+                    # choose closest by ability mapping
+                    best = None
+                    best_delta = 999
+                    for doc in docs:
+                        bv = _difficulty_to_value(doc.get("difficulty", "medium"))
+                        delta = abs(theta - bv)
+                        if delta < best_delta:
+                            best = doc
+                            best_delta = delta
+                    picked = best
+                    break
+            if not picked:
+                picked = await db.aptitude_questions.find_one({"topic": topic, "id": {"$nin": avoid_ids}})
+            if not picked:
+                return {"message": "no_more_questions"}
+            asked_ids.append(picked["id"])
+            await db.aptitude_sessions.update_one({"session_id": session_id}, {"$set": {"questions_sequence": asked_ids}})
+            qdoc = picked
+            idx = len(asked_ids)-1
+        else:
+            qid = asked_ids[idx]
+            qdoc = await db.aptitude_questions.find_one({"id": qid})
+            if not qdoc:
+                await db.aptitude_sessions.update_one({"session_id": session_id}, {"$inc": {"current_question_index": 1}})
+                return await get_next_question(session_id)
         # Randomize options if config says so
         if cfg.get("randomize_options", True) and qdoc.get("question_type") == "multiple_choice":
             opts = qdoc.get("options", [])[:]
@@ -4910,7 +4933,8 @@ async def get_next_question(session_id: str):
             qdoc["options"] = opts
         # Do not send correct_answer to client
         qdoc_slim = {k: v for k, v in qdoc.items() if k not in ["_id", "correct_answer"]}
-        return {"question": qdoc_slim, "index": idx, "total": len(sess.get("questions_sequence", []))}
+        total_target = sum((cfg.get("questions_per_topic", {}) or {}).values())
+        return {"question": qdoc_slim, "index": idx, "total_target": total_target, "cat_theta": theta, "cat_se": se}
     except HTTPException:
         raise
     except Exception as e:
