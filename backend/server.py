@@ -4559,6 +4559,412 @@ async def admin_login(request: AdminLoginRequest):
 
 # Placement Preparation Dedicated Endpoints
 
+# ===== Aptitude: Core API Endpoints (Phase 1 - Part 4) =====
+# Configuration Endpoints (Placement Preparation Tab)
+class CreateAptitudeConfigRequest(BaseModel):
+    created_by: str
+    test_name: str
+    job_title: str = ""
+    job_description: str = ""
+    topics: List[str]
+    questions_per_topic: Dict[str, int]
+    difficulty_distribution: Dict[str, float]  # must include easy, medium, hard
+    total_time_limit: int = 3600
+    adaptive_mode: bool = True
+    randomize_questions: bool = True
+    randomize_options: bool = True
+
+@api_router.post("/placement-preparation/aptitude-test-config")
+async def create_aptitude_test_config(req: CreateAptitudeConfigRequest):
+    try:
+        # Basic validation
+        for t in req.topics:
+            if t not in TOPICS_SUBTOPICS:
+                raise HTTPException(status_code=400, detail=f"Invalid topic: {t}")
+        if set(req.difficulty_distribution.keys()) != {"easy", "medium", "hard"}:
+            raise HTTPException(status_code=400, detail="difficulty_distribution must include easy, medium, hard")
+        if abs(sum(req.difficulty_distribution.values()) - 1.0) > 0.001:
+            raise HTTPException(status_code=400, detail="difficulty_distribution values must sum to 1.0")
+        cfg = AptitudeTestConfig(
+            created_by=req.created_by,
+            test_name=req.test_name,
+            job_title=req.job_title,
+            job_description=req.job_description,
+            topics=req.topics,
+            questions_per_topic=req.questions_per_topic,
+            difficulty_distribution=req.difficulty_distribution,
+            total_time_limit=req.total_time_limit,
+            adaptive_mode=req.adaptive_mode,
+            randomize_questions=req.randomize_questions,
+            randomize_options=req.randomize_options
+        )
+        await db.aptitude_configs.insert_one(cfg.dict())
+        return {"success": True, "config_id": cfg.id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Create config error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create config")
+
+@api_router.get("/placement-preparation/aptitude-test-configs")
+async def list_aptitude_test_configs():
+    try:
+        configs = await db.aptitude_configs.find({}).sort("created_at", -1).to_list(length=None)
+        for c in configs:
+            if "_id" in c:
+                c["_id"] = str(c["_id"])
+        return {"configs": configs}
+    except Exception as e:
+        logging.error(f"List configs error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list configs")
+
+@api_router.get("/placement-preparation/aptitude-test-config/{config_id}")
+async def get_aptitude_test_config(config_id: str):
+    try:
+        cfg = await db.aptitude_configs.find_one({"id": config_id})
+        if not cfg:
+            raise HTTPException(status_code=404, detail="Config not found")
+        if "_id" in cfg:
+            cfg["_id"] = str(cfg["_id"])
+        return cfg
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Get config error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get config")
+
+# Token generation
+class GenerateAptitudeTokenRequest(BaseModel):
+    config_id: str
+    expires_in_minutes: int = 120
+    max_attempts: int = 1
+    candidate_restrictions: Dict[str, Any] = {}
+
+@api_router.post("/placement-preparation/generate-aptitude-token")
+async def generate_aptitude_test_token(req: GenerateAptitudeTokenRequest):
+    try:
+        cfg = await db.aptitude_configs.find_one({"id": req.config_id})
+        if not cfg:
+            raise HTTPException(status_code=404, detail="Config not found")
+        token_obj = AptitudeTestToken(
+            config_id=req.config_id,
+            expires_at=datetime.utcnow() + timedelta(minutes=req.expires_in_minutes),
+            max_attempts=req.max_attempts,
+            candidate_restrictions=req.candidate_restrictions
+        )
+        await db.aptitude_tokens.insert_one(token_obj.dict())
+        return {"success": True, "token": token_obj.token, "expires_at": token_obj.expires_at}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Generate token error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate token")
+
+# Test Execution Endpoints (Aptitude Test Tab)
+class ValidateTokenRequest(BaseModel):
+    token: str
+    candidate_name: Optional[str] = ""
+    candidate_email: Optional[str] = ""
+
+@api_router.post("/aptitude-test/validate-token")
+async def validate_token_and_start_test(req: ValidateTokenRequest, request: Request):
+    try:
+        tok = await db.aptitude_tokens.find_one({"token": req.token, "is_active": True})
+        if not tok:
+            raise HTTPException(status_code=400, detail="Invalid or inactive token")
+        if datetime.utcnow() > tok["expires_at"]:
+            raise HTTPException(status_code=400, detail="Token expired")
+        if tok.get("used_count", 0) >= tok.get("max_attempts", 1):
+            raise HTTPException(status_code=400, detail="Maximum attempts exceeded")
+        # Create session
+        session = AptitudeTestSession(
+            token=req.token,
+            config_id=tok["config_id"],
+            candidate_name=req.candidate_name or "",
+            candidate_email=req.candidate_email or "",
+            status="in_progress",
+            start_time=datetime.utcnow(),
+            ip_address=request.client.host if request.client else "",
+            user_agent=request.headers.get("user-agent", "")
+        )
+        await db.aptitude_sessions.insert_one(session.dict())
+        # Increment token use
+        await db.aptitude_tokens.update_one({"token": req.token}, {"$inc": {"used_count": 1}})
+        return {"success": True, "session_id": session.session_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Validate token error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to validate token")
+
+@api_router.get("/aptitude-test/session/{session_id}")
+async def get_session_status(session_id: str):
+    try:
+        sess = await db.aptitude_sessions.find_one({"session_id": session_id})
+        if not sess:
+            raise HTTPException(status_code=404, detail="Session not found")
+        if "_id" in sess:
+            sess["_id"] = str(sess["_id"])
+        return sess
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Get session error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get session")
+
+@api_router.get("/aptitude-test/question/{session_id}")
+async def get_next_question(session_id: str):
+    try:
+        sess = await db.aptitude_sessions.find_one({"session_id": session_id})
+        if not sess:
+            raise HTTPException(status_code=404, detail="Session not found")
+        cfg = await db.aptitude_configs.find_one({"id": sess["config_id"]})
+        if not cfg:
+            raise HTTPException(status_code=404, detail="Config not found")
+        # If first time, build sequence per config
+        if not sess.get("questions_sequence"):
+            sequence: List[str] = []
+            # For each topic, sample N questions by difficulty distribution
+            for topic in cfg.get("topics", []):
+                n_topic = int(cfg.get("questions_per_topic", {}).get(topic, 0))
+                if n_topic <= 0:
+                    continue
+                # Build difficulty splits
+                dd = cfg.get("difficulty_distribution", {"easy":0.4, "medium":0.4, "hard":0.2})
+                counts = {
+                    "easy": int(n_topic * dd.get("easy", 0.4)),
+                    "medium": int(n_topic * dd.get("medium", 0.4)),
+                    "hard": max(0, n_topic - int(n_topic*dd.get("easy",0.4)) - int(n_topic*dd.get("medium",0.4)))
+                }
+                for d, c in counts.items():
+                    if c <= 0:
+                        continue
+                    pipeline = [{"$match": {"topic": topic, "difficulty": d}}, {"$sample": {"size": c}}]
+                    docs = await db.aptitude_questions.aggregate(pipeline).to_list(length=None)
+                    sequence.extend([doc["id"] for doc in docs])
+            if cfg.get("randomize_questions", True):
+                random.shuffle(sequence)
+            await db.aptitude_sessions.update_one({"session_id": session_id}, {"$set": {"questions_sequence": sequence, "current_question_index": 0}})
+            sess["questions_sequence"] = sequence
+            sess["current_question_index"] = 0
+        # If completed
+        idx = sess.get("current_question_index", 0)
+        if idx >= len(sess.get("questions_sequence", [])):
+            return {"message": "no_more_questions"}
+        qid = sess["questions_sequence"][idx]
+        qdoc = await db.aptitude_questions.find_one({"id": qid})
+        if not qdoc:
+            # skip broken id
+            await db.aptitude_sessions.update_one({"session_id": session_id}, {"$inc": {"current_question_index": 1}})
+            return await get_next_question(session_id)
+        # Randomize options if config says so
+        if cfg.get("randomize_options", True) and qdoc.get("question_type") == "multiple_choice":
+            opts = qdoc.get("options", [])[:]
+            random.shuffle(opts)
+            qdoc["options"] = opts
+        # Do not send correct_answer to client
+        qdoc_slim = {k: v for k, v in qdoc.items() if k not in ["_id", "correct_answer"]}
+        return {"question": qdoc_slim, "index": idx, "total": len(sess.get("questions_sequence", []))}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Get next question error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get question")
+
+class SubmitAnswerRequest(BaseModel):
+    question_id: str
+    answer: Any
+    time_taken: float = 0.0
+
+@api_router.post("/aptitude-test/answer/{session_id}")
+async def submit_answer(session_id: str, req: SubmitAnswerRequest):
+    try:
+        sess = await db.aptitude_sessions.find_one({"session_id": session_id})
+        if not sess:
+            raise HTTPException(status_code=404, detail="Session not found")
+        qdoc = await db.aptitude_questions.find_one({"id": req.question_id})
+        if not qdoc:
+            raise HTTPException(status_code=404, detail="Question not found")
+        # Evaluate correctness
+        is_correct = False
+        if qdoc.get("question_type") in ["multiple_choice", "true_false"]:
+            is_correct = str(req.answer).strip() == str(qdoc.get("correct_answer")).strip()
+        elif qdoc.get("question_type") == "numerical_input":
+            try:
+                is_correct = float(req.answer) == float(qdoc.get("correct_answer"))
+            except Exception:
+                is_correct = False
+        # Update session answers and progress index
+        answers = sess.get("answers", {})
+        answers[qdoc["id"]] = {"answer": req.answer, "correct": is_correct}
+        time_map = sess.get("time_per_question", {})
+        time_map[qdoc["id"]] = float(req.time_taken or 0.0)
+        new_idx = sess.get("current_question_index", 0) + 1
+        status = sess.get("status", "in_progress")
+        if new_idx >= len(sess.get("questions_sequence", [])):
+            status = "completed"
+            end_time = datetime.utcnow()
+        else:
+            end_time = sess.get("end_time")
+        await db.aptitude_sessions.update_one(
+            {"session_id": session_id},
+            {"$set": {
+                "answers": answers,
+                "time_per_question": time_map,
+                "current_question_index": new_idx,
+                "status": status,
+                "end_time": end_time
+            }}
+        )
+        return {"success": True, "correct": is_correct, "next_index": new_idx, "status": status}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Submit answer error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit answer")
+
+@api_router.get("/aptitude-test/results/{session_id}")
+async def get_test_results(session_id: str):
+    try:
+        # If results already computed
+        existing = await db.aptitude_results.find_one({"session_id": session_id})
+        if existing:
+            if "_id" in existing:
+                existing["_id"] = str(existing["_id"])
+            return existing
+        # Compute quick results
+        sess = await db.aptitude_sessions.find_one({"session_id": session_id})
+        if not sess:
+            raise HTTPException(status_code=404, detail="Session not found")
+        cfg = await db.aptitude_configs.find_one({"id": sess["config_id"]})
+        answers = sess.get("answers", {})
+        total = len(sess.get("questions_sequence", []))
+        correct_ids = [qid for qid, a in answers.items() if a.get("correct")]
+        questions = await db.aptitude_questions.find({"id": {"$in": list(answers.keys())}}).to_list(length=None)
+        questions_map = {q["id"]: q for q in questions}
+        topic_scores: Dict[str, Dict[str, Any]] = {}
+        diff_perf: Dict[str, Dict[str, Any]] = {}
+        for qid, a in answers.items():
+            q = questions_map.get(qid)
+            if not q:
+                continue
+            t = q.get("topic")
+            d = q.get("difficulty")
+            topic_scores.setdefault(t, {"score": 0, "total": 0, "time": 0.0})
+            topic_scores[t]["total"] += 1
+            topic_scores[t]["time"] += float(sess.get("time_per_question", {}).get(qid, 0.0))
+            if a.get("correct"):
+                topic_scores[t]["score"] += 1
+            diff_perf.setdefault(d, {"score": 0, "total": 0})
+            diff_perf[d]["total"] += 1
+            if a.get("correct"):
+                diff_perf[d]["score"] += 1
+        # Final aggregates
+        questions_correct = len(correct_ids)
+        percentage = (questions_correct / total * 100) if total > 0 else 0.0
+        strengths = sorted([t for t, s in topic_scores.items() if s["total"]>0], key=lambda x: -(topic_scores[x]["score"]/max(1,topic_scores[x]["total"])) )[:3]
+        improvement = sorted([t for t, s in topic_scores.items() if s["total"]>0], key=lambda x: (topic_scores[x]["score"]/max(1,topic_scores[x]["total"])) )[:3]
+        result = AptitudeTestResult(
+            session_id=session_id,
+            overall_score=percentage,
+            percentage_score=percentage,
+            topic_scores={k: {**v, "percentage": round((v["score"]/max(1,v["total"]))*100,2)} for k,v in topic_scores.items()},
+            difficulty_performance={k: {**v, "percentage": round((v["score"]/max(1,v["total"]))*100,2)} for k,v in diff_perf.items()},
+            total_time_taken=int(sum(sess.get("time_per_question", {}).values())),
+            questions_attempted=total,
+            questions_correct=questions_correct,
+            strengths=strengths,
+            improvement_areas=improvement,
+            recommendations=[],
+            detailed_analysis=""
+        )
+        await db.aptitude_results.insert_one(result.dict())
+        return result.dict()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Get results error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get results")
+
+@api_router.get("/aptitude-test/results/{session_id}/pdf")
+async def download_results_pdf(session_id: str):
+    # Placeholder simple PDF until full report is implemented in later phase
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.units import cm
+        tmp_dir = "/tmp"
+        os.makedirs(tmp_dir, exist_ok=True)
+        pdf_path = os.path.join(tmp_dir, f"aptitude_results_{session_id}.pdf")
+        c = canvas.Canvas(pdf_path, pagesize=A4)
+        width, height = A4
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(2*cm, height-2*cm, "Aptitude Test Results")
+        c.setFont("Helvetica", 12)
+        c.drawString(2*cm, height-3*cm, f"Session: {session_id}")
+        # Pull summary
+        res = await db.aptitude_results.find_one({"session_id": session_id})
+        if not res:
+            c.drawString(2*cm, height-4*cm, "No results available")
+        else:
+            c.drawString(2*cm, height-4*cm, f"Overall: {round(res.get('percentage_score',0),2)}%")
+            y = height-5*cm
+            c.drawString(2*cm, y, "Topic-wise:")
+            y -= 0.7*cm
+            for t, s in (res.get("topic_scores", {}) or {}).items():
+                c.drawString(2.3*cm, y, f"{t}: {s.get('score',0)}/{s.get('total',0)} ({s.get('percentage',0)}%)")
+                y -= 0.6*cm
+        c.showPage()
+        c.save()
+        from fastapi.responses import FileResponse
+        return FileResponse(pdf_path, media_type='application/pdf', filename=f"aptitude_results_{session_id}.pdf")
+    except Exception as e:
+        logging.error(f"Aptitude results PDF error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate PDF")
+
+# Admin & Management Endpoints
+@api_router.get("/admin/aptitude-questions")
+async def list_aptitude_questions(topic: Optional[str] = None, difficulty: Optional[str] = None, page: int = 1, page_size: int = 20):
+    try:
+        filters: Dict[str, Any] = {}
+        if topic:
+            filters["topic"] = topic
+        if difficulty:
+            filters["difficulty"] = difficulty
+        skip = max(0, (page-1)*page_size)
+        cursor = db.aptitude_questions.find(filters).sort("created_at", -1).skip(skip).limit(page_size)
+        items = await cursor.to_list(length=None)
+        for it in items:
+            if "_id" in it:
+                it["_id"] = str(it["_id"])
+        total = await db.aptitude_questions.count_documents(filters)
+        return {"items": items, "total": total, "page": page, "page_size": page_size}
+    except Exception as e:
+        logging.error(f"List questions error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list questions")
+
+class BulkImportQuestionsRequest(BaseModel):
+    questions: List[AptitudeQuestion]
+
+@api_router.post("/admin/aptitude-questions/bulk-import")
+async def bulk_import_questions(req: BulkImportQuestionsRequest):
+    try:
+        docs = []
+        for q in req.questions:
+            data = q.dict()
+            check = validate_aptitude_question(AptitudeQuestion(**data))
+            if not check["valid"]:
+                return {"success": False, "error": "validation_failed", "details": check}
+            data["metadata"] = {**(data.get("metadata") or {}), "quality": check, "source": data.get("metadata", {}).get("source", "admin_bulk")}
+            docs.append(data)
+        if docs:
+            await db.aptitude_questions.insert_many(docs)
+        return {"success": True, "inserted": len(docs)}
+    except Exception as e:
+        logging.error(f"Bulk import error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to import questions")
+
+
 # ===== Aptitude: AI Question Generation (Gemini) =====
 class AIQuestionGenerateRequest(BaseModel):
     job_title: str = ""
