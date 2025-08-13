@@ -14015,7 +14015,7 @@ app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["https://aptitude-models.preview.emergentagent.com", "http://localhost:3000", "*"],
+    allow_origins=["https://aptiscore-engine.preview.emergentagent.com", "http://localhost:3000", "*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

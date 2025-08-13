@@ -4,7 +4,7 @@
 
 ### 1. LOGIN TO ADMIN DASHBOARD
 ```
-URL: https://aptitude-models.preview.emergentagent.com
+URL: https://aptiscore-engine.preview.emergentagent.com
 Admin Password: Game@1234
 ```
 

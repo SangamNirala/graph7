@@ -11,7 +11,7 @@ import time
 from typing import Dict, Any
 
 # Backend URL - using the production URL from frontend .env
-BASE_URL = "https://aptitude-models.preview.emergentagent.com/api"
+BASE_URL = "https://aptiscore-engine.preview.emergentagent.com/api"
 
 class AdminLoginTester:
     def __init__(self):

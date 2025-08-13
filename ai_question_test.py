@@ -10,7 +10,7 @@ import time
 import io
 
 # Backend URL from frontend .env
-BASE_URL = "https://aptitude-models.preview.emergentagent.com/api"
+BASE_URL = "https://aptiscore-engine.preview.emergentagent.com/api"
 
 class AIQuestionTester:
     def __init__(self):

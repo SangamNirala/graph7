@@ -11,7 +11,7 @@ import requests
 import json
 import io
 
-BASE_URL = "https://aptitude-models.preview.emergentagent.com/api"
+BASE_URL = "https://aptiscore-engine.preview.emergentagent.com/api"
 
 def test_specific_scenario():
     session = requests.Session()
