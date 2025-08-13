@@ -5600,7 +5600,8 @@ async def bulk_import_questions(req: BulkImportQuestionsRequest):
         raise HTTPException(status_code=500, detail="Failed to import questions")
 
 
-# ===== Aptitude: AI Question Generation (Gemini) =====
+# ===== ENHANCED AI QUESTION GENERATION ENGINE (PHASE 1 - PART 3) =====
+
 class AIQuestionGenerateRequest(BaseModel):
     job_title: str = ""
     job_description: str = ""
@@ -5611,13 +5612,343 @@ class AIQuestionGenerateRequest(BaseModel):
     count: int = 5
     curated_ratio: float = 0.0  # 0.0-1.0 of curated questions to mix in
     randomize_options: bool = True
+    contextual_enhancement: bool = True  # Enable job-contextual question generation
+    quality_threshold: float = 0.7  # Minimum quality score (0.0-1.0)
+    industry_focus: Optional[str] = None  # Auto-detected or manually specified
+
+class JobContextualGenerationRequest(BaseModel):
+    """Enhanced request for job-contextual question generation"""
+    job_title: str
+    job_description: str
+    company_industry: Optional[str] = None
+    required_skills: List[str] = []
+    experience_level: str = "mid"  # entry, mid, senior, executive
+    topics: List[str]  # Multiple topics for mixed generation
+    questions_per_topic: Dict[str, int] = {}
+    difficulty_distribution: Dict[str, float] = {"easy": 0.3, "medium": 0.5, "hard": 0.2}
+    total_questions: int = 20
+    quality_threshold: float = 0.8
+    include_role_specific_scenarios: bool = True
 
 AI_ALLOWED_TOPICS = set(TOPICS_SUBTOPICS.keys())
 AI_ALLOWED_TYPES = {"multiple_choice", "numerical_input", "true_false"}
 AI_ALLOWED_DIFFICULTY = {"easy", "medium", "hard"}
 
+# Industry-specific question contexts
+INDUSTRY_CONTEXTS = {
+    "technology": {
+        "keywords": ["software", "algorithm", "data", "system", "programming", "tech", "digital"],
+        "scenarios": ["software development", "data analysis", "system optimization", "algorithm design"],
+        "skills": ["problem-solving", "logical thinking", "analytical reasoning", "technical aptitude"]
+    },
+    "finance": {
+        "keywords": ["financial", "investment", "banking", "analysis", "risk", "portfolio", "market"],
+        "scenarios": ["financial analysis", "risk assessment", "investment planning", "market evaluation"],
+        "skills": ["numerical reasoning", "analytical thinking", "risk assessment", "quantitative analysis"]
+    },
+    "healthcare": {
+        "keywords": ["medical", "patient", "clinical", "healthcare", "diagnosis", "treatment", "research"],
+        "scenarios": ["patient care", "clinical analysis", "medical research", "healthcare optimization"],
+        "skills": ["logical reasoning", "analytical thinking", "attention to detail", "critical thinking"]
+    },
+    "consulting": {
+        "keywords": ["consulting", "strategy", "business", "analysis", "client", "solution", "management"],
+        "scenarios": ["business analysis", "strategic planning", "client consultation", "problem solving"],
+        "skills": ["logical reasoning", "analytical thinking", "communication", "strategic thinking"]
+    },
+    "manufacturing": {
+        "keywords": ["production", "manufacturing", "quality", "process", "efficiency", "operations"],
+        "scenarios": ["production optimization", "quality control", "process improvement", "operational efficiency"],
+        "skills": ["logical reasoning", "problem-solving", "analytical thinking", "attention to detail"]
+    }
+}
+
+
+async def detect_industry_context(job_title: str, job_description: str) -> str:
+    """Auto-detect industry context from job description"""
+    text = f"{job_title} {job_description}".lower()
+    
+    industry_scores = {}
+    for industry, context in INDUSTRY_CONTEXTS.items():
+        score = 0
+        for keyword in context["keywords"]:
+            score += text.count(keyword.lower())
+        industry_scores[industry] = score
+    
+    # Return industry with highest score, or 'general' if no clear match
+    best_industry = max(industry_scores.items(), key=lambda x: x[1])
+    return best_industry[0] if best_industry[1] > 0 else "general"
+
+
+async def extract_job_skills(job_description: str) -> List[str]:
+    """Extract key skills and requirements from job description using AI"""
+    try:
+        if not GEMINI_API_KEY:
+            return []
+        
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"""
+Extract the key skills, competencies, and requirements from this job description.
+Return a JSON array of strings with the most important skills mentioned.
+Focus on cognitive abilities, technical skills, and aptitudes that can be tested.
+Limit to 10 most important skills.
+
+Job Description: {job_description[:2000]}
+
+Return format: ["skill1", "skill2", "skill3", ...]
+"""
+        
+        response = model.generate_content(prompt)
+        skills_data = _extract_json(response.text)
+        
+        if isinstance(skills_data, list):
+            return [str(skill).strip() for skill in skills_data[:10]]
+        return []
+        
+    except Exception as e:
+        logging.error(f"Skill extraction error: {e}")
+        return []
+
+
+def build_enhanced_ai_question_prompt(req: AIQuestionGenerateRequest, industry: str, skills: List[str]) -> str:
+    """Build enhanced AI prompt with job-contextual information"""
+    subtopics = TOPICS_SUBTOPICS.get(req.topic, [])
+    chosen_sub = req.subtopic if req.subtopic else (subtopics[0] if subtopics else "general")
+    
+    # Get industry-specific context
+    industry_context = INDUSTRY_CONTEXTS.get(industry, {})
+    scenarios = industry_context.get("scenarios", [])
+    relevant_skills = industry_context.get("skills", [])
+    
+    schema_hint = {
+        "question_text": "string",
+        "question_type": req.question_type,
+        "options": ["string", "string", "string", "string"] if req.question_type == "multiple_choice" else [],
+        "correct_answer": "string",
+        "explanation": "string",
+        "job_relevance_score": "float (0.0-1.0)",
+        "cognitive_skills_tested": ["string", "string"]
+    }
+    
+    prompt = f"""
+You are an expert psychometrician and assessment designer specializing in job-relevant aptitude testing.
+Create a high-quality, job-contextual aptitude question that tests cognitive abilities relevant to the target role.
+
+STRICT JSON RESPONSE ONLY matching this schema: {json.dumps(schema_hint)}
+
+QUESTION REQUIREMENTS:
+- Topic: {req.topic} (subtopic: {chosen_sub})
+- Difficulty: {req.difficulty}
+- Type: {req.question_type}
+- Cognitive Focus: Test {req.topic.replace('_', ' ')} skills essential for job performance
+
+JOB CONTEXT INTEGRATION:
+- Job Title: {req.job_title}
+- Industry: {industry}
+- Key Job Skills: {', '.join(skills[:5])}
+- Relevant Scenarios: {', '.join(scenarios[:3])}
+- Required Cognitive Skills: {', '.join(relevant_skills)}
+
+CONTEXTUAL ENHANCEMENT RULES:
+1. Use realistic scenarios that a {req.job_title} might encounter (without mentioning specific companies)
+2. Incorporate industry-relevant examples and terminology where appropriate
+3. Ensure the question tests transferable cognitive skills, not job-specific knowledge
+4. Make distractors plausible but clearly incorrect to experts
+5. Provide job_relevance_score (0.0-1.0) indicating how well the question relates to the role
+6. List 2-3 primary cognitive skills this question tests
+
+QUALITY STANDARDS:
+- Question must be unambiguous and have exactly one correct answer
+- All options must be plausible to eliminate guessing
+- Explanation should be educational and connect to job relevance
+- For multiple_choice: provide exactly 4 options, ensure correct_answer matches one option exactly
+- Difficulty level should match the {req.difficulty} specification
+
+EXAMPLES OF GOOD CONTEXTUAL INTEGRATION:
+- Numerical reasoning for finance roles: Use financial data scenarios
+- Logical reasoning for tech roles: Use algorithmic or system logic problems  
+- Verbal comprehension for consulting: Use business communication scenarios
+- Spatial reasoning for engineering: Use design or architectural problems
+
+Job Description Context (first 1000 chars): {req.job_description[:1000]}
+"""
+    return prompt
+
+
+async def validate_ai_question_quality(question: AptitudeQuestion, target_relevance: float = 0.7) -> Dict[str, Any]:
+    """Enhanced quality validation for AI-generated questions"""
+    validation_result = {
+        "valid": True,
+        "quality_score": 0.0,
+        "job_relevance": 0.0,
+        "issues": [],
+        "suggestions": []
+    }
+    
+    try:
+        # Basic validation first
+        basic_validation = validate_aptitude_question(question)
+        validation_result.update(basic_validation)
+        
+        if not basic_validation["valid"]:
+            return validation_result
+        
+        # Enhanced validation for AI questions
+        quality_factors = []
+        
+        # 1. Question text quality (length, clarity)
+        text_length = len(question.question_text.strip())
+        if 20 <= text_length <= 300:
+            quality_factors.append(0.9)
+        elif text_length < 20:
+            quality_factors.append(0.3)
+            validation_result["issues"].append("Question text too short")
+        else:
+            quality_factors.append(0.6)
+            validation_result["suggestions"].append("Consider shorter question text for clarity")
+        
+        # 2. Options quality for multiple choice
+        if question.question_type == "multiple_choice":
+            options_quality = 0.5
+            if len(question.options) == 4:
+                options_quality += 0.2
+            if question.correct_answer in question.options:
+                options_quality += 0.3
+            else:
+                validation_result["valid"] = False
+                validation_result["issues"].append("Correct answer not in options")
+                return validation_result
+                
+            quality_factors.append(options_quality)
+        
+        # 3. Explanation quality
+        explanation_length = len(question.explanation.strip())
+        if 30 <= explanation_length <= 500:
+            quality_factors.append(0.9)
+        elif explanation_length < 30:
+            quality_factors.append(0.4)
+            validation_result["issues"].append("Explanation too brief")
+        else:
+            quality_factors.append(0.7)
+        
+        # 4. Job relevance score from metadata
+        job_relevance = question.metadata.get("job_relevance_score", 0.5)
+        if isinstance(job_relevance, (int, float)):
+            validation_result["job_relevance"] = float(job_relevance)
+            if job_relevance >= target_relevance:
+                quality_factors.append(1.0)
+            else:
+                quality_factors.append(max(0.3, job_relevance))
+                validation_result["suggestions"].append(f"Job relevance ({job_relevance:.2f}) below target ({target_relevance})")
+        
+        # Calculate overall quality score
+        validation_result["quality_score"] = sum(quality_factors) / len(quality_factors) if quality_factors else 0.5
+        
+        # Final validation
+        if validation_result["quality_score"] < 0.5:
+            validation_result["valid"] = False
+            validation_result["issues"].append(f"Quality score ({validation_result['quality_score']:.2f}) below minimum threshold")
+        
+        return validation_result
+        
+    except Exception as e:
+        logging.error(f"Quality validation error: {e}")
+        validation_result["valid"] = False
+        validation_result["issues"].append(f"Validation error: {str(e)}")
+        return validation_result
+
+
+async def ai_generate_contextual_question(req: AIQuestionGenerateRequest) -> Optional[AptitudeQuestion]:
+    """Generate a single contextual aptitude question using enhanced AI"""
+    try:
+        if not GEMINI_API_KEY:
+            logging.error("GEMINI_API_KEY missing; cannot generate AI question")
+            return None
+        
+        # Detect industry context and extract skills
+        industry = await detect_industry_context(req.job_title, req.job_description) if req.contextual_enhancement else "general"
+        skills = await extract_job_skills(req.job_description) if req.contextual_enhancement and req.job_description else []
+        
+        # Build enhanced prompt
+        if req.contextual_enhancement and (req.job_title or req.job_description):
+            prompt = build_enhanced_ai_question_prompt(req, industry, skills)
+        else:
+            # Fallback to basic prompt for backward compatibility
+            prompt = build_ai_question_prompt(req)
+        
+        # Generate question using Gemini
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        data = _extract_json(response.text)
+        
+        # Extract enhanced data
+        job_relevance_score = data.get("job_relevance_score", 0.5)
+        cognitive_skills = data.get("cognitive_skills_tested", [])
+        
+        # Normalize question data
+        qtype = data.get("question_type", req.question_type)
+        options = data.get("options") or []
+        
+        if qtype == "multiple_choice":
+            options = [str(o).strip() for o in options][:4]
+            while len(options) < 4:
+                options.append("None of the above")
+        
+        # Create enhanced question object
+        question = AptitudeQuestion(
+            topic=req.topic,
+            subtopic=(req.subtopic or (TOPICS_SUBTOPICS[req.topic][0] if req.topic in TOPICS_SUBTOPICS else "general")),
+            difficulty=req.difficulty,
+            question_text=str(data.get("question_text", "")).strip(),
+            question_type=qtype,
+            options=options,
+            correct_answer=str(data.get("correct_answer", "")).strip(),
+            explanation=str(data.get("explanation", "")).strip(),
+            time_limit=_choose_time_limit(req.difficulty),
+            metadata={
+                "source": "ai_gemini_enhanced",
+                "model": "gemini-1.5-flash",
+                "job_title": req.job_title,
+                "industry": industry,
+                "job_relevance_score": job_relevance_score,
+                "cognitive_skills_tested": cognitive_skills,
+                "contextual_enhancement": req.contextual_enhancement,
+                "extracted_skills": skills[:5]  # Store top 5 skills
+            }
+        )
+        
+        # Randomize options if requested
+        if req.randomize_options and question.question_type == "multiple_choice":
+            correct_answer = question.correct_answer
+            random.shuffle(question.options)
+            # Ensure correct answer is still in options after shuffle
+            if correct_answer not in question.options and question.options:
+                question.options[0] = correct_answer
+                random.shuffle(question.options)
+        
+        # Enhanced quality validation
+        validation = await validate_ai_question_quality(question, req.quality_threshold)
+        question.metadata["quality_validation"] = validation
+        
+        if not validation["valid"]:
+            logging.warning(f"Generated question failed validation: {validation['issues']}")
+            # Try auto-fix for common issues
+            if question.question_type == "multiple_choice" and question.correct_answer not in question.options and question.options:
+                question.options[0] = question.correct_answer
+                question.metadata["quality_validation"]["autofix"] = "inserted_correct_answer"
+                # Re-validate after fix
+                validation = await validate_ai_question_quality(question, req.quality_threshold)
+                question.metadata["quality_validation"] = validation
+        
+        return question if validation["valid"] else None
+        
+    except Exception as e:
+        logging.error(f"Enhanced AI generation error: {e}")
+        return None
+
 
 def build_ai_question_prompt(req: AIQuestionGenerateRequest) -> str:
+    """Legacy prompt builder for backward compatibility"""
     subtopics = TOPICS_SUBTOPICS.get(req.topic, [])
     chosen_sub = req.subtopic if req.subtopic else (subtopics[0] if subtopics else "general")
     schema_hint = {
