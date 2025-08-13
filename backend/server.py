@@ -6306,50 +6306,243 @@ class AIQuestionRefineRequest(BaseModel):
 
 @api_router.post("/admin/aptitude-questions/ai-refine")
 async def admin_ai_refine_question(req: AIQuestionRefineRequest):
+    """Enhanced AI question refinement with job context"""
     try:
         doc = await db.aptitude_questions.find_one({"id": req.question_id})
         if not doc:
             raise HTTPException(status_code=404, detail="Question not found")
         if not GEMINI_API_KEY:
             raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
-        base = AptitudeQuestion(**{k: v for k, v in doc.items() if k != "_id"})
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Build refinement prompt with job context if available
+        job_title = doc.get("metadata", {}).get("job_title", "")
+        industry = doc.get("metadata", {}).get("industry", "general")
+        
         prompt = f"""
-Refine the following question according to the instruction.
-Return STRICT JSON ONLY with fields: question_text, options, correct_answer, explanation.
-Instruction: {req.instruction}
+You are an expert psychometrician. Refine this aptitude test question based on the instruction.
+Return STRICT JSON matching the original schema.
 
-Question:
-- topic: {base.topic}
-- subtopic: {base.subtopic}
-- difficulty: {base.difficulty}
-- type: {base.question_type}
-- question_text: {base.question_text}
-- options: {json.dumps(base.options)}
-- correct_answer: {base.correct_answer}
-- explanation: {base.explanation}
+CURRENT QUESTION:
+Question: {doc.get('question_text', '')}
+Type: {doc.get('question_type', 'multiple_choice')}
+Options: {doc.get('options', [])}
+Correct Answer: {doc.get('correct_answer', '')}
+Explanation: {doc.get('explanation', '')}
+Topic: {doc.get('topic', '')} / {doc.get('subtopic', '')}
+Difficulty: {doc.get('difficulty', 'medium')}
+
+JOB CONTEXT:
+Job Title: {job_title}
+Industry: {industry}
+
+REFINEMENT INSTRUCTION: {req.instruction}
+
+REQUIREMENTS:
+1. Maintain the same topic, difficulty, and question type
+2. Keep the correct answer conceptually the same unless instruction requires change
+3. Improve clarity, remove ambiguity, strengthen distractors
+4. Enhance job relevance while keeping it generalizable
+5. Provide better explanation connecting to job context
+
+Return JSON with: question_text, question_type, options, correct_answer, explanation, job_relevance_score, improvement_notes
 """
+        
+        model = genai.GenerativeModel('gemini-1.5-flash')
         resp = model.generate_content(prompt)
-        data = _extract_json(resp.text)
-        # Apply refinement but preserve core fields
-        updated = {
-            "question_text": str(data.get("question_text", base.question_text)).strip(),
-            "options": [str(o) for o in (data.get("options") or base.options)],
-            "correct_answer": base.correct_answer,  # preserve
-            "explanation": str(data.get("explanation", base.explanation)).strip(),
-            "metadata": {**(base.metadata or {}), "refined_by": "ai_gemini", "refine_ts": datetime.utcnow().isoformat()}
+        refined = _extract_json(resp.text)
+        
+        # Update question with refined data
+        updates = {}
+        if "question_text" in refined:
+            updates["question_text"] = str(refined["question_text"]).strip()
+        if "options" in refined and doc.get("question_type") == "multiple_choice":
+            updates["options"] = [str(opt).strip() for opt in refined["options"][:4]]
+        if "correct_answer" in refined:
+            updates["correct_answer"] = str(refined["correct_answer"]).strip()
+        if "explanation" in refined:
+            updates["explanation"] = str(refined["explanation"]).strip()
+        
+        # Update metadata
+        metadata = doc.get("metadata", {})
+        metadata["refined"] = True
+        metadata["refinement_instruction"] = req.instruction
+        metadata["job_relevance_score"] = refined.get("job_relevance_score", metadata.get("job_relevance_score", 0.5))
+        metadata["improvement_notes"] = refined.get("improvement_notes", "AI refinement applied")
+        updates["metadata"] = metadata
+        
+        # Validate refined question
+        temp_question = AptitudeQuestion(**{**doc, **updates})
+        validation = await validate_ai_question_quality(temp_question)
+        updates["metadata"]["post_refinement_validation"] = validation
+        
+        # Update in database
+        result = await db.aptitude_questions.update_one(
+            {"id": req.question_id}, 
+            {"$set": updates}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=500, detail="Failed to update question")
+        
+        return {
+            "success": True,
+            "question_id": req.question_id,
+            "refinement_applied": req.instruction,
+            "validation_result": validation,
+            "improvements": refined.get("improvement_notes", "Question refined successfully")
         }
-        # Validate updated question
-        candidate = AptitudeQuestion(**{**base.dict(), **updated})
-        check = validate_aptitude_question(candidate)
-        updated["metadata"]= {**updated["metadata"], "quality": check}
-        await db.aptitude_questions.update_one({"id": base.id}, {"$set": updated})
-        return {"success": True, "question_id": base.id, "quality": check}
+        
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"AI refine error: {e}")
-        raise HTTPException(status_code=500, detail="Refinement failed")
+        logging.error(f"AI refinement error: {e}")
+        raise HTTPException(status_code=500, detail="AI refinement failed")
+
+
+@api_router.post("/admin/aptitude-questions/validate-quality")
+async def validate_question_quality(question_id: str):
+    """Validate and score question quality with detailed feedback"""
+    try:
+        doc = await db.aptitude_questions.find_one({"id": question_id})
+        if not doc:
+            raise HTTPException(status_code=404, detail="Question not found")
+        
+        # Create question object for validation
+        question = AptitudeQuestion(**doc)
+        
+        # Run enhanced quality validation
+        validation_result = await validate_ai_question_quality(question, 0.7)
+        
+        # Additional analysis for job context relevance
+        job_context_analysis = {
+            "has_job_context": bool(question.metadata.get("job_title")),
+            "industry": question.metadata.get("industry", "general"),
+            "job_relevance_score": question.metadata.get("job_relevance_score", 0.5),
+            "cognitive_skills": question.metadata.get("cognitive_skills_tested", [])
+        }
+        
+        # Update question metadata with validation results
+        await db.aptitude_questions.update_one(
+            {"id": question_id},
+            {"$set": {"metadata.last_quality_check": validation_result, "metadata.validated_at": datetime.utcnow()}}
+        )
+        
+        return {
+            "success": True,
+            "question_id": question_id,
+            "validation_result": validation_result,
+            "job_context_analysis": job_context_analysis,
+            "recommendations": validation_result.get("suggestions", [])
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Quality validation error: {e}")
+        raise HTTPException(status_code=500, detail="Quality validation failed")
+
+
+@api_router.get("/admin/aptitude-questions/ai-analytics")
+async def get_ai_question_analytics():
+    """Get analytics on AI-generated questions and their quality"""
+    try:
+        # Get all AI-generated questions
+        ai_questions = await db.aptitude_questions.find({
+            "metadata.source": {"$regex": "ai_"}
+        }).to_list(length=None)
+        
+        if not ai_questions:
+            return {
+                "success": True,
+                "total_ai_questions": 0,
+                "analytics": "No AI-generated questions found"
+            }
+        
+        # Calculate analytics
+        analytics = {
+            "total_ai_questions": len(ai_questions),
+            "by_source": {},
+            "by_topic": {},
+            "by_difficulty": {},
+            "by_industry": {},
+            "quality_metrics": {
+                "average_quality_score": 0.0,
+                "average_job_relevance": 0.0,
+                "high_quality_count": 0,
+                "contextual_questions": 0
+            },
+            "validation_status": {
+                "validated": 0,
+                "needs_validation": 0,
+                "failed_validation": 0
+            }
+        }
+        
+        quality_scores = []
+        relevance_scores = []
+        
+        for q in ai_questions:
+            metadata = q.get("metadata", {})
+            
+            # Source analysis
+            source = metadata.get("source", "unknown")
+            analytics["by_source"][source] = analytics["by_source"].get(source, 0) + 1
+            
+            # Topic analysis
+            topic = q.get("topic", "unknown")
+            analytics["by_topic"][topic] = analytics["by_topic"].get(topic, 0) + 1
+            
+            # Difficulty analysis
+            difficulty = q.get("difficulty", "unknown")
+            analytics["by_difficulty"][difficulty] = analytics["by_difficulty"].get(difficulty, 0) + 1
+            
+            # Industry analysis
+            industry = metadata.get("industry", "general")
+            analytics["by_industry"][industry] = analytics["by_industry"].get(industry, 0) + 1
+            
+            # Quality metrics
+            quality_validation = metadata.get("quality_validation", {})
+            quality_score = quality_validation.get("quality_score", 0.5)
+            job_relevance = metadata.get("job_relevance_score", 0.5)
+            
+            quality_scores.append(quality_score)
+            relevance_scores.append(job_relevance)
+            
+            if quality_score >= 0.8:
+                analytics["quality_metrics"]["high_quality_count"] += 1
+            
+            if metadata.get("contextual_enhancement"):
+                analytics["quality_metrics"]["contextual_questions"] += 1
+            
+            # Validation status
+            if quality_validation:
+                if quality_validation.get("valid", False):
+                    analytics["validation_status"]["validated"] += 1
+                else:
+                    analytics["validation_status"]["failed_validation"] += 1
+            else:
+                analytics["validation_status"]["needs_validation"] += 1
+        
+        # Calculate averages
+        if quality_scores:
+            analytics["quality_metrics"]["average_quality_score"] = round(sum(quality_scores) / len(quality_scores), 3)
+        if relevance_scores:
+            analytics["quality_metrics"]["average_job_relevance"] = round(sum(relevance_scores) / len(relevance_scores), 3)
+        
+        return {
+            "success": True,
+            "analytics": analytics,
+            "summary": {
+                "total_questions": len(ai_questions),
+                "contextual_percentage": round((analytics["quality_metrics"]["contextual_questions"] / len(ai_questions)) * 100, 1),
+                "high_quality_percentage": round((analytics["quality_metrics"]["high_quality_count"] / len(ai_questions)) * 100, 1),
+                "validation_coverage": round((analytics["validation_status"]["validated"] / len(ai_questions)) * 100, 1)
+            }
+        }
+    
+    except Exception as e:
+        logging.error(f"AI analytics error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate analytics")
 
 @api_router.post("/admin/upload")
 async def placement_preparation_upload(resume: UploadFile = File(...)):
