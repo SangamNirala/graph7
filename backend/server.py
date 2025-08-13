@@ -4195,6 +4195,58 @@ async def startup_background_tasks():
 def generate_secure_token() -> str:
     return ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(16))
 
+# ===== Aptitude: Security, Validation, Anti-cheat, Rate Limiting =====
+RATE_LIMIT_STORE: Dict[str, List[float]] = {}
+
+def _rate_key(scope: str, ip: str) -> str:
+    return f"{scope}:{ip}"
+
+def check_rate_limit(scope: str, ip: str, limit: int, window_sec: int = 60):
+    now = datetime.utcnow().timestamp()
+    key = _rate_key(scope, ip or "unknown")
+    arr = RATE_LIMIT_STORE.get(key, [])
+    # prune old
+    arr = [t for t in arr if now - t <= window_sec]
+    if len(arr) >= limit:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please slow down.")
+    arr.append(now)
+    RATE_LIMIT_STORE[key] = arr
+
+MAX_STR_LEN = 5000
+
+def sanitize_text(s: Optional[str], max_len: int = MAX_STR_LEN) -> str:
+    if not s:
+        return ""
+    s = str(s)
+    s = s.replace("\x00", " ").strip()
+    if len(s) > max_len:
+        s = s[:max_len]
+    return s
+
+async def enforce_candidate_restrictions(tok: dict, request: Request):
+    res = tok.get("candidate_restrictions", {}) or {}
+    ip = request.client.host if request.client else ""
+    ua = request.headers.get("user-agent", "")
+    if res.get("allowed_ips") and ip not in res.get("allowed_ips"):
+        raise HTTPException(status_code=403, detail="IP not allowed for this test")
+    if res.get("blocked_ips") and ip in res.get("blocked_ips"):
+        raise HTTPException(status_code=403, detail="IP blocked for this test")
+    if res.get("allowed_user_agents"):
+        allowed_match = any(x.lower() in ua.lower() for x in res.get("allowed_user_agents", []))
+        if not allowed_match:
+            raise HTTPException(status_code=403, detail="Browser not allowed for this test")
+    if res.get("email_domain") and request.headers.get("x-candidate-email"):
+        em = request.headers.get("x-candidate-email")
+        if not em.lower().endswith("@" + res.get("email_domain").lower()):
+            raise HTTPException(status_code=403, detail="Email domain restriction failed")
+
+async def mark_anti_cheat_flag(session_id: str, reason: str, meta: Dict[str, Any] = None):
+    try:
+        await db.aptitude_sessions.update_one({"session_id": session_id}, {"$push": {"anti_cheat_flags": {"reason": reason, "meta": meta or {}, "ts": datetime.utcnow().isoformat()}}})
+    except Exception as e:
+        logging.error(f"Anti-cheat flag error: {e}")
+
+
 # ===== Aptitude: Collections & Indexes =====
 async def ensure_aptitude_indexes():
     try:
