@@ -18,6 +18,7 @@ import string
 import io
 import base64
 
+import random
 # Google Generative AI import
 import google.generativeai as genai
 
