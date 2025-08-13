@@ -296,6 +296,21 @@ IMPLEMENTATION DETAILS:
 5. Hybrid Architecture - TTS uses Google Cloud, STT uses Web Speech API
 
 backend:
+  - task: "Aptitude Question Seeding System (Phase 1 - Part 2)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "✅ Implemented aptitude seeding: added collections/indexes on startup, validation utilities, generators per topic, and two admin endpoints: POST /api/admin/aptitude-questions/seed, GET /api/admin/aptitude-questions/stats."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ Tested seeding endpoints successfully. Seed inserted 800 questions with exact 200 per topic and 40/40/20 difficulty split. Stats endpoint returns accurate totals. Routes correctly use single /api prefix."
+
 frontend:
   - task: "Landing Page & Navigation Testing"
     implemented: true
