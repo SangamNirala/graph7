@@ -5993,6 +5993,15 @@ def _extract_json(text: str) -> dict:
 
 
 async def ai_generate_single_question(req: AIQuestionGenerateRequest) -> Optional[AptitudeQuestion]:
+    """Generate single question - routes to enhanced or legacy generation"""
+    if req.contextual_enhancement and (req.job_title or req.job_description):
+        return await ai_generate_contextual_question(req)
+    else:
+        return await ai_generate_legacy_question(req)
+
+
+async def ai_generate_legacy_question(req: AIQuestionGenerateRequest) -> Optional[AptitudeQuestion]:
+    """Legacy question generation for backward compatibility"""
     try:
         if not GEMINI_API_KEY:
             logging.error("GEMINI_API_KEY missing; cannot generate AI question")
