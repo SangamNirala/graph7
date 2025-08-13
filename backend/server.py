@@ -5521,41 +5521,589 @@ async def get_test_results(session_id: str):
         logging.error(f"Get results error: {e}")
         raise HTTPException(status_code=500, detail="Failed to get comprehensive results")
 
-@api_router.get("/aptitude-test/results/{session_id}/pdf")
-async def download_results_pdf(session_id: str):
-    # Placeholder simple PDF until full report is implemented in later phase
+# ===== PROFESSIONAL PDF REPORT GENERATION SYSTEM (PHASE 1 - PART 8) =====
+
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.patches import Circle
+import seaborn as sns
+import numpy as np
+from io import BytesIO
+import base64
+
+# Set professional color palette
+APTITUDE_COLORS = {
+    'primary': '#2E86AB',      # Professional Blue
+    'secondary': '#A23B72',    # Magenta
+    'success': '#F18F01',      # Orange
+    'warning': '#C73E1D',      # Red
+    'info': '#6C7B7F',         # Gray
+    'light': '#F5F5F5',        # Light Gray
+    'dark': '#2C3E50'          # Dark Blue
+}
+
+TOPIC_COLORS = {
+    'numerical_reasoning': '#2E86AB',
+    'logical_reasoning': '#A23B72', 
+    'verbal_comprehension': '#F18F01',
+    'spatial_reasoning': '#C73E1D'
+}
+
+
+def create_performance_radar_chart(topic_scores: Dict[str, Dict[str, Any]]) -> str:
+    """Create radar chart for topic performance"""
     try:
-        from reportlab.lib.pagesizes import A4
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.units import cm
+        plt.style.use('seaborn-v0_8-whitegrid')
+        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(projection='polar'))
+        
+        # Prepare data
+        topics = list(topic_scores.keys())
+        topic_names = {
+            'numerical_reasoning': 'Numerical\nReasoning',
+            'logical_reasoning': 'Logical\nReasoning', 
+            'verbal_comprehension': 'Verbal\nComprehension',
+            'spatial_reasoning': 'Spatial\nReasoning'
+        }
+        
+        labels = [topic_names.get(topic, topic.replace('_', ' ').title()) for topic in topics]
+        values = [topic_scores[topic].get('percentage', 0) for topic in topics]
+        
+        # Close the plot
+        values += values[:1]
+        labels += labels[:1]
+        
+        # Create angles for each topic
+        angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=True)
+        
+        # Plot
+        ax.plot(angles, values, 'o-', linewidth=3, color=APTITUDE_COLORS['primary'], markersize=8)
+        ax.fill(angles, values, alpha=0.25, color=APTITUDE_COLORS['primary'])
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(labels[:-1], fontsize=11, fontweight='bold')
+        ax.set_ylim(0, 100)
+        ax.set_yticks([20, 40, 60, 80, 100])
+        ax.set_yticklabels(['20%', '40%', '60%', '80%', '100%'], fontsize=9)
+        ax.grid(True, alpha=0.3)
+        
+        # Add performance zones
+        ax.fill_between(angles, 0, 40, alpha=0.1, color='red', label='Needs Improvement')
+        ax.fill_between(angles, 40, 70, alpha=0.1, color='orange', label='Good')
+        ax.fill_between(angles, 70, 100, alpha=0.1, color='green', label='Excellent')
+        
+        plt.title('Topic Performance Overview', pad=30, fontsize=16, fontweight='bold')
+        
+        # Save to base64
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png', dpi=300, bbox_inches='tight', facecolor='white')
+        buffer.seek(0)
+        chart_b64 = base64.b64encode(buffer.read()).decode()
+        plt.close()
+        
+        return chart_b64
+        
+    except Exception as e:
+        logging.error(f"Radar chart creation error: {e}")
+        return ""
+
+
+def create_difficulty_progression_chart(difficulty_performance: Dict[str, Dict[str, Any]]) -> str:
+    """Create bar chart for difficulty progression"""
+    try:
+        plt.style.use('seaborn-v0_8-whitegrid')
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        difficulties = ['easy', 'medium', 'hard']
+        percentages = [difficulty_performance.get(diff, {}).get('percentage', 0) for diff in difficulties]
+        totals = [difficulty_performance.get(diff, {}).get('total', 0) for diff in difficulties]
+        
+        colors = [APTITUDE_COLORS['success'], APTITUDE_COLORS['primary'], APTITUDE_COLORS['warning']]
+        
+        bars = ax.bar(difficulties, percentages, color=colors, alpha=0.8, edgecolor='white', linewidth=2)
+        
+        # Add value labels on bars
+        for i, (bar, percentage, total) in enumerate(zip(bars, percentages, totals)):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height + 1,
+                   f'{percentage:.1f}%\n({total} questions)',
+                   ha='center', va='bottom', fontweight='bold', fontsize=10)
+        
+        ax.set_ylim(0, 100)
+        ax.set_ylabel('Success Rate (%)', fontsize=12, fontweight='bold')
+        ax.set_xlabel('Difficulty Level', fontsize=12, fontweight='bold')
+        ax.set_title('Performance by Difficulty Level', fontsize=14, fontweight='bold', pad=20)
+        
+        # Add performance zones
+        ax.axhspan(0, 40, alpha=0.1, color='red', label='Needs Improvement')
+        ax.axhspan(40, 70, alpha=0.1, color='orange', label='Good')
+        ax.axhspan(70, 100, alpha=0.1, color='green', label='Excellent')
+        
+        ax.grid(axis='y', alpha=0.3)
+        ax.set_xticklabels([d.title() for d in difficulties], fontsize=11)
+        
+        # Save to base64
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png', dpi=300, bbox_inches='tight', facecolor='white')
+        buffer.seek(0)
+        chart_b64 = base64.b64encode(buffer.read()).decode()
+        plt.close()
+        
+        return chart_b64
+        
+    except Exception as e:
+        logging.error(f"Difficulty chart creation error: {e}")
+        return ""
+
+
+def create_time_management_chart(time_analysis: Dict[str, Any]) -> str:
+    """Create time management visualization"""
+    try:
+        plt.style.use('seaborn-v0_8-whitegrid')
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        
+        # Time efficiency gauge
+        efficiency_score = time_analysis.get('time_efficiency_score', 50)
+        
+        # Create gauge chart
+        theta = np.linspace(0, np.pi, 100)
+        r = 1
+        
+        ax1.plot(r * np.cos(theta), r * np.sin(theta), 'k-', linewidth=3)
+        ax1.fill_between(r * np.cos(theta), 0, r * np.sin(theta), alpha=0.1, color='lightgray')
+        
+        # Color zones
+        zones = [
+            (0, 40, 'red', 'Needs Improvement'),
+            (40, 70, 'orange', 'Good'),
+            (70, 100, 'green', 'Excellent')
+        ]
+        
+        for start, end, color, label in zones:
+            start_angle = np.pi * (1 - start/100)
+            end_angle = np.pi * (1 - end/100)
+            theta_zone = np.linspace(end_angle, start_angle, 50)
+            ax1.fill_between(r * np.cos(theta_zone), 0, r * np.sin(theta_zone), 
+                           alpha=0.3, color=color, label=label)
+        
+        # Needle
+        needle_angle = np.pi * (1 - efficiency_score/100)
+        ax1.arrow(0, 0, 0.8 * np.cos(needle_angle), 0.8 * np.sin(needle_angle),
+                 head_width=0.05, head_length=0.05, fc='black', ec='black', linewidth=3)
+        
+        ax1.set_xlim(-1.2, 1.2)
+        ax1.set_ylim(-0.2, 1.2)
+        ax1.set_aspect('equal')
+        ax1.axis('off')
+        ax1.set_title(f'Time Efficiency: {efficiency_score:.1f}%', fontsize=14, fontweight='bold', pad=20)
+        
+        # Time by topic
+        time_by_topic = time_analysis.get('time_by_topic', {})
+        if time_by_topic:
+            topics = list(time_by_topic.keys())
+            avg_times = [time_by_topic[topic].get('avg_time', 0) for topic in topics]
+            
+            topic_names = {
+                'numerical_reasoning': 'Numerical',
+                'logical_reasoning': 'Logical', 
+                'verbal_comprehension': 'Verbal',
+                'spatial_reasoning': 'Spatial'
+            }
+            
+            labels = [topic_names.get(topic, topic.replace('_', ' ').title()) for topic in topics]
+            colors = [TOPIC_COLORS.get(topic, APTITUDE_COLORS['info']) for topic in topics]
+            
+            bars = ax2.bar(labels, avg_times, color=colors, alpha=0.8, edgecolor='white', linewidth=2)
+            
+            # Add value labels
+            for bar, time_val in zip(bars, avg_times):
+                height = bar.get_height()
+                ax2.text(bar.get_x() + bar.get_width()/2., height + 2,
+                        f'{time_val:.1f}s',
+                        ha='center', va='bottom', fontweight='bold', fontsize=10)
+            
+            ax2.set_ylabel('Average Time (seconds)', fontsize=12, fontweight='bold')
+            ax2.set_xlabel('Topic', fontsize=12, fontweight='bold')
+            ax2.set_title('Average Time per Topic', fontsize=14, fontweight='bold', pad=20)
+            ax2.grid(axis='y', alpha=0.3)
+        
+        plt.tight_layout()
+        
+        # Save to base64
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png', dpi=300, bbox_inches='tight', facecolor='white')
+        buffer.seek(0)
+        chart_b64 = base64.b64encode(buffer.read()).decode()
+        plt.close()
+        
+        return chart_b64
+        
+    except Exception as e:
+        logging.error(f"Time chart creation error: {e}")
+        return ""
+
+
+def create_percentile_visualization(percentile_rank: float, overall_score: float) -> str:
+    """Create percentile comparison visualization"""
+    try:
+        plt.style.use('seaborn-v0_8-whitegrid')
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        
+        # Percentile distribution
+        x = np.linspace(0, 100, 1000)
+        y = np.exp(-(x-50)**2/800)  # Bell curve approximation
+        
+        ax1.fill_between(x, 0, y, alpha=0.3, color=APTITUDE_COLORS['info'], label='All Test Takers')
+        ax1.fill_between(x[x <= percentile_rank], 0, y[x <= percentile_rank], 
+                        alpha=0.7, color=APTITUDE_COLORS['primary'], label=f'Your Percentile: {percentile_rank:.1f}%')
+        
+        ax1.axvline(percentile_rank, color=APTITUDE_COLORS['warning'], linewidth=3, linestyle='--', label='Your Position')
+        ax1.set_xlabel('Percentile Rank', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('Distribution Density', fontsize=12, fontweight='bold')
+        ax1.set_title('Percentile Ranking', fontsize=14, fontweight='bold', pad=20)
+        ax1.legend()
+        ax1.grid(alpha=0.3)
+        
+        # Score comparison
+        score_ranges = [
+            (0, 40, 'Below Average', 'red'),
+            (40, 60, 'Average', 'orange'),
+            (60, 80, 'Above Average', 'lightgreen'),
+            (80, 100, 'Excellent', 'green')
+        ]
+        
+        for i, (start, end, label, color) in enumerate(score_ranges):
+            ax2.barh(i, end-start, left=start, color=color, alpha=0.6, edgecolor='white', linewidth=2)
+            ax2.text(start + (end-start)/2, i, label, ha='center', va='center', fontweight='bold', fontsize=10)
+        
+        # Your score indicator
+        ax2.axvline(overall_score, color='black', linewidth=4, linestyle='-', label=f'Your Score: {overall_score:.1f}%')
+        
+        ax2.set_xlabel('Score (%)', fontsize=12, fontweight='bold')
+        ax2.set_title('Score Comparison', fontsize=14, fontweight='bold', pad=20)
+        ax2.set_yticks([])
+        ax2.legend()
+        ax2.grid(axis='x', alpha=0.3)
+        
+        plt.tight_layout()
+        
+        # Save to base64
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png', dpi=300, bbox_inches='tight', facecolor='white')
+        buffer.seek(0)
+        chart_b64 = base64.b64encode(buffer.read()).decode()
+        plt.close()
+        
+        return chart_b64
+        
+    except Exception as e:
+        logging.error(f"Percentile chart creation error: {e}")
+        return ""
+
+
+async def generate_professional_aptitude_pdf(session_id: str) -> str:
+    """Generate comprehensive professional PDF report"""
+    try:
+        from reportlab.lib.pagesizes import A4, letter
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch, cm
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
+        from reportlab.graphics.shapes import Drawing, Rect
+        from reportlab.graphics import renderPDF
+        
+        # Get comprehensive results
+        result = await db.aptitude_results.find_one({"session_id": session_id})
+        if not result:
+            raise HTTPException(status_code=404, detail="Results not found")
+        
+        session = await db.aptitude_sessions.find_one({"session_id": session_id})
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Create PDF file
         tmp_dir = "/tmp"
         os.makedirs(tmp_dir, exist_ok=True)
-        pdf_path = os.path.join(tmp_dir, f"aptitude_results_{session_id}.pdf")
-        c = canvas.Canvas(pdf_path, pagesize=A4)
-        width, height = A4
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(2*cm, height-2*cm, "Aptitude Test Results")
-        c.setFont("Helvetica", 12)
-        c.drawString(2*cm, height-3*cm, f"Session: {session_id}")
-        # Pull summary
-        res = await db.aptitude_results.find_one({"session_id": session_id})
-        if not res:
-            c.drawString(2*cm, height-4*cm, "No results available")
+        pdf_path = os.path.join(tmp_dir, f"aptitude_report_{session_id}.pdf")
+        
+        # Create document
+        doc = SimpleDocTemplate(pdf_path, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+        story = []
+        
+        # Get styles
+        styles = getSampleStyleSheet()
+        
+        # Custom styles
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            alignment=TA_CENTER,
+            textColor=colors.HexColor(APTITUDE_COLORS['primary'])
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=16,
+            spaceAfter=12,
+            spaceBefore=20,
+            textColor=colors.HexColor(APTITUDE_COLORS['dark'])
+        )
+        
+        body_style = ParagraphStyle(
+            'CustomBody',
+            parent=styles['Normal'],
+            fontSize=11,
+            spaceAfter=12,
+            alignment=TA_JUSTIFY
+        )
+        
+        # Header
+        story.append(Paragraph("APTITUDE TEST COMPREHENSIVE REPORT", title_style))
+        story.append(Spacer(1, 20))
+        
+        # Executive Summary Section
+        story.append(Paragraph("EXECUTIVE SUMMARY", heading_style))
+        
+        candidate_name = session.get('candidate_name', 'Anonymous')
+        test_date = session.get('start_time', datetime.utcnow()).strftime('%B %d, %Y')
+        overall_score = result.get('overall_score', 0)
+        percentile_rank = result.get('percentile_rank', 50)
+        
+        summary_data = [
+            ['Candidate Name:', candidate_name],
+            ['Test Date:', test_date],
+            ['Overall Score:', f"{overall_score:.1f}%"],
+            ['Percentile Rank:', f"{percentile_rank:.1f}th percentile"],
+            ['Questions Attempted:', f"{result.get('questions_attempted', 0)} questions"],
+            ['Time Taken:', f"{result.get('total_time_taken', 0) // 60} minutes {result.get('total_time_taken', 0) % 60} seconds"]
+        ]
+        
+        summary_table = Table(summary_data, colWidths=[2*inch, 3*inch])
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8F9FA')),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor(APTITUDE_COLORS['dark'])),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('PADDIN', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#DEE2E6'))
+        ]))
+        
+        story.append(summary_table)
+        story.append(Spacer(1, 20))
+        
+        # Performance Level Assessment
+        if overall_score >= 80:
+            performance_level = "EXCELLENT"
+            level_color = "green"
+            level_description = "Outstanding performance demonstrating exceptional cognitive abilities across multiple domains."
+        elif overall_score >= 60:
+            performance_level = "GOOD"
+            level_color = "orange"
+            level_description = "Solid performance showing good aptitude with identified areas for targeted improvement."
+        elif overall_score >= 40:
+            performance_level = "AVERAGE"
+            level_color = "orange" 
+            level_description = "Average performance indicating foundational skills with significant development opportunities."
         else:
-            c.drawString(2*cm, height-4*cm, f"Overall: {round(res.get('percentage_score',0),2)}%")
-            y = height-5*cm
-            c.drawString(2*cm, y, "Topic-wise:")
-            y -= 0.7*cm
-            for t, s in (res.get("topic_scores", {}) or {}).items():
-                c.drawString(2.3*cm, y, f"{t}: {s.get('score',0)}/{s.get('total',0)} ({s.get('percentage',0)}%)")
-                y -= 0.6*cm
-        c.showPage()
-        c.save()
-        from fastapi.responses import FileResponse
-        return FileResponse(pdf_path, media_type='application/pdf', filename=f"aptitude_results_{session_id}.pdf")
+            performance_level = "NEEDS IMPROVEMENT"
+            level_color = "red"
+            level_description = "Performance indicates need for substantial skill development across core areas."
+        
+        story.append(Paragraph(f"<b>Performance Level: {performance_level}</b>", 
+                             ParagraphStyle('PerformanceLevel', parent=body_style, 
+                                          textColor=colors.HexColor(APTITUDE_COLORS[level_color if level_color != 'green' else 'success']),
+                                          fontSize=14, spaceAfter=10)))
+        story.append(Paragraph(level_description, body_style))
+        story.append(Spacer(1, 20))
+        
+        # Topic Performance Charts
+        story.append(Paragraph("DETAILED PERFORMANCE ANALYSIS", heading_style))
+        
+        # Create and add radar chart
+        radar_chart = create_performance_radar_chart(result.get('topic_scores', {}))
+        if radar_chart:
+            try:
+                radar_img_data = base64.b64decode(radar_chart)
+                radar_img = Image(BytesIO(radar_img_data), width=6*inch, height=4*inch)
+                story.append(radar_img)
+                story.append(Spacer(1, 15))
+            except Exception as e:
+                logging.error(f"Error adding radar chart: {e}")
+        
+        # Topic Scores Table
+        story.append(Paragraph("Topic-wise Performance Breakdown", 
+                             ParagraphStyle('SubHeading', parent=heading_style, fontSize=14)))
+        
+        topic_names = {
+            'numerical_reasoning': 'Numerical Reasoning',
+            'logical_reasoning': 'Logical Reasoning', 
+            'verbal_comprehension': 'Verbal Comprehension',
+            'spatial_reasoning': 'Spatial Reasoning'
+        }
+        
+        topic_data = [['Topic', 'Score', 'Total', 'Percentage', 'Avg. Time', 'Assessment']]
+        
+        for topic, scores in result.get('topic_scores', {}).items():
+            topic_name = topic_names.get(topic, topic.replace('_', ' ').title())
+            score = scores.get('score', 0)
+            total = scores.get('total', 0)
+            percentage = scores.get('percentage', 0)
+            avg_time = scores.get('avg_time', 0)
+            
+            if percentage >= 75:
+                assessment = "Strong"
+            elif percentage >= 50:
+                assessment = "Moderate"
+            else:
+                assessment = "Needs Work"
+            
+            topic_data.append([
+                topic_name,
+                str(score),
+                str(total),
+                f"{percentage:.1f}%",
+                f"{avg_time:.1f}s",
+                assessment
+            ])
+        
+        topic_table = Table(topic_data, colWidths=[2.2*inch, 0.6*inch, 0.6*inch, 0.8*inch, 0.8*inch, 1*inch])
+        topic_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(APTITUDE_COLORS['primary'])),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F8F9FA')),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#DEE2E6')),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('PADDINGX', (0, 0), (-1, -1), 6),
+            ('PADDINGY', (0, 0), (-1, -1), 8)
+        ]))
+        
+        story.append(topic_table)
+        story.append(PageBreak())
+        
+        # Difficulty Analysis
+        story.append(Paragraph("DIFFICULTY PROGRESSION ANALYSIS", heading_style))
+        
+        difficulty_chart = create_difficulty_progression_chart(result.get('difficulty_performance', {}))
+        if difficulty_chart:
+            try:
+                diff_img_data = base64.b64decode(difficulty_chart)
+                diff_img = Image(BytesIO(diff_img_data), width=7*inch, height=4*inch)
+                story.append(diff_img)
+                story.append(Spacer(1, 15))
+            except Exception as e:
+                logging.error(f"Error adding difficulty chart: {e}")
+        
+        # Time Management Analysis
+        story.append(Paragraph("TIME MANAGEMENT ANALYSIS", heading_style))
+        
+        time_analysis = result.get('time_management_analytics', {})
+        time_chart = create_time_management_chart(time_analysis)
+        if time_chart:
+            try:
+                time_img_data = base64.b64decode(time_chart)
+                time_img = Image(BytesIO(time_img_data), width=7*inch, height=4*inch)
+                story.append(time_img)
+                story.append(Spacer(1, 15))
+            except Exception as e:
+                logging.error(f"Error adding time chart: {e}")
+        
+        # Time Management Insights
+        time_insights = time_analysis.get('time_management_insights', [])
+        if time_insights:
+            story.append(Paragraph("Time Management Insights:", 
+                                 ParagraphStyle('InsightHeading', parent=body_style, fontName='Helvetica-Bold')))
+            for insight in time_insights:
+                story.append(Paragraph(f"• {insight}", body_style))
+            story.append(Spacer(1, 15))
+        
+        # Percentile Comparison
+        story.append(Paragraph("COMPARATIVE PERFORMANCE", heading_style))
+        
+        percentile_chart = create_percentile_visualization(percentile_rank, overall_score)
+        if percentile_chart:
+            try:
+                perc_img_data = base64.b64decode(percentile_chart)
+                perc_img = Image(BytesIO(perc_img_data), width=7*inch, height=4*inch)
+                story.append(perc_img)
+                story.append(Spacer(1, 15))
+            except Exception as e:
+                logging.error(f"Error adding percentile chart: {e}")
+        
+        # Improvement Recommendations
+        story.append(Paragraph("PERSONALIZED IMPROVEMENT RECOMMENDATIONS", heading_style))
+        
+        recommendations = result.get('recommendations', [])
+        if recommendations:
+            for i, rec in enumerate(recommendations, 1):
+                story.append(Paragraph(f"<b>{i}.</b> {rec}", body_style))
+                story.append(Spacer(1, 8))
+        
+        story.append(Spacer(1, 20))
+        
+        # Detailed Analysis
+        detailed_analysis = result.get('detailed_analysis', '')
+        if detailed_analysis:
+            story.append(Paragraph("COMPREHENSIVE ANALYSIS", heading_style))
+            # Split analysis into paragraphs
+            analysis_parts = detailed_analysis.split('**')
+            for part in analysis_parts:
+                if part.strip():
+                    if part.strip().endswith(':'):
+                        # This is a heading
+                        story.append(Paragraph(f"<b>{part.strip()}</b>", 
+                                             ParagraphStyle('AnalysisHeading', parent=body_style, 
+                                                           fontName='Helvetica-Bold', spaceAfter=8)))
+                    else:
+                        story.append(Paragraph(part.strip(), body_style))
+        
+        # Footer
+        story.append(Spacer(1, 30))
+        story.append(Paragraph("Generated by Elite AI Aptitude Assessment System", 
+                             ParagraphStyle('Footer', parent=styles['Normal'], 
+                                          fontSize=9, alignment=TA_CENTER, 
+                                          textColor=colors.HexColor('#6C757D'))))
+        
+        # Build PDF
+        doc.build(story)
+        
+        return pdf_path
+        
     except Exception as e:
-        logging.error(f"Aptitude results PDF error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate PDF")
+        logging.error(f"Professional PDF generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate professional PDF: {str(e)}")
+
+
+@api_router.get("/aptitude-test/results/{session_id}/pdf")
+async def download_results_pdf(session_id: str):
+    """Generate and download comprehensive professional PDF report"""
+    try:
+        # Generate professional PDF
+        pdf_path = await generate_professional_aptitude_pdf(session_id)
+        
+        from fastapi.responses import FileResponse
+        return FileResponse(
+            pdf_path, 
+            media_type='application/pdf', 
+            filename=f"aptitude_assessment_report_{session_id}.pdf",
+            headers={"Content-Disposition": f"inline; filename=aptitude_assessment_report_{session_id}.pdf"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"PDF download error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate PDF report")
 
 # Admin & Management Endpoints
 @api_router.get("/admin/aptitude-questions")
