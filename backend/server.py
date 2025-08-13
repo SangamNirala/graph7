@@ -4879,12 +4879,16 @@ async def validate_token_and_start_test(req: ValidateTokenRequest, request: Requ
             raise HTTPException(status_code=400, detail="Token expired")
         if tok.get("used_count", 0) >= tok.get("max_attempts", 1):
             raise HTTPException(status_code=400, detail="Maximum attempts exceeded")
+        # Enforce candidate restrictions and sanitize
+        await enforce_candidate_restrictions(tok, request)
+        cand_name = sanitize_text(req.candidate_name, 200)
+        cand_email = sanitize_text(req.candidate_email, 200)
         # Create session
         session = AptitudeTestSession(
             token=req.token,
             config_id=tok["config_id"],
-            candidate_name=req.candidate_name or "",
-            candidate_email=req.candidate_email or "",
+            candidate_name=cand_name,
+            candidate_email=cand_email,
             status="in_progress",
             start_time=datetime.utcnow(),
             ip_address=request.client.host if request.client else "",
